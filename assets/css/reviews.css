@@ -1,0 +1,279 @@
+/* Reviews Widgets & Carousels */
+.reviews-widget {
+  background: #ffffff;
+  border: 1px solid #e2ddd3;
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: 0 8px 24px rgba(24, 56, 43, 0.06);
+}
+
+.reviews-widget-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.reviews-widget-head h3 {
+  margin: 0 0 6px;
+  font-size: 22px;
+  color: #18382b;
+}
+
+.reviews-rating {
+  font-size: 16px;
+  color: #18382b;
+}
+
+.reviews-tripadvisor .reviews-rating span,
+.reviews-tripadvisor .review-stars {
+  color: #00aa6c;
+  letter-spacing: 2px;
+}
+
+.reviews-google .reviews-rating span,
+.reviews-google .review-stars {
+  color: #f5a623;
+  letter-spacing: 2px;
+}
+
+.reviews-post {
+  display: inline-block;
+  padding: 10px 18px;
+  background: #18382b;
+  color: #ffffff !important;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.reviews-post:hover {
+  background: #25523f;
+}
+
+.review-carousel {
+  position: relative;
+}
+
+.review-track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc(33.333% - 14px);
+  gap: 20px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  padding-bottom: 8px;
+  scrollbar-width: none;
+}
+
+.review-track::-webkit-scrollbar {
+  display: none;
+}
+
+.review-card {
+  scroll-snap-align: start;
+  background: #faf5ec;
+  border: 1px solid #e7e1d6;
+  border-radius: 18px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.review-author {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.review-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #18382b;
+  color: #faf5ec;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.review-author a {
+  font-weight: 700;
+  color: #18382b;
+}
+
+.review-date {
+  font-size: 13px;
+  color: #667268;
+}
+
+.review-title {
+  font-size: 16px;
+  color: #18382b;
+}
+
+.review-summary {
+  margin: 0;
+  font-size: 15px;
+  color: #3f4942;
+  line-height: 1.6;
+  flex-grow: 1;
+}
+
+.review-read {
+  align-self: flex-start;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: #92501e;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.review-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid #d5d9d2;
+  background: #ffffff;
+  color: #18382b;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.review-prev {
+  left: -14px;
+}
+
+.review-next {
+  right: -14px;
+}
+
+.review-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.review-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 0;
+  padding: 0;
+  background: #d5d9d2;
+  cursor: pointer;
+}
+
+.review-dot[aria-current="true"] {
+  background: #18382b;
+}
+
+/* GetYourGuide Section */
+.janaka-gyg {
+  background: #ffffff;
+  border: 1px solid #e2ddd3;
+  border-radius: 24px;
+  padding: 28px;
+  margin: 0 30px;
+  box-shadow: 0 8px 24px rgba(24, 56, 43, 0.06);
+}
+
+.janaka-gyg-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.janaka-gyg-header h3 {
+  margin: 0 0 4px;
+  font-size: 22px;
+  color: #18382b;
+}
+
+.janaka-gyg-note {
+  font-size: 14px;
+  color: #667268;
+}
+
+.janaka-gyg-link {
+  font-size: 13px;
+  font-weight: 700;
+  color: #92501e;
+}
+
+.janaka-gyg-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.janaka-gyg-card {
+  background: #faf5ec;
+  border: 1px solid #e7e1d6;
+  border-radius: 18px;
+  padding: 20px;
+}
+
+.janaka-gyg-name {
+  font-weight: 700;
+  color: #18382b;
+}
+
+.janaka-gyg-date {
+  font-size: 13px;
+  color: #667268;
+  margin-bottom: 8px;
+}
+
+.janaka-gyg-stars {
+  color: #f5a623;
+  margin-bottom: 10px;
+}
+
+.janaka-gyg-card blockquote {
+  margin: 0 0 12px;
+  font-size: 15px;
+  color: #3f4942;
+}
+
+.janaka-gyg-source {
+  font-size: 12px;
+  color: #756b5d;
+}
+
+@media screen and (max-width: 900px) {
+  .review-track {
+    grid-auto-columns: calc(50% - 10px);
+  }
+  .janaka-gyg-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media screen and (max-width: 640px) {
+  .review-track {
+    grid-auto-columns: 100%;
+  }
+  .janaka-gyg {
+    margin: 0;
+  }
+}

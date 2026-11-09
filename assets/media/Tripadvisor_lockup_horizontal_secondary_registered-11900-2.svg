@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="44" viewBox="0 0 220 44">
+      <circle cx="22" cy="22" r="18" fill="#00aa6c"/>
+      <circle cx="16" cy="22" r="5" fill="#fff"/>
+      <circle cx="28" cy="22" r="5" fill="#fff"/>
+      <text x="50" y="29" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#18382b">Tripadvisor</text>
+    </svg>

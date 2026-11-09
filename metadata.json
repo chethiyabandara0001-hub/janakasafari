@@ -1,0 +1,6 @@
+{
+  "name": "Janaka Safari Jeep Tours",
+  "description": "Guided 4x4 wildlife safaris across Yala, Udawalawe, Bundala, Wilpattu, Minneriya, and Kumana National Parks in Sri Lanka.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

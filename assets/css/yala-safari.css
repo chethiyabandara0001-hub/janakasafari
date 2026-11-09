@@ -1,0 +1,205 @@
+/* Yala Safari Page Styles */
+.wsite-background-11 {
+  background-color: #faf5ec !important;
+}
+
+.wsite-background-11 .wsite-multicol-table-wrap,
+.wsite-background-17 .wsite-multicol-table-wrap,
+.wsite-background-12 .wsite-multicol-table-wrap,
+.wsite-background-15 .wsite-multicol-table-wrap {
+  margin: 0 !important;
+}
+
+.wsite-background-11 .wsite-multicol-table,
+.wsite-background-11 .wsite-multicol-tbody,
+.wsite-background-17 .wsite-multicol-table,
+.wsite-background-17 .wsite-multicol-tbody,
+.wsite-background-12 .wsite-multicol-table,
+.wsite-background-12 .wsite-multicol-tbody,
+.wsite-background-15 .wsite-multicol-table,
+.wsite-background-15 .wsite-multicol-tbody {
+  display: block;
+  width: 100%;
+}
+
+.wsite-background-11 .wsite-multicol-tr,
+.wsite-background-15 .wsite-multicol-tr {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  align-items: stretch;
+}
+
+.wsite-background-17 .wsite-multicol-tr {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  align-items: stretch;
+}
+
+.wsite-background-11 .wsite-multicol-col {
+  display: flex !important;
+  flex-direction: column;
+  width: auto !important;
+  padding: 0 !important;
+  background: #ffffff;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(35, 45, 30, 0.08);
+}
+
+.wsite-background-11 .wsite-image {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.wsite-background-11 .wsite-image img {
+  display: block;
+  width: 100% !important;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+}
+
+.wsite-background-11 .wsite-multicol-col > .paragraph {
+  padding: 0 24px !important;
+  margin: 0 0 14px !important;
+  text-align: left !important;
+}
+
+.wsite-background-11 .wsite-multicol-col > .paragraph:nth-of-type(1) {
+  padding-top: 20px !important;
+  color: #756b5d;
+  font-size: 14px;
+}
+
+.wsite-background-11 .wsite-multicol-col > .paragraph:nth-of-type(3) {
+  flex-grow: 1;
+}
+
+.safari-inclusions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.safari-inclusions li {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.safari-tick {
+  color: #18382b;
+  font-weight: 700;
+}
+
+.wsite-background-11 .wsite-multicol-col > div:last-child {
+  margin: 12px 24px 24px !important;
+}
+
+.wsite-background-11 .wsite-button {
+  display: block;
+  width: 100%;
+}
+
+/* Transfer cards & Port Safari */
+.wsite-background-17 .wsite-multicol-col,
+.port-safari-card,
+.wsite-background-15 .wsite-multicol-col {
+  display: flex !important;
+  flex-direction: column;
+  width: auto !important;
+  padding: 28px !important;
+  background: #ffffff;
+  border: 1px solid #e2ddd3;
+  border-radius: 22px;
+  box-shadow: 0 6px 20px rgba(35, 45, 30, 0.06);
+}
+
+.port-safari-card {
+  max-width: 1000px;
+  margin: 24px auto 0;
+}
+
+/* Discover Yala Dark Section */
+.wsite-background-12 {
+  background-color: #13231b !important;
+}
+
+.wsite-background-12 h2,
+.wsite-background-12 h2 *,
+.wsite-background-12 .paragraph,
+.wsite-background-12 .paragraph * {
+  color: #faf5ec !important;
+}
+
+.wsite-background-12 .wsite-multicol {
+  margin-bottom: 24px;
+}
+
+.wsite-background-12 .wsite-multicol-tr {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.wsite-background-12 .wsite-multicol-tr:has(> .wsite-multicol-col:nth-child(2):last-child) {
+  grid-template-columns: 1.5fr 1fr;
+}
+
+.wsite-background-12 .wsite-multicol-col {
+  width: auto !important;
+  padding: 0 !important;
+  background: #223a2b;
+  border-radius: 22px;
+  overflow: hidden;
+}
+
+.wsite-background-12 .wsite-image {
+  padding: 0 !important;
+}
+
+.wsite-background-12 .wsite-image img {
+  display: block;
+  width: 100% !important;
+  height: 260px !important;
+  object-fit: cover;
+}
+
+.wsite-background-12 .wsite-multicol-col > .paragraph {
+  padding: 12px 22px 0 !important;
+}
+
+.janaka-payment {
+  text-align: center;
+  padding: 20px 0 8px;
+  color: #18382b;
+}
+
+.janaka-payment-logos {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.janaka-payment-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 50px;
+  background: #fff;
+  border: 1px solid #e1e5dc;
+  border-radius: 8px;
+}
+
+@media screen and (max-width: 767px) {
+  .wsite-background-11 .wsite-multicol-tr,
+  .wsite-background-17 .wsite-multicol-tr,
+  .wsite-background-12 .wsite-multicol-tr,
+  .wsite-background-12 .wsite-multicol-tr:has(> .wsite-multicol-col:nth-child(2):last-child),
+  .wsite-background-15 .wsite-multicol-tr {
+    grid-template-columns: 1fr;
+  }
+}

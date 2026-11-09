@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="640" viewBox="0 0 960 640">
+      <rect width="960" height="640" fill="#eef2e8"/>
+      <path d="M140 120 Q480 60 820 160 T800 520 Q480 580 160 480 Z" fill="#d9e4d1" stroke="#18382b" stroke-width="3" stroke-dasharray="8 6"/>
+      <circle cx="480" cy="310" r="95" fill="#9fc5cb" opacity="0.55"/>
+      <circle cx="380" cy="260" r="9" fill="#92501e"/>
+      <circle cx="560" cy="360" r="9" fill="#18382b"/>
+      <text x="480" y="90" text-anchor="middle" font-family="system-ui, sans-serif" font-size="26" font-weight="700" fill="#18382b">KUMANA SAFARI LOCATION MAP</text>
+      <text x="480" y="318" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="600" fill="#18382b">National Park Reserve &amp; Safari Tracks</text>
+    </svg>

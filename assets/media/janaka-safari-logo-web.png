@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="96" viewBox="0 0 340 96">
+      <rect width="340" height="96" rx="14" fill="#18382b"/>
+      <circle cx="48" cy="48" r="30" fill="#f5a623" opacity="0.18"/>
+      <path d="M34 58 C38 40, 56 34, 64 46 C56 46, 48 52, 46 60 Z" fill="#f5a623"/>
+      <text x="90" y="46" font-family="system-ui, sans-serif" font-size="24" font-weight="800" fill="#faf5ec">JANAKA SAFARI</text>
+      <text x="90" y="68" font-family="system-ui, sans-serif" font-size="13" font-weight="600" letter-spacing="1.5" fill="#f5a623">SRI LANKA JEEP TOURS</text>
+    </svg>

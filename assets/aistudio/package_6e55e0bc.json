@@ -1,0 +1,14 @@
+{
+  "name": "sri-lanka-yala-safaris",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=18.3.0"
+  },
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "start": "node scripts/serve.mjs",
+    "build": "node scripts/build.mjs",
+    "preview": "node scripts/serve.mjs --dist"
+  }
+}

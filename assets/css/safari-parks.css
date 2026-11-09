@@ -1,0 +1,73 @@
+/* Safari Parks Overview Grid */
+body.header-page #wsite-content .wsite-background-73 {
+  background-color: #faf5ec !important;
+}
+
+.parks-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px 24px;
+  width: 100%;
+  margin-top: 24px;
+}
+
+.parks-overview-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #ffffff;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(35, 45, 30, 0.08);
+}
+
+.parks-overview-card .wsite-image {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.parks-overview-card .wsite-image img {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 674 / 322;
+  object-fit: cover;
+}
+
+.parks-overview-card > .paragraph {
+  padding: 0 24px !important;
+  text-align: left !important;
+  margin: 0 0 18px !important;
+}
+
+.parks-overview-card > .parks-card-title {
+  margin: 22px 0 12px !important;
+  font-size: 22px !important;
+  font-weight: 700;
+  color: #18382b !important;
+}
+
+.parks-overview-card > .paragraph:not(.parks-card-title) {
+  flex-grow: 1;
+  color: #3f4942 !important;
+}
+
+.parks-card-button {
+  margin: auto 24px 24px !important;
+}
+
+.parks-card-button > div {
+  display: none !important;
+}
+
+.parks-card-button .wsite-button {
+  display: block;
+  width: 100%;
+}
+
+@media screen and (max-width: 767px) {
+  .parks-overview-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
