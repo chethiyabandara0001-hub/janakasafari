@@ -449,7 +449,8 @@
     const candidates = Array.from(
       document.querySelectorAll('div[style*="background-image"], img')
     ).filter((el) => {
-      if (el.closest("dialog") || el.closest(".firebase-section-showcase")) return false;
+      if (el.closest("dialog") || el.closest(".firebase-section-showcase") || el.closest(".hero-cross-bridge-wrap")) return false;
+      if (el.classList.contains("cross-top-img")) return false;
       if (el.tagName.toLowerCase() === "div") {
         const styleAttr = el.getAttribute("style") || "";
         if (!/background-image\s*:\s*url\(/i.test(styleAttr)) return false;
@@ -756,8 +757,15 @@
           if (entry.type === "hero-bg") {
             if (/payment-|visa|mastercard/i.test(ov.src)) return;
             if (entry.element.classList.contains("wsite-body-section")) return;
-            entry.element.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)), url("${ov.src}")`;
+            entry.element.style.backgroundImage = `url("${ov.src}")`;
+            entry.element.style.backgroundSize = "cover";
+            entry.element.style.backgroundPosition = "center center";
+            entry.element.style.minHeight = "110vh";
+            entry.element.style.height = "110vh";
           } else {
+            if (entry.element.classList.contains("janaka-brand-logo") || entry.element.closest(".hero-cross-bridge-wrap")) {
+              return;
+            }
             entry.element.src = ov.src;
             if (ov.alt) entry.element.alt = ov.alt;
             const parentAnchor = entry.element.closest("a[data-lightbox]");
@@ -895,8 +903,914 @@
     document.body.classList.toggle("admin-text-edit-mode", textEditModeActive);
   }
 
+  function initUltraSmoothScroll() {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if ("ontouchstart" in window || navigator.maxTouchPoints > 0) return;
+
+    let currentY = window.scrollY;
+    let targetY = window.scrollY;
+    let rafId = null;
+    let isAnimating = false;
+    let lastTime = performance.now();
+    const lerpFactor = 0.085; // Silky inertia damping
+
+    function getMaxScroll() {
+      return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    }
+
+    function updateScroll(now) {
+      const dt = Math.min((now - lastTime) / 16.667, 4);
+      lastTime = now;
+
+      const diff = targetY - currentY;
+      if (Math.abs(diff) > 0.35) {
+        currentY += diff * (1 - Math.pow(1 - lerpFactor, dt));
+        window.scrollTo(0, currentY);
+        rafId = requestAnimationFrame(updateScroll);
+      } else {
+        currentY = targetY;
+        window.scrollTo(0, targetY);
+        isAnimating = false;
+        rafId = null;
+        document.documentElement.classList.remove("ultra-smooth-active");
+      }
+    }
+
+    function startAnimation() {
+      if (!isAnimating) {
+        isAnimating = true;
+        lastTime = performance.now();
+        document.documentElement.classList.add("ultra-smooth-active");
+        rafId = requestAnimationFrame(updateScroll);
+      }
+    }
+
+    window.addEventListener(
+      "wheel",
+      (e) => {
+        if (e.ctrlKey || e.metaKey || e.defaultPrevented) return;
+        if (document.body.style.overflow === "hidden") return;
+        const openDialog = document.querySelector("dialog[open]");
+        if (openDialog) return;
+
+        // Allow native scrolling inside nested scrollable containers
+        let node = e.target;
+        while (node && node !== document.body && node !== document.documentElement) {
+          if (node instanceof HTMLElement) {
+            const style = window.getComputedStyle(node);
+            const overflowY = style.overflowY;
+            if ((overflowY === "auto" || overflowY === "scroll") && node.scrollHeight > node.clientHeight) {
+              return;
+            }
+          }
+          node = node.parentNode;
+        }
+
+        e.preventDefault();
+
+        let delta = e.deltaY;
+        if (e.deltaMode === 1) delta *= 36;
+        else if (e.deltaMode === 2) delta *= window.innerHeight * 0.85;
+
+        if (!isAnimating) {
+          currentY = window.scrollY;
+          targetY = window.scrollY;
+        }
+
+        targetY = Math.max(0, Math.min(getMaxScroll(), targetY + delta));
+        startAnimation();
+      },
+      { passive: false }
+    );
+
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (!isAnimating) {
+          currentY = window.scrollY;
+          targetY = window.scrollY;
+        }
+      },
+      { passive: true }
+    );
+
+    window.addEventListener("keydown", (e) => {
+      const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : "";
+      if (activeTag === "input" || activeTag === "textarea" || activeTag === "select") return;
+      if (document.querySelector("dialog[open]")) return;
+
+      let step = 0;
+      if (e.key === "ArrowDown") step = 110;
+      else if (e.key === "ArrowUp") step = -110;
+      else if (e.key === "PageDown" || (e.key === " " && !e.shiftKey)) step = window.innerHeight * 0.82;
+      else if (e.key === "PageUp" || (e.key === " " && e.shiftKey)) step = -window.innerHeight * 0.82;
+      else if (e.key === "Home") {
+        e.preventDefault();
+        if (!isAnimating) currentY = window.scrollY;
+        targetY = 0;
+        startAnimation();
+        return;
+      } else if (e.key === "End") {
+        e.preventDefault();
+        if (!isAnimating) currentY = window.scrollY;
+        targetY = getMaxScroll();
+        startAnimation();
+        return;
+      }
+
+      if (step !== 0) {
+        e.preventDefault();
+        if (!isAnimating) {
+          currentY = window.scrollY;
+          targetY = window.scrollY;
+        }
+        targetY = Math.max(0, Math.min(getMaxScroll(), targetY + step));
+        startAnimation();
+      }
+    });
+
+    // Smooth in-page hash anchor navigation
+    document.addEventListener("click", (e) => {
+      const anchor = e.target instanceof Element ? e.target.closest('a[href^="#"]') : null;
+      if (!anchor) return;
+      const hash = anchor.getAttribute("href");
+      if (!hash || hash === "#") return;
+      const targetEl = document.querySelector(hash);
+      if (targetEl) {
+        e.preventDefault();
+        if (!isAnimating) currentY = window.scrollY;
+        const rect = targetEl.getBoundingClientRect();
+        targetY = Math.max(0, Math.min(getMaxScroll(), window.scrollY + rect.top - 24));
+        startAnimation();
+        history.pushState(null, "", hash);
+      }
+    });
+
+    window.addEventListener("resize", () => {
+      targetY = Math.min(targetY, getMaxScroll());
+      if (rafId && !isAnimating) cancelAnimationFrame(rafId);
+    });
+  }
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = src;
+      s.async = true;
+      s.onload = () => resolve();
+      s.onerror = (err) => reject(err);
+      document.head.appendChild(s);
+    });
+  }
+
+  async function initDistinctGsapAnimations() {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    try {
+      if (!window.gsap) {
+        await loadScript("https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js");
+      }
+      if (!window.ScrollTrigger) {
+        await loadScript("https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js");
+      }
+    } catch (err) {
+      console.warn("GSAP CDN load skipped:", err);
+      return;
+    }
+
+    const gsap = window.gsap;
+    const ScrollTrigger = window.ScrollTrigger;
+    if (!gsap || !ScrollTrigger) return;
+
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Sync ScrollTrigger with ultra-smooth scrolling
+    window.addEventListener("scroll", () => ScrollTrigger.update(), { passive: true });
+
+    // 1. HEADER & NAVIGATION — Distinct Entrance Choreography
+    const headerLogo = document.querySelector(".dusk-header .logo");
+    const navItems = gsap.utils.toArray(".dusk-header .desktop-nav-center .wsite-menu-item-wrap");
+    const contactBtn = document.querySelector(".dusk-header .header-action-contact .nav-contact-btn");
+
+    const headerTl = gsap.timeline({ defaults: { ease: "power3.out" } });
+    if (headerLogo) {
+      headerTl.fromTo(
+        headerLogo,
+        { x: -50, opacity: 0, rotate: -6, scale: 0.88 },
+        { x: 0, opacity: 1, rotate: 0, scale: 1, duration: 0.9 }
+      );
+    }
+    if (navItems.length > 0) {
+      headerTl.fromTo(
+        navItems,
+        { y: -28, opacity: 0, rotateX: -45 },
+        { y: 0, opacity: 1, rotateX: 0, duration: 0.65, stagger: 0.08, ease: "back.out(1.7)" },
+        "-=0.55"
+      );
+    }
+    if (contactBtn) {
+      headerTl.fromTo(
+        contactBtn,
+        { x: 50, opacity: 0, scale: 0.75 },
+        { x: 0, opacity: 1, scale: 1, duration: 0.75, ease: "elastic.out(1, 0.6)" },
+        "-=0.45"
+      );
+    }
+
+    // 2. HERO BANNER — Distinct Item-by-Item Reveal + Scroll Parallax
+    const heroKicker = document.querySelector(".banner .hero-editorial-kicker");
+    const heroTitle = document.querySelector(".banner h2.wsite-content-title");
+    const heroHighlight = document.querySelector(".banner .sri-lanka-tracks");
+    const heroParagraphs = gsap.utils.toArray(".banner .paragraph");
+    const heroBtn = document.querySelector(".banner .wsite-button");
+
+    const heroTl = gsap.timeline({ delay: 0.15 });
+    if (heroKicker) {
+      heroTl.fromTo(
+        heroKicker,
+        { x: -60, opacity: 0, skewX: -12 },
+        { x: 0, opacity: 1, skewX: 0, duration: 0.8, ease: "expo.out" }
+      );
+    }
+    if (heroTitle) {
+      heroTl.fromTo(
+        heroTitle,
+        { y: 55, opacity: 0, scale: 0.94, filter: "blur(8px)" },
+        { y: 0, opacity: 1, scale: 1, filter: "blur(0px)", duration: 1.0, ease: "power4.out" },
+        "-=0.5"
+      );
+    }
+    if (heroHighlight) {
+      heroTl.fromTo(
+        heroHighlight,
+        { scale: 0.85, textShadow: "0 0 0px rgba(245,166,35,0)" },
+        { scale: 1, textShadow: "0 0 28px rgba(245,166,35,0.65)", duration: 0.85, ease: "back.out(2)" },
+        "-=0.6"
+      );
+    }
+    if (heroParagraphs.length > 0) {
+      heroTl.fromTo(
+        heroParagraphs,
+        { y: 32, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.75, stagger: 0.12, ease: "power2.out" },
+        "-=0.55"
+      );
+    }
+    if (heroBtn) {
+      heroTl.fromTo(
+        heroBtn,
+        { y: 36, opacity: 0, scale: 0.82 },
+        { y: 0, opacity: 1, scale: 1, duration: 0.85, ease: "elastic.out(1, 0.55)" },
+        "-=0.45"
+      );
+    }
+
+    const heroBg = document.querySelector(".banner-wrap .wsite-header-section");
+    if (heroBg) {
+      gsap.to(heroBg, {
+        backgroundPositionY: "62%",
+        ease: "none",
+        scrollTrigger: {
+          trigger: ".banner-wrap",
+          start: "top top",
+          end: "bottom top",
+          scrub: true,
+        },
+      });
+    }
+
+    // 3. CROSS-SECTION BRIDGE — Distinct Animations for Left, Center & Right Sub-Sections + Number Counters
+    const crossCard = document.querySelector(".hero-cross-bridge-card");
+    if (crossCard) {
+      const subLeft = crossCard.querySelector(".cross-sub-left");
+      const subCenter = crossCard.querySelector(".cross-sub-center");
+      const subRight = crossCard.querySelector(".cross-sub-right");
+      const topImgs = crossCard.querySelectorAll(".cross-top-img");
+
+      const crossTl = gsap.timeline({
+        scrollTrigger: {
+          trigger: crossCard,
+          start: "top 92%",
+          toggleActions: "play none none reverse",
+        },
+      });
+
+      crossTl.fromTo(
+        crossCard,
+        { y: 60, opacity: 0, scale: 0.96 },
+        { y: 0, opacity: 1, scale: 1, duration: 0.8, ease: "power3.out" }
+      );
+
+      if (subLeft) {
+        crossTl.fromTo(
+          subLeft,
+          { x: -55, opacity: 0, rotateY: 25 },
+          { x: 0, opacity: 1, rotateY: 0, duration: 0.75, ease: "back.out(1.5)" },
+          "-=0.45"
+        );
+      }
+      if (subCenter) {
+        crossTl.fromTo(
+          subCenter,
+          { y: 45, opacity: 0, scale: 0.82 },
+          { y: 0, opacity: 1, scale: 1, duration: 0.8, ease: "elastic.out(1, 0.65)" },
+          "-=0.55"
+        );
+      }
+      if (subRight) {
+        crossTl.fromTo(
+          subRight,
+          { x: 55, opacity: 0, rotateY: -25 },
+          { x: 0, opacity: 1, rotateY: 0, duration: 0.75, ease: "back.out(1.5)" },
+          "-=0.6"
+        );
+      }
+      if (topImgs.length > 0) {
+        crossTl.fromTo(
+          topImgs,
+          { scale: 0, rotate: -15, opacity: 0 },
+          { scale: 1, rotate: 0, opacity: 1, duration: 0.7, stagger: 0.14, ease: "back.out(2.2)" },
+          "-=0.55"
+        );
+      }
+
+      // Animated Counter for 4.9 Google Score
+      const scoreEl = crossCard.querySelector(".cross-score");
+      if (scoreEl) {
+        const scoreObj = { val: 0 };
+        gsap.to(scoreObj, {
+          val: 4.9,
+          duration: 1.6,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: crossCard,
+            start: "top 90%",
+          },
+          onUpdate: () => {
+            scoreEl.textContent = scoreObj.val.toFixed(1);
+          },
+        });
+      }
+
+      // Animated Counter for 12,500+ Happy Explorers
+      const metricEl = crossCard.querySelector(".cross-metric");
+      if (metricEl) {
+        const countObj = { val: 0 };
+        gsap.to(countObj, {
+          val: 12500,
+          duration: 1.8,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: crossCard,
+            start: "top 90%",
+          },
+          onUpdate: () => {
+            metricEl.textContent = `${Math.round(countObj.val).toLocaleString()}+`;
+          },
+        });
+      }
+    }
+
+    // 4. SECTION: WHY EXPLORE WITH JANAKA (.janaka-benefits) — 4 Distinct Card Motions
+    const benefitsSection = document.querySelector(".janaka-benefits");
+    if (benefitsSection) {
+      const heading = benefitsSection.querySelector("h2.wsite-content-title");
+      const benefitCols = gsap.utils.toArray(benefitsSection.querySelectorAll(".benefit-column"));
+
+      if (heading) {
+        gsap.fromTo(
+          heading,
+          { y: -40, opacity: 0, scale: 0.9 },
+          {
+            y: 0,
+            opacity: 1,
+            scale: 1,
+            duration: 0.85,
+            ease: "back.out(1.7)",
+            scrollTrigger: { trigger: benefitsSection, start: "top 82%" },
+          }
+        );
+      }
+
+      const distinctBenefitFromVars = [
+        { x: -70, y: 30, rotate: -6, opacity: 0, scale: 0.88 }, // Card 1: swoop from bottom-left
+        { y: 75, rotateX: 35, opacity: 0, scale: 0.85 },        // Card 2: 3D flip up from bottom
+        { y: -65, rotateX: -35, opacity: 0, scale: 0.85 },      // Card 3: 3D drop from top
+        { x: 70, y: 30, rotate: 6, opacity: 0, scale: 0.88 },   // Card 4: swoop from bottom-right
+      ];
+
+      benefitCols.forEach((col, i) => {
+        const fromVars = distinctBenefitFromVars[i % distinctBenefitFromVars.length];
+        const icon = col.querySelector(".benefit-icon");
+        const texts = col.querySelectorAll(".paragraph");
+
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: col,
+            start: "top 86%",
+            toggleActions: "play none none reverse",
+          },
+        });
+
+        tl.fromTo(
+          col,
+          fromVars,
+          { x: 0, y: 0, rotate: 0, rotateX: 0, opacity: 1, scale: 1, duration: 0.85, delay: i * 0.1, ease: "expo.out" }
+        );
+
+        if (icon) {
+          tl.fromTo(
+            icon,
+            { scale: 0, rotate: -180 },
+            { scale: 1, rotate: 0, duration: 0.7, ease: "elastic.out(1, 0.5)" },
+            "-=0.5"
+          );
+        }
+        if (texts.length > 0) {
+          tl.fromTo(
+            texts,
+            { y: 18, opacity: 0 },
+            { y: 0, opacity: 1, duration: 0.5, stagger: 0.08, ease: "power2.out" },
+            "-=0.45"
+          );
+        }
+      });
+    }
+
+    // 5. SECTION: SAVE UP TO 30% DIRECT BOOKING (.wsite-background-75)
+    const directSection = document.querySelector(".wsite-background-75");
+    if (directSection) {
+      const title = directSection.querySelector("h2.wsite-content-title");
+      const paragraphs = gsap.utils.toArray(directSection.querySelectorAll(".paragraph"));
+      const ctaBtn = directSection.querySelector(".wsite-button");
+      const payCards = gsap.utils.toArray(directSection.querySelectorAll(".janaka-payment-card"));
+
+      const directTl = gsap.timeline({
+        scrollTrigger: {
+          trigger: directSection,
+          start: "top 80%",
+          toggleActions: "play none none reverse",
+        },
+      });
+
+      if (title) {
+        directTl.fromTo(
+          title,
+          { scale: 0.72, opacity: 0, y: 35 },
+          { scale: 1, opacity: 1, y: 0, duration: 0.85, ease: "back.out(1.8)" }
+        );
+      }
+      if (paragraphs.length > 0) {
+        directTl.fromTo(
+          paragraphs,
+          { x: (idx) => (idx % 2 === 0 ? -50 : 50), opacity: 0 },
+          { x: 0, opacity: 1, duration: 0.7, stagger: 0.14, ease: "power3.out" },
+          "-=0.45"
+        );
+      }
+      if (ctaBtn) {
+        directTl.fromTo(
+          ctaBtn,
+          { scale: 0.6, opacity: 0 },
+          { scale: 1, opacity: 1, duration: 0.8, ease: "elastic.out(1.1, 0.5)" },
+          "-=0.35"
+        );
+      }
+      if (payCards.length > 0) {
+        directTl.fromTo(
+          payCards,
+          { y: 30, rotate: (idx) => (idx === 0 ? -12 : 12), opacity: 0, scale: 0.8 },
+          { y: 0, rotate: 0, opacity: 1, scale: 1, duration: 0.65, stagger: 0.15, ease: "back.out(2)" },
+          "-=0.4"
+        );
+      }
+    }
+
+    // 6. SECTION: WHY CHOOSE US (.home-why-choose) — Split Image Reveal + Staggered Numbered Steps
+    const whyChooseSection = document.querySelector(".home-why-choose");
+    if (whyChooseSection) {
+      const featureImg = whyChooseSection.querySelector(".wsite-image img");
+      const heading = whyChooseSection.querySelector("h2.wsite-content-title");
+      const steps = gsap.utils.toArray(whyChooseSection.querySelectorAll(".paragraph"));
+      const btn = whyChooseSection.querySelector(".wsite-button");
+
+      if (featureImg) {
+        gsap.fromTo(
+          featureImg,
+          { x: -80, scale: 1.15, rotate: -3, opacity: 0, clipPath: "inset(0 100% 0 0)" },
+          {
+            x: 0,
+            scale: 1,
+            rotate: 0,
+            opacity: 1,
+            clipPath: "inset(0 0% 0 0)",
+            duration: 1.15,
+            ease: "power4.out",
+            scrollTrigger: { trigger: whyChooseSection, start: "top 78%" },
+          }
+        );
+      }
+
+      const rightTl = gsap.timeline({
+        scrollTrigger: { trigger: whyChooseSection, start: "top 78%", toggleActions: "play none none reverse" },
+      });
+
+      if (heading) {
+        rightTl.fromTo(
+          heading,
+          { x: 65, opacity: 0, skewX: 8 },
+          { x: 0, opacity: 1, skewX: 0, duration: 0.8, ease: "power3.out" }
+        );
+      }
+      if (steps.length > 0) {
+        steps.forEach((step, idx) => {
+          const stepAnimations = [
+            { x: 60, y: 0, rotateX: 0 },
+            { x: 0, y: 40, scale: 0.92 },
+            { x: 75, y: 15, skewX: -6 },
+            { x: 0, y: -35, rotateX: -25 },
+          ];
+          const v = stepAnimations[idx % stepAnimations.length];
+          rightTl.fromTo(
+            step,
+            { ...v, opacity: 0 },
+            { x: 0, y: 0, scale: 1, skewX: 0, rotateX: 0, opacity: 1, duration: 0.65, ease: "back.out(1.4)" },
+            "-=0.45"
+          );
+        });
+      }
+      if (btn) {
+        rightTl.fromTo(
+          btn,
+          { y: 28, opacity: 0, scale: 0.85 },
+          { y: 0, opacity: 1, scale: 1, duration: 0.7, ease: "elastic.out(1, 0.6)" },
+          "-=0.3"
+        );
+      }
+    }
+
+    // 7. SECTION: 6 SAFARI EXPERIENCES GRID (.home-safari-grid) — Distinct Trajectory Per Park Card
+    const safariCards = gsap.utils.toArray(".home-safari-card");
+    if (safariCards.length > 0) {
+      const safariHeaders = gsap.utils.toArray(".wsite-background-1 h2.wsite-content-title");
+      if (safariHeaders.length > 0) {
+        gsap.fromTo(
+          safariHeaders,
+          { y: 38, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration: 0.8,
+            stagger: 0.15,
+            ease: "power3.out",
+            scrollTrigger: { trigger: ".wsite-background-1", start: "top 82%" },
+          }
+        );
+      }
+
+      const distinctCardVectors = [
+        { x: -80, y: 45, rotate: -5, scale: 0.9 },     // 1. Yala: diagonal from bottom-left
+        { x: 0, y: 85, scale: 0.82, rotateX: 25 },     // 2. Udawalawe: 3D rise from bottom
+        { x: 80, y: 45, rotate: 5, scale: 0.9 },       // 3. Bundala: diagonal from bottom-right
+        { x: -75, y: -35, rotateY: 30, scale: 0.88 },  // 4. Wilpattu: 3D hinge from top-left
+        { x: 0, y: -70, scale: 0.78, rotate: 3 },      // 5. Minneriya: zoom-drop from center
+        { x: 75, y: -35, rotateY: -30, scale: 0.88 },  // 6. Kumana: 3D hinge from top-right
+      ];
+
+      safariCards.forEach((card, i) => {
+        const vec = distinctCardVectors[i % distinctCardVectors.length];
+        const img = card.querySelector(".wsite-image img");
+        const title = card.querySelector(".home-safari-title");
+        const desc = card.querySelector(".home-safari-description");
+        const btn = card.querySelector(".wsite-button");
+
+        const cardTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: card,
+            start: "top 88%",
+            toggleActions: "play none none reverse",
+          },
+        });
+
+        cardTl.fromTo(
+          card,
+          { ...vec, opacity: 0 },
+          { x: 0, y: 0, rotate: 0, rotateX: 0, rotateY: 0, scale: 1, opacity: 1, duration: 0.85, ease: "power3.out" }
+        );
+
+        if (img) {
+          cardTl.fromTo(
+            img,
+            { scale: 1.28, filter: "brightness(0.6)" },
+            { scale: 1, filter: "brightness(1)", duration: 0.95, ease: "power2.out" },
+            "-=0.7"
+          );
+        }
+        if (title) {
+          cardTl.fromTo(title, { y: 18, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "back.out(1.7)" }, "-=0.55");
+        }
+        if (desc) {
+          cardTl.fromTo(desc, { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power2.out" }, "-=0.4");
+        }
+        if (btn) {
+          cardTl.fromTo(btn, { scale: 0.82, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.55, ease: "back.out(2)" }, "-=0.35");
+        }
+      });
+    }
+
+    // 8. SECTION: YALA SPOTLIGHT & WILDLIFE ENCOUNTERS (.home-wildlife-section)
+    const yalaFeature = document.querySelector(".home-yala-feature");
+    if (yalaFeature) {
+      const yalaImg = yalaFeature.querySelector(".wsite-image img");
+      const yalaCopyItems = gsap.utils.toArray(yalaFeature.querySelectorAll(".home-yala-copy .paragraph, .home-yala-copy .wsite-button"));
+
+      const yalaTl = gsap.timeline({
+        scrollTrigger: { trigger: yalaFeature, start: "top 82%", toggleActions: "play none none reverse" },
+      });
+
+      yalaTl.fromTo(
+        yalaFeature,
+        { scale: 0.92, opacity: 0, y: 50 },
+        { scale: 1, opacity: 1, y: 0, duration: 0.85, ease: "expo.out" }
+      );
+      if (yalaImg) {
+        yalaTl.fromTo(
+          yalaImg,
+          { x: -55, scale: 1.15, opacity: 0 },
+          { x: 0, scale: 1, opacity: 1, duration: 0.85, ease: "power3.out" },
+          "-=0.55"
+        );
+      }
+      if (yalaCopyItems.length > 0) {
+        yalaTl.fromTo(
+          yalaCopyItems,
+          { x: 45, opacity: 0 },
+          { x: 0, opacity: 1, duration: 0.65, stagger: 0.12, ease: "back.out(1.4)" },
+          "-=0.6"
+        );
+      }
+    }
+
+    const wildlifeCards = gsap.utils.toArray(".home-wildlife-card");
+    if (wildlifeCards.length > 0) {
+      const wildlifeVectors = [
+        { x: -65, rotate: -4, scale: 0.88 },
+        { y: 65, scale: 0.85, rotateX: 30 },
+        { y: -65, scale: 0.85, rotateX: -30 },
+        { x: 65, rotate: 4, scale: 0.88 },
+      ];
+      wildlifeCards.forEach((wCard, idx) => {
+        const wVec = wildlifeVectors[idx % wildlifeVectors.length];
+        const wImg = wCard.querySelector("img");
+        const wTexts = wCard.querySelectorAll(".paragraph");
+
+        const tl = gsap.timeline({
+          scrollTrigger: { trigger: wCard, start: "top 88%", toggleActions: "play none none reverse" },
+        });
+        tl.fromTo(
+          wCard,
+          { ...wVec, opacity: 0 },
+          { x: 0, y: 0, rotate: 0, rotateX: 0, scale: 1, opacity: 1, duration: 0.8, delay: idx * 0.08, ease: "back.out(1.4)" }
+        );
+        if (wImg) {
+          tl.fromTo(wImg, { scale: 1.22 }, { scale: 1, duration: 0.85, ease: "power2.out" }, "-=0.65");
+        }
+        if (wTexts.length > 0) {
+          tl.fromTo(wTexts, { y: 15, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, stagger: 0.08 }, "-=0.5");
+        }
+      });
+    }
+
+    // 9. SECTION: MEET JANAKA & THE TEAM (.home-meet-janaka)
+    const meetSection = document.querySelector(".home-meet-janaka");
+    if (meetSection) {
+      const meetImg = meetSection.querySelector(".wsite-image img");
+      const meetHeading = meetSection.querySelector("h2.wsite-content-title");
+      const meetParas = gsap.utils.toArray(meetSection.querySelectorAll(".paragraph"));
+      const meetBtn = meetSection.querySelector(".wsite-button");
+
+      const meetTl = gsap.timeline({
+        scrollTrigger: { trigger: meetSection, start: "top 80%", toggleActions: "play none none reverse" },
+      });
+
+      if (meetImg) {
+        meetTl.fromTo(
+          meetImg,
+          { x: -70, rotate: -4, scale: 0.9, opacity: 0 },
+          { x: 0, rotate: 0, scale: 1, opacity: 1, duration: 0.95, ease: "power3.out" }
+        );
+      }
+      if (meetHeading) {
+        meetTl.fromTo(
+          meetHeading,
+          { y: -35, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.7, ease: "back.out(1.7)" },
+          "-=0.6"
+        );
+      }
+      if (meetParas.length > 0) {
+        meetTl.fromTo(
+          meetParas,
+          { x: 50, opacity: 0 },
+          { x: 0, opacity: 1, duration: 0.65, stagger: 0.14, ease: "power2.out" },
+          "-=0.45"
+        );
+      }
+      if (meetBtn) {
+        meetTl.fromTo(
+          meetBtn,
+          { scale: 0.75, opacity: 0 },
+          { scale: 1, opacity: 1, duration: 0.7, ease: "elastic.out(1, 0.55)" },
+          "-=0.35"
+        );
+      }
+    }
+
+    // 10. SECTION: GUEST REVIEWS (.home-guest-reviews)
+    const reviewsSection = document.querySelector(".home-guest-reviews");
+    if (reviewsSection) {
+      const revHeading = reviewsSection.querySelector("h2.wsite-content-title");
+      const revAward = reviewsSection.querySelector(".home-review-award");
+      const revSummary = reviewsSection.querySelector(".home-review-summary");
+      const revListItems = gsap.utils.toArray(reviewsSection.querySelectorAll(".home-review-summary ul li"));
+      const googleBtn = reviewsSection.querySelector(".guest-google-button .wsite-button");
+
+      const revTl = gsap.timeline({
+        scrollTrigger: { trigger: reviewsSection, start: "top 80%", toggleActions: "play none none reverse" },
+      });
+
+      if (revHeading) {
+        revTl.fromTo(revHeading, { y: 35, opacity: 0 }, { y: 0, opacity: 1, duration: 0.75, ease: "power3.out" });
+      }
+      if (revAward) {
+        revTl.fromTo(
+          revAward,
+          { x: -60, rotateY: -25, opacity: 0, scale: 0.88 },
+          { x: 0, rotateY: 0, opacity: 1, scale: 1, duration: 0.8, ease: "back.out(1.6)" },
+          "-=0.4"
+        );
+      }
+      if (revSummary) {
+        revTl.fromTo(
+          revSummary,
+          { x: 60, opacity: 0, scale: 0.94 },
+          { x: 0, opacity: 1, scale: 1, duration: 0.8, ease: "power3.out" },
+          "-=0.6"
+        );
+      }
+      if (revListItems.length > 0) {
+        revTl.fromTo(
+          revListItems,
+          { x: 30, opacity: 0 },
+          { x: 0, opacity: 1, duration: 0.45, stagger: 0.08, ease: "back.out(1.5)" },
+          "-=0.45"
+        );
+      }
+      if (googleBtn) {
+        revTl.fromTo(
+          googleBtn,
+          { y: 24, opacity: 0, scale: 0.85 },
+          { y: 0, opacity: 1, scale: 1, duration: 0.65, ease: "elastic.out(1, 0.6)" },
+          "-=0.3"
+        );
+      }
+    }
+
+    // 11. SECTION: HAMBANTOTA PORT SAFARIS (.home-port-section)
+    const portSection = document.querySelector(".home-port-section");
+    if (portSection) {
+      const portCards = gsap.utils.toArray(portSection.querySelectorAll(".home-port-card"));
+      const portVectors = [
+        { x: -70, y: 40, rotate: -4 },
+        { x: 0, y: 70, scale: 0.84 },
+        { x: 70, y: 40, rotate: 4 },
+      ];
+      portCards.forEach((pCard, i) => {
+        const v = portVectors[i % portVectors.length];
+        gsap.fromTo(
+          pCard,
+          { ...v, opacity: 0 },
+          {
+            x: 0,
+            y: 0,
+            rotate: 0,
+            scale: 1,
+            opacity: 1,
+            duration: 0.85,
+            delay: i * 0.12,
+            ease: "back.out(1.5)",
+            scrollTrigger: { trigger: pCard, start: "top 88%", toggleActions: "play none none reverse" },
+          }
+        );
+      });
+    }
+
+    // 12. SECTION: TRANSFERS & STAYS (.wsite-background-84) + OTHER PAGE SECTIONS
+    const transfersSection = document.querySelector(".wsite-background-84");
+    if (transfersSection) {
+      const cols = gsap.utils.toArray(transfersSection.querySelectorAll(".wsite-multicol-col"));
+      const colMotions = [
+        { x: -65, rotateY: 20, opacity: 0 },
+        { y: 65, scale: 0.86, opacity: 0 },
+        { x: 65, rotateY: -20, opacity: 0 },
+      ];
+      cols.forEach((col, i) => {
+        gsap.fromTo(
+          col,
+          colMotions[i % colMotions.length],
+          {
+            x: 0,
+            y: 0,
+            rotateY: 0,
+            scale: 1,
+            opacity: 1,
+            duration: 0.85,
+            delay: i * 0.12,
+            ease: "power3.out",
+            scrollTrigger: { trigger: col, start: "top 86%", toggleActions: "play none none reverse" },
+          }
+        );
+      });
+    }
+
+    // 13. OTHER INNER PAGES — Distinct Section & Item Animations for Park/Gallery/About/Contact Pages
+    if (!document.querySelector(".janaka-benefits")) {
+      const bodySections = gsap.utils.toArray(".wsite-body-section");
+      bodySections.forEach((sec, secIdx) => {
+        const headings = sec.querySelectorAll("h2.wsite-content-title, h3");
+        const images = sec.querySelectorAll(".wsite-image img, .galleryImageHolder");
+        const paragraphs = sec.querySelectorAll(".paragraph");
+
+        if (headings.length > 0) {
+          gsap.fromTo(
+            headings,
+            { y: 36, opacity: 0, skewX: secIdx % 2 === 0 ? -6 : 6 },
+            {
+              y: 0,
+              opacity: 1,
+              skewX: 0,
+              duration: 0.8,
+              stagger: 0.12,
+              ease: "power3.out",
+              scrollTrigger: { trigger: sec, start: "top 82%" },
+            }
+          );
+        }
+        if (images.length > 0) {
+          gsap.fromTo(
+            images,
+            { scale: 0.88, y: 40, opacity: 0 },
+            {
+              scale: 1,
+              y: 0,
+              opacity: 1,
+              duration: 0.85,
+              stagger: 0.08,
+              ease: "back.out(1.4)",
+              scrollTrigger: { trigger: sec, start: "top 82%" },
+            }
+          );
+        }
+        if (paragraphs.length > 0) {
+          gsap.fromTo(
+            paragraphs,
+            { y: 24, opacity: 0 },
+            {
+              y: 0,
+              opacity: 1,
+              duration: 0.65,
+              stagger: 0.06,
+              ease: "power2.out",
+              scrollTrigger: { trigger: sec, start: "top 80%" },
+            }
+          );
+        }
+      });
+    }
+
+    // 14. FOOTER — Staggered 3-Column Entrance
+    const footerWrap = document.querySelector(".footer-wrap");
+    if (footerWrap) {
+      const footerCols = gsap.utils.toArray(footerWrap.querySelectorAll(".wsite-multicol-col"));
+      gsap.fromTo(
+        footerCols,
+        { y: 45, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.8,
+          stagger: 0.15,
+          ease: "power3.out",
+          scrollTrigger: { trigger: footerWrap, start: "top 90%" },
+        }
+      );
+    }
+  }
+
   bindEditableSlots();
   bindEditableTextSlots();
   applyEditModeState();
+  initUltraSmoothScroll();
+  void initDistinctGsapAnimations();
   void hydrateFromFirebaseCms();
 })();

@@ -157,8 +157,8 @@ function parsePageSlots(html: string): RawMatch[] {
       });
     } else if (match[3]) {
       const imgTag = match[3];
-      if (imgTag.includes('photo-full')) {
-        // Skip empty lightbox dialog template <img class="photo-full">
+      if (imgTag.includes('photo-full') || imgTag.includes('cross-top-img')) {
+        // Skip empty lightbox dialog template <img class="photo-full"> and cross-section badge icons
         continue;
       }
       const srcMatch = imgTag.match(/\bsrc="([^"]*)"/i);

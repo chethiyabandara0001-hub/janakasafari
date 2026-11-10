@@ -33,6 +33,11 @@
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  overscroll-behavior-y: none;
+}
+
+html.ultra-smooth-active {
+  scroll-behavior: auto !important;
 }
 
 body {
@@ -45,6 +50,8 @@ body {
   line-height: 1.7;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-overflow-scrolling: touch;
 }
 
 img {
@@ -345,96 +352,97 @@ main#main-content {
   }
 }
 
-/* Hero Banner — 110vh Extra Height Viewport with Zoomed Photography Covering the Expanded Size */
+/* Hero Banner — 110vh Extra Height Viewport with Zoomed Photography Reaching the Second Section */
 .banner-wrap,
+.banner-wrap > .wsite-elements,
+.banner-wrap .wsite-header-elements,
 .banner-wrap .wsite-section-wrap {
   position: relative;
   width: 100%;
-  min-height: 110vh !important;
-  height: 110vh !important;
+  min-height: 112vh !important;
+  height: 112vh !important;
   margin: 0;
   border-radius: 0;
-  border-bottom: 2px solid rgba(245, 166, 35, 0.4);
   overflow: hidden !important;
+  border-bottom: none;
+  background-color: #012f23;
 }
 
 .banner-wrap .wsite-header-section {
-  position: relative;
-  width: 100%;
-  min-height: 110vh !important;
-  height: 110vh !important;
-  margin: 0;
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  min-height: 112vh !important;
+  height: 100% !important;
+  margin: 0 !important;
   display: flex;
   flex-direction: column;
   justify-content: center;
   background-size: cover !important;
-  background-position: center center !important;
+  background-position: center 35% !important;
   background-repeat: no-repeat !important;
+  /* Zoom in the hero image so it fills and reaches all the way down to the second section */
+  transform: scale(1.22);
+  transform-origin: center center;
   /* Make the image highlights colorful and vivid */
   filter: saturate(1.18) contrast(1.06) brightness(1.03);
 }
 
-@media screen and (min-width: 768px) {
-  .banner-wrap .wsite-header-section {
-    background-size: max(104vw, 115vh * 1.6) max(115vh, 104vw * 0.65) !important;
-    background-position: center 38% !important;
-  }
-}
-
-/* Remove surface shades of green — Neutral photography gradient with fade to black for the extra expanded 10% height */
+/* Remove surface shades of green — Neutral photography gradient with subtle bottom fade into the second section */
 .wsite-header-section::before {
   content: "";
   position: absolute;
   inset: 0;
   background: linear-gradient(
     90deg,
-    rgba(0, 0, 0, 0.72) 0%,
-    rgba(0, 0, 0, 0.45) 42%,
-    rgba(0, 0, 0, 0.12) 68%,
-    rgba(0, 0, 0, 0.02) 100%
+    rgba(0, 0, 0, 0.68) 0%,
+    rgba(0, 0, 0, 0.38) 42%,
+    rgba(0, 0, 0, 0.1) 68%,
+    rgba(0, 0, 0, 0) 100%
   ),
   linear-gradient(
     180deg,
-    rgba(0, 0, 0, 0.5) 0%,
+    rgba(0, 0, 0, 0.45) 0%,
     transparent 24%,
-    transparent 78%,
-    rgba(0, 0, 0, 0.35) 86%,
-    rgba(0, 0, 0, 0.82) 93%,
-    #000000 100%
+    transparent 86%,
+    rgba(0, 0, 0, 0.55) 95%,
+    rgba(0, 0, 0, 0.92) 100%
   ) !important;
   pointer-events: none;
   z-index: 1;
 }
 
-/* Extra expanded 10% height dedicated fade-to-black gradient layer */
-.wsite-header-section::after {
+/* Subtle bottom edge fade right at the boundary of the second section */
+.banner-wrap::after {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  height: 12%;
-  min-height: 100px;
+  height: 9%;
+  min-height: 75px;
   background: linear-gradient(
     180deg,
     rgba(0, 0, 0, 0) 0%,
-    rgba(0, 0, 0, 0.45) 35%,
-    rgba(0, 0, 0, 0.88) 72%,
+    rgba(0, 0, 0, 0.45) 55%,
     #000000 100%
   ) !important;
   pointer-events: none;
-  z-index: 1;
+  z-index: 3;
 }
 
 .wsite-header-section .wsite-section-content {
   position: relative;
-  z-index: 2;
+  z-index: 4;
   width: 100%;
   flex: 1;
   display: flex;
   align-items: center;
-  min-height: 110vh;
-  padding-bottom: 100px;
+  min-height: 112vh;
+  padding-bottom: 120px;
+  /* Counteract parent 1.22 zoom scale so text and buttons remain crisp at 1:1 scale */
+  transform: scale(0.81967);
+  transform-origin: center center;
 }
 
 .wsite-header-section .container {
@@ -579,77 +587,80 @@ body.wsite-page-index .banner-wrap .sri-lanka-tracks * {
 }
 
 /* Hero Bottom Cross Section — Bridges Bottom of Hero Section and Second Section */
-.hero-cross-bridge-wrap {
+.hero-cross-bridge-wrap,
+div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) {
   position: relative;
   width: 100%;
   z-index: 35;
   margin-top: -95px;
   margin-bottom: -28px;
   pointer-events: auto;
+  background: linear-gradient(180deg, transparent 0%, #012f23 42%, #012f23 100%);
 }
 
-.hero-cross-bridge-card {
+.hero-cross-bridge-card,
+div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) > div:nth-of-type(1) {
   width: 90%;
   max-width: 1360px;
   margin-left: 5%;
   margin-right: 5%;
-  border-top-left-radius: 24px;
-  border-top-right-radius: 24px;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-  border-top: 1px solid rgba(245, 166, 35, 0.45);
-  border-left: 1px solid rgba(245, 166, 35, 0.22);
-  border-right: 1px solid rgba(245, 166, 35, 0.22);
-  border-bottom: none;
-  background: linear-gradient(
-    180deg,
-    rgba(8, 28, 20, 0.96) 0%,
-    rgba(5, 34, 25, 0.92) 48%,
-    rgba(1, 47, 35, 0.65) 78%,
-    rgba(1, 47, 35, 0) 100%
-  );
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-  box-shadow: 0 -12px 34px rgba(0, 0, 0, 0.45), 0 20px 40px rgba(0, 0, 0, 0.35);
+  border-radius: 24px;
+  border: none !important;
+  outline: none !important;
+  background-color: #ffffff !important;
+  background-image: none !important;
+  color: #000000 !important;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.22);
   display: grid;
-  grid-template-columns: 1fr 1.3fr 1fr;
+  grid-template-columns: 1fr 1.25fr 1fr;
   align-items: center;
-  padding: 24px 28px 46px 28px;
+  padding: 26px 28px;
   overflow: hidden;
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 78%, rgba(0, 0, 0, 0) 100%);
-  mask-image: linear-gradient(to bottom, #000 0%, #000 78%, rgba(0, 0, 0, 0) 100%);
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
 }
 
 .hero-cross-sub-section {
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 8px 24px;
+  justify-content: center;
+  text-align: center;
+  gap: 16px;
+  padding: 10px 24px;
+  color: #000000 !important;
 }
 
 .hero-cross-sub-section:not(:last-child) {
-  border-right: 1px solid rgba(255, 255, 255, 0.16);
+  border-right: 1px solid rgba(0, 0, 0, 0.12);
 }
 
 .cross-sub-center {
   justify-content: center;
   text-align: center;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .cross-sub-badge-wrap {
   display: flex;
   justify-content: center;
   align-items: center;
+  gap: 12px;
 }
 
 .cross-award-img {
-  height: 58px;
+  height: 54px;
   width: auto;
   max-width: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.45));
+  filter: none;
+}
+
+.cross-tripadvisor-owl {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  display: block;
 }
 
 .cross-web-logo {
@@ -657,31 +668,49 @@ body.wsite-page-index .banner-wrap .sri-lanka-tracks * {
   object-fit: contain;
 }
 
+.cross-sub-icon-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .cross-sub-icon-wrap {
   flex-shrink: 0;
-  width: 52px;
-  height: 52px;
+  width: 50px;
+  height: 50px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #f5f7f6;
+  border: none !important;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.cross-sub-icon-wrap.traveler-icon-wrap {
-  background: rgba(0, 182, 122, 0.14);
-  border-color: rgba(0, 182, 122, 0.4);
+.cross-jeep-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(245, 166, 35, 0.16);
+  color: #000000;
+  flex-shrink: 0;
 }
 
-.cross-web-logo.trustpilot-logo {
-  fill: #00b67a;
-  filter: drop-shadow(0 2px 6px rgba(0, 182, 122, 0.4));
+.cross-jeep-badge svg {
+  width: 22px;
+  height: 22px;
+  stroke: #000000;
 }
 
 .cross-sub-info {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  text-align: center;
+  color: #000000 !important;
 }
 
 .cross-sub-info.center-info {
@@ -689,9 +718,35 @@ body.wsite-page-index .banner-wrap .sri-lanka-tracks * {
   text-align: center;
 }
 
+.cross-top-media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.cross-top-img {
+  display: block;
+  object-fit: contain;
+  width: auto;
+}
+
+.cross-top-google {
+  height: 48px;
+}
+
+.cross-top-tripadvisor {
+  height: 76px;
+}
+
+.cross-top-traveler {
+  height: 48px;
+}
+
 .cross-metric-row {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
   line-height: 1.1;
   margin-bottom: 4px;
@@ -702,7 +757,7 @@ body.wsite-page-index .banner-wrap .sri-lanka-tracks * {
   font-family: var(--font-sans, "Plus Jakarta Sans", sans-serif);
   font-size: 26px;
   font-weight: 800;
-  color: #ffffff;
+  color: #000000 !important;
   letter-spacing: -0.02em;
 }
 
@@ -710,36 +765,38 @@ body.wsite-page-index .banner-wrap .sri-lanka-tracks * {
   font-size: 17px;
   color: #f5a623;
   letter-spacing: 2px;
-  text-shadow: 0 0 10px rgba(245, 166, 35, 0.6);
+  text-shadow: none;
 }
 
 .cross-title {
   font-family: var(--font-sans, "Plus Jakarta Sans", sans-serif);
   font-size: 13.5px;
-  font-weight: 700;
-  color: #f3f6f4;
+  font-weight: 800;
+  color: #000000 !important;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   margin-bottom: 2px;
 }
 
 .cross-title.gold-accent {
-  color: #f5a623;
+  color: #000000 !important;
   letter-spacing: 0.08em;
-  font-size: 13px;
+  font-size: 13.5px;
 }
 
 .cross-caption {
-  font-size: 12px;
-  color: #b2c2b9;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1f2421 !important;
   letter-spacing: 0.02em;
 }
 
 @media screen and (max-width: 960px) {
-  .hero-cross-bridge-card {
+  .hero-cross-bridge-card,
+  div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) > div:nth-of-type(1) {
     grid-template-columns: 1fr;
     gap: 18px;
-    padding: 22px 18px 42px 18px;
+    padding: 22px 18px;
   }
 
   .hero-cross-sub-section {
@@ -749,7 +806,7 @@ body.wsite-page-index .banner-wrap .sri-lanka-tracks * {
 
   .hero-cross-sub-section:not(:last-child) {
     border-right: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   }
 
   .hero-cross-bridge-wrap {
