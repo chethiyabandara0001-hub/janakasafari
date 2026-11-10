@@ -1,0 +1,1951 @@
+export interface SeedSectionGalleryItem {
+  itemId: string;
+  page: string;
+  sectionKey: string;
+  sectionTitle: string;
+  title: string;
+  caption: string;
+  src: string;
+  alt: string;
+  order: number;
+}
+
+export interface SeedSlotOverrideItem {
+  slotId: string;
+  page: string;
+  slotIndex: number;
+  type: 'hero-bg' | 'img' | 'lightbox-img' | 'logo';
+  label: string;
+  sectionContext: string;
+  src: string;
+  lightboxHref?: string;
+  alt: string;
+}
+
+/**
+ * Curated wildlife & safari images for EVERY section across all 12 pages,
+ * managed and synced through Firebase Firestore — all using direct web image links.
+ */
+export const INITIAL_FIREBASE_SECTION_IMAGES: SeedSectionGalleryItem[] = [
+  {
+    "itemId": "home_hero_1",
+    "page": "index.html",
+    "sectionKey": "home_welcome_section",
+    "sectionTitle": "Welcome & Private Jeep Fleet",
+    "title": "Golden Hour Leopard Tracking in Block 1",
+    "caption": "Early morning 5:00 AM entry into Yala National Park aboard our custom-built 4x4 Toyota Hilux safari jeeps.",
+    "src": "https://images.unsplash.com/photo-1456926631375-92c8ce872def?auto=format&fit=crop&w=1280&q=85&v=sec1",
+    "alt": "Sri Lankan Leopard resting on granite outcrop at golden hour in Yala",
+    "order": 1
+  },
+  {
+    "itemId": "home_welcome_2",
+    "page": "index.html",
+    "sectionKey": "home_welcome_section",
+    "sectionTitle": "Welcome & Private Jeep Fleet",
+    "title": "Elevated 6-Seat Viewing Deck",
+    "caption": "Forward-facing cushioned bucket seats with unobstructed 360-degree photography angles and roll-up canvas sides.",
+    "src": "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1280&q=85&v=sec2",
+    "alt": "Custom 4x4 safari jeep traversing Sri Lankan national park trail",
+    "order": 2
+  },
+  {
+    "itemId": "home_parks_1",
+    "page": "index.html",
+    "sectionKey": "home_parks_section",
+    "sectionTitle": "Featured National Parks",
+    "title": "Udawalawe Wild Elephant Herd",
+    "caption": "Multi-generational Asian elephant families gathering along the Udawalawe reservoir shoreline.",
+    "src": "https://images.unsplash.com/photo-1557050543-4d5f4e07ef46?auto=format&fit=crop&w=1280&q=85&v=sec3",
+    "alt": "Asian elephant family walking across grasslands in Udawalawe National Park",
+    "order": 3
+  },
+  {
+    "itemId": "home_parks_2",
+    "page": "index.html",
+    "sectionKey": "home_parks_section",
+    "sectionTitle": "Featured National Parks",
+    "title": "Bundala & Kumana Coastal Wetlands",
+    "caption": "Migratory Greater Flamingos, Painted Storks, and Bee-eaters feeding in shallow brackish lagoons.",
+    "src": "https://images.unsplash.com/photo-1497206365907-f5e630693df0?auto=format&fit=crop&w=1280&q=85&v=sec4",
+    "alt": "Flock of flamingos wading in Bundala coastal lagoon at sunrise",
+    "order": 4
+  },
+  {
+    "itemId": "yala_sec_leopard_1",
+    "page": "yala-safari.html",
+    "sectionKey": "yala_wildlife_section",
+    "sectionTitle": "Yala Leopard & Big Game Highlights",
+    "title": "Panthera pardus kotiya — Sri Lankan Leopard",
+    "caption": "Yala Block 1 and Block 5 hold one of the highest leopard densities in the world.",
+    "src": "https://images.unsplash.com/photo-1534567153574-2b12153a87f0?auto=format&fit=crop&w=1280&q=85&v=sec5",
+    "alt": "Close-up of a Sri Lankan leopard in Yala National Park",
+    "order": 1
+  },
+  {
+    "itemId": "yala_sec_bear_2",
+    "page": "yala-safari.html",
+    "sectionKey": "yala_wildlife_section",
+    "sectionTitle": "Yala Leopard & Big Game Highlights",
+    "title": "Sri Lankan Sloth Bear During Palu Season",
+    "caption": "May to July brings sloth bears out to feast on ripe golden Palu berries across rocky scrubland.",
+    "src": "https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?auto=format&fit=crop&w=1280&q=85&v=sec6",
+    "alt": "Sloth bear foraging in Yala forest scrub",
+    "order": 2
+  },
+  {
+    "itemId": "yala_sec_packages_3",
+    "page": "yala-safari.html",
+    "sectionKey": "yala_packages_section",
+    "sectionTitle": "Yala Full-Day & Half-Day Packages",
+    "title": "Full-Day Bush Picnic by Menik Ganga",
+    "caption": "Full-day safaris include freshly prepared breakfast and lunch served at shaded riverside rest stops.",
+    "src": "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=1280&q=85&v=sec7",
+    "alt": "Scenic golden savannah and watering hole in Yala National Park",
+    "order": 3
+  },
+  {
+    "itemId": "udawalawe_sec_1",
+    "page": "udawalawe-safari.html",
+    "sectionKey": "udawalawe_elephants_section",
+    "sectionTitle": "Udawalawe Elephant Herds & Reservoir",
+    "title": "Iconic Tuskers & Calf Herds",
+    "caption": "Guaranteed close-range sightings of wild elephant herds grazing across open Patana grasslands.",
+    "src": "https://images.unsplash.com/photo-1581852017103-68ac65514cf7?auto=format&fit=crop&w=1280&q=85&v=sec8",
+    "alt": "Herd of wild elephants with calves in Udawalawe National Park",
+    "order": 1
+  },
+  {
+    "itemId": "udawalawe_sec_2",
+    "page": "udawalawe-safari.html",
+    "sectionKey": "udawalawe_elephants_section",
+    "sectionTitle": "Udawalawe Elephant Herds & Reservoir",
+    "title": "Crested Hawk-Eagle & Raptors",
+    "caption": "Dead trees emerging from the Udawalawe reservoir serve as perches for White-bellied Sea Eagles and Changeable Hawk-Eagles.",
+    "src": "https://images.unsplash.com/photo-1611689342806-0863700ce1e4?auto=format&fit=crop&w=1280&q=85&v=sec9",
+    "alt": "Raptor perched on deadwood branch overlooking Udawalawe reservoir",
+    "order": 2
+  },
+  {
+    "itemId": "bundala_sec_1",
+    "page": "bundala-birding-safari.html",
+    "sectionKey": "bundala_wetlands_section",
+    "sectionTitle": "Bundala Lagoon Birding & Crocodiles",
+    "title": "Ramsar Wetland Sanctuary — 197+ Bird Species",
+    "caption": "Quiet coastal lagoons hosting Greater Flamingos, Black-necked Storks, Spoonbills, and Blue-tailed Bee-eaters.",
+    "src": "https://images.unsplash.com/photo-1549608276-5786777e6587?auto=format&fit=crop&w=1280&q=85&v=sec10",
+    "alt": "Waterbirds wading in Bundala National Park lagoon",
+    "order": 1
+  },
+  {
+    "itemId": "bundala_sec_2",
+    "page": "bundala-birding-safari.html",
+    "sectionKey": "bundala_wetlands_section",
+    "sectionTitle": "Bundala Lagoon Birding & Crocodiles",
+    "title": "Estuarine & Mugger Crocodiles Basking",
+    "caption": "Both saltwater and freshwater crocodiles bask along Bundala’s sunlit sandbars and channels.",
+    "src": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1280&q=85&v=sec11",
+    "alt": "Crocodile basking on bank of Bundala lagoon",
+    "order": 2
+  },
+  {
+    "itemId": "wilpattu_sec_1",
+    "page": "wilpattu-safari.html",
+    "sectionKey": "wilpattu_villus_section",
+    "sectionTitle": "Wilpattu Natural Villu Lakes & Leopards",
+    "title": "Leopard Patrol Along Natural Sand-Rimmed Villus",
+    "caption": "Sri Lanka’s largest national park features serene natural lakes (Villus) where leopards stalk spotted deer.",
+    "src": "https://images.unsplash.com/photo-1575550959106-5a7defe28b56?auto=format&fit=crop&w=1280&q=85&v=sec12",
+    "alt": "Leopard walking along sandy forest track in Wilpattu National Park",
+    "order": 1
+  },
+  {
+    "itemId": "wilpattu_sec_2",
+    "page": "wilpattu-safari.html",
+    "sectionKey": "wilpattu_villus_section",
+    "sectionTitle": "Wilpattu Natural Villu Lakes & Leopards",
+    "title": "Spotted Deer (Axis axis) & Ceylon Junglefowl",
+    "caption": "Morning mist rising over Kokkare Villu with herds of spotted deer and barking deer.",
+    "src": "https://images.unsplash.com/photo-1484406566174-9da000fda645?auto=format&fit=crop&w=1280&q=85&v=sec13",
+    "alt": "Spotted deer alert in forest clearing in Wilpattu",
+    "order": 2
+  },
+  {
+    "itemId": "minneriya_sec_1",
+    "page": "minneriya-safari.html",
+    "sectionKey": "minneriya_gathering_section",
+    "sectionTitle": "The Great Asian Elephant Gathering",
+    "title": "Over 300 Elephants at Ancient Minneriya Tank",
+    "caption": "During the dry season, herds from across the North Central Province converge on Minneriya’s receding grassy shores.",
+    "src": "https://images.unsplash.com/photo-1564760055775-d63b17a55c44?auto=format&fit=crop&w=1280&q=85&v=sec14",
+    "alt": "Large gathering of Asian elephants by Minneriya tank water edge",
+    "order": 1
+  },
+  {
+    "itemId": "minneriya_sec_2",
+    "page": "minneriya-safari.html",
+    "sectionKey": "minneriya_gathering_section",
+    "sectionTitle": "The Great Asian Elephant Gathering",
+    "title": "Sunset Over Minneriya Wewa",
+    "caption": "Afternoon safaris culminate in golden silhouettes of bathing elephants and flocks of cormorants.",
+    "src": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1280&q=85&v=sec15",
+    "alt": "Elephants silhouetted against golden sunset at Minneriya reservoir",
+    "order": 2
+  },
+  {
+    "itemId": "kumana_sec_1",
+    "page": "kumana-birding-safari.html",
+    "sectionKey": "kumana_villu_section",
+    "sectionTitle": "Kumana Villu Mangrove Heronry",
+    "title": "200-Hectare Kumana Villu Nesting Sanctuary",
+    "caption": "Thousands of Pelicans, Painted Storks, Spoonbills, and Purple Herons nest in the mangrove swamps from April to July.",
+    "src": "https://images.unsplash.com/photo-1444464666168-49d633b86797?auto=format&fit=crop&w=1280&q=85&v=sec16",
+    "alt": "Colorful kingfisher and waterbirds in Kumana National Park",
+    "order": 1
+  },
+  {
+    "itemId": "kumana_sec_2",
+    "page": "kumana-birding-safari.html",
+    "sectionKey": "kumana_villu_section",
+    "sectionTitle": "Kumana Villu Mangrove Heronry",
+    "title": "Untamed Yala East Leopard & Tusker Trails",
+    "caption": "Remote tracks along the Kumbukkan Oya river offer tranquil leopard and elephant encounters away from crowds.",
+    "src": "https://images.unsplash.com/photo-1535941339077-2dd1c7963098?auto=format&fit=crop&w=1280&q=85&v=sec17",
+    "alt": "Wild elephant crossing river trail in Kumana Yala East",
+    "order": 2
+  },
+  {
+    "itemId": "parks_overview_1",
+    "page": "safari-parks.html",
+    "sectionKey": "parks_comparison_section",
+    "sectionTitle": "Sri Lanka National Parks Comparison",
+    "title": "Southern & Dry-Zone Wildlife Corridor",
+    "caption": "We operate across Yala, Udawalawe, Bundala, Kumana, Lunugamvehera, Minneriya, Kaudulla, and Wilpattu.",
+    "src": "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1280&q=85&v=sec18",
+    "alt": "Safari 4x4 jeep on scenic dry-zone wilderness track",
+    "order": 1
+  },
+  {
+    "itemId": "parks_overview_2",
+    "page": "safari-parks.html",
+    "sectionKey": "parks_comparison_section",
+    "sectionTitle": "Sri Lanka National Parks Comparison",
+    "title": "Tailored Photography & Family Game Drives",
+    "caption": "Whether tracking elusive leopards or watching baby elephants at play, every route is customized to the season.",
+    "src": "https://images.unsplash.com/photo-1523805009345-7448845a9e53?auto=format&fit=crop&w=1280&q=85&v=sec19",
+    "alt": "Panoramic wildlife landscape in southern Sri Lanka",
+    "order": 2
+  },
+  {
+    "itemId": "about_sec_1",
+    "page": "about.html",
+    "sectionKey": "about_team_section",
+    "sectionTitle": "Janaka & Experienced Tracker Team",
+    "title": "15+ Years Born & Raised Beside Yala",
+    "caption": "Deep local knowledge of animal behavior, alarm calls, and territorial tracks across all five blocks of Yala.",
+    "src": "https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?auto=format&fit=crop&w=1280&q=85&v=sec20",
+    "alt": "Safari tracker guiding guests from open-top 4x4 jeep",
+    "order": 1
+  },
+  {
+    "itemId": "about_sec_2",
+    "page": "about.html",
+    "sectionKey": "about_team_section",
+    "sectionTitle": "Janaka & Experienced Tracker Team",
+    "title": "Ethical Wildlife Distance & Conservation First",
+    "caption": "We respect park speed limits, never crowd resting animals, and position our jeeps thoughtfully for natural sightings.",
+    "src": "https://images.unsplash.com/photo-1602491453631-e2a5ad90a131?auto=format&fit=crop&w=1280&q=85&v=sec21",
+    "alt": "Respectful wildlife photography of a leopard in natural habitat",
+    "order": 2
+  },
+  {
+    "itemId": "gallery_sec_1",
+    "page": "gallery.html",
+    "sectionKey": "gallery_featured_section",
+    "sectionTitle": "Recent Guest Sightings & Field Moments",
+    "title": "Morning Mist & Golden Light in Block 1",
+    "caption": "Captured during our 5:30 AM gate entry drive with guests from Europe and Australia.",
+    "src": "https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&w=1280&q=85&v=sec22",
+    "alt": "Leopard photographed in morning golden light",
+    "order": 1
+  },
+  {
+    "itemId": "gallery_sec_2",
+    "page": "gallery.html",
+    "sectionKey": "gallery_featured_section",
+    "sectionTitle": "Recent Guest Sightings & Field Moments",
+    "title": "Indian Peafowl Full Plumage Display",
+    "caption": "Vibrant male peacock dancing along the Palatupana coastal track in Yala.",
+    "src": "https://images.unsplash.com/photo-1511208687438-2c5a5abb810c?auto=format&fit=crop&w=1280&q=85&v=sec23",
+    "alt": "Peacock displaying iridescent feathers in Sri Lanka",
+    "order": 2
+  },
+  {
+    "itemId": "reviews_sec_1",
+    "page": "reviews.html",
+    "sectionKey": "reviews_highlights_section",
+    "sectionTitle": "Travelers’ Choice Safari Memories",
+    "title": "Unforgettable Family & Private Photography Tours",
+    "caption": "Rated 4.9/5 across Tripadvisor and Google Reviews by hundreds of international wildlife travelers.",
+    "src": "https://images.unsplash.com/photo-1507668077129-56e32842fceb?auto=format&fit=crop&w=1280&q=85&v=sec24",
+    "alt": "Happy safari wildlife encounter with elephants in Sri Lanka",
+    "order": 1
+  },
+  {
+    "itemId": "contact_sec_1",
+    "page": "contact.html",
+    "sectionKey": "contact_pickup_section",
+    "sectionTitle": "Tissamaharama, Kirinda & Kataragama Pickup Hub",
+    "title": "Complimentary Door-to-Door Hotel Pickup",
+    "caption": "Direct 4x4 jeep pickup from hotels in Tissamaharama, Yala, Kirinda, Weerawila, Kataragama, and Hambantota.",
+    "src": "https://images.unsplash.com/photo-1534759846116-5799c33ce22a?auto=format&fit=crop&w=1280&q=85&v=sec25",
+    "alt": "Safari jeep ready for morning hotel pickup in Tissamaharama",
+    "order": 1
+  }
+];
+
+/**
+ * Curated hero banner & key section slot upgrades across the 12 pages
+ * all using 100% web image links (no local image files).
+ */
+export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
+  {
+    "slotId": "index_html__slot_0",
+    "page": "index.html",
+    "slotIndex": 0,
+    "type": "logo",
+    "label": "Janaka Safari",
+    "sectionContext": "Header Navigation Logo",
+    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "alt": "Janaka Safari"
+  },
+  {
+    "slotId": "index_html__slot_1",
+    "page": "index.html",
+    "slotIndex": 1,
+    "type": "hero-bg",
+    "label": "Discover the Wild Side of Sri Lanka",
+    "sectionContext": "Hero Banner (Discover the Wild Side of Sri Lanka)",
+    "src": "https://images.unsplash.com/photo-1456926631375-92c8ce872def?auto=format&fit=crop&w=1600&q=85&v=hero-home",
+    "alt": "Discover the Wild Side of Sri Lanka"
+  },
+  {
+    "slotId": "index_html__slot_2",
+    "page": "index.html",
+    "slotIndex": 2,
+    "type": "img",
+    "label": "Visa",
+    "sectionContext": "Payment Badge — Visa",
+    "src": "https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/visa.svg",
+    "alt": "Visa"
+  },
+  {
+    "slotId": "index_html__slot_3",
+    "page": "index.html",
+    "slotIndex": 3,
+    "type": "img",
+    "label": "Mastercard",
+    "sectionContext": "Payment Badge — Mastercard",
+    "src": "https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/mastercard.svg",
+    "alt": "Mastercard"
+  },
+  {
+    "slotId": "index_html__slot_4",
+    "page": "index.html",
+    "slotIndex": 4,
+    "type": "img",
+    "label": "Why Choose Us — Sri Lankan Leopard Portrait",
+    "sectionContext": "Why Choose Us for Your Safari Tours?",
+    "src": "https://images.unsplash.com/photo-1561731216-c3a4d99437d5?auto=format&fit=crop&w=1000&q=82&v=wcu",
+    "alt": "Sri Lankan Leopard in Yala National Park"
+  },
+  {
+    "slotId": "index_html__slot_5",
+    "page": "index.html",
+    "slotIndex": 5,
+    "type": "img",
+    "label": "Yala Safari",
+    "sectionContext": "Your Sri Lankan Safari Starts Here · Yala Safari",
+    "src": "https://images.unsplash.com/photo-1575550959106-5a7defe28b56?auto=format&fit=crop&w=1000&q=82&v=idx5",
+    "alt": "Yala Safari — Sri Lankan Leopard"
+  },
+  {
+    "slotId": "index_html__slot_6",
+    "page": "index.html",
+    "slotIndex": 6,
+    "type": "img",
+    "label": "Udawalawe Safari",
+    "sectionContext": "Your Sri Lankan Safari Starts Here · Udawalawe Safari",
+    "src": "https://images.unsplash.com/photo-1581852017103-68ac65514cf7?auto=format&fit=crop&w=1000&q=82&v=idx6",
+    "alt": "Udawalawe Safari — Wild Elephant Herd"
+  },
+  {
+    "slotId": "index_html__slot_7",
+    "page": "index.html",
+    "slotIndex": 7,
+    "type": "img",
+    "label": "Bundala Birding Safari",
+    "sectionContext": "Your Sri Lankan Safari Starts Here · Bundala Birding Safari",
+    "src": "https://images.unsplash.com/photo-1549608276-5786777e6587?auto=format&fit=crop&w=1000&q=82&v=idx7",
+    "alt": "Bundala Birding Safari — Wetland Birds"
+  },
+  {
+    "slotId": "index_html__slot_8",
+    "page": "index.html",
+    "slotIndex": 8,
+    "type": "img",
+    "label": "Wilpattu Safari",
+    "sectionContext": "Your Sri Lankan Safari Starts Here · Wilpattu Safari",
+    "src": "https://images.unsplash.com/photo-1534567153574-2b12153a87f0?auto=format&fit=crop&w=1000&q=82&v=idx8",
+    "alt": "Wilpattu Safari — Leopard by Natural Villu Lake"
+  },
+  {
+    "slotId": "index_html__slot_9",
+    "page": "index.html",
+    "slotIndex": 9,
+    "type": "img",
+    "label": "Minneriya Safari",
+    "sectionContext": "Your Sri Lankan Safari Starts Here · Minneriya Safari",
+    "src": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1000&q=82&v=idx9",
+    "alt": "Minneriya Safari — Great Elephant Gathering"
+  },
+  {
+    "slotId": "index_html__slot_10",
+    "page": "index.html",
+    "slotIndex": 10,
+    "type": "img",
+    "label": "Kumana Safari",
+    "sectionContext": "Your Sri Lankan Safari Starts Here · Kumana Safari",
+    "src": "https://images.unsplash.com/photo-1611689342806-0863700ce1e4?auto=format&fit=crop&w=1000&q=82&v=idx10",
+    "alt": "Kumana Birding Safari — Waterbird Sanctuary"
+  },
+  {
+    "slotId": "index_html__slot_11",
+    "page": "index.html",
+    "slotIndex": 11,
+    "type": "img",
+    "label": "Sri Lankan leopard resting on a granite rock",
+    "sectionContext": "Yala - At the Heart of Our Safari Journey",
+    "src": "https://images.unsplash.com/photo-1456926631375-92c8ce872def?auto=format&fit=crop&w=1100&q=84&v=idx11",
+    "alt": "Sri Lankan leopard resting on a granite rock"
+  },
+  {
+    "slotId": "index_html__slot_12",
+    "page": "index.html",
+    "slotIndex": 12,
+    "type": "img",
+    "label": "Sri Lankan Leopards",
+    "sectionContext": "Wildlife You May Encounter · Sri Lankan Leopards",
+    "src": "https://images.unsplash.com/photo-1602491453631-e2a5ad90a131?auto=format&fit=crop&w=1000&q=82&v=idx12",
+    "alt": "Sri Lankan Leopards"
+  },
+  {
+    "slotId": "index_html__slot_13",
+    "page": "index.html",
+    "slotIndex": 13,
+    "type": "img",
+    "label": "Sri Lankan Elephants",
+    "sectionContext": "Wildlife You May Encounter · Sri Lankan Elephants",
+    "src": "https://images.unsplash.com/photo-1549366021-9f761d450615?auto=format&fit=crop&w=1000&q=82&v=idx13",
+    "alt": "Sri Lankan Elephants"
+  },
+  {
+    "slotId": "index_html__slot_14",
+    "page": "index.html",
+    "slotIndex": 14,
+    "type": "img",
+    "label": "Sloth Bears",
+    "sectionContext": "Wildlife You May Encounter · Sloth Bears",
+    "src": "https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?auto=format&fit=crop&w=1000&q=82&v=idx14",
+    "alt": "Sloth Bears"
+  },
+  {
+    "slotId": "index_html__slot_15",
+    "page": "index.html",
+    "slotIndex": 15,
+    "type": "img",
+    "label": "Birdlife & Wetland Wildlife",
+    "sectionContext": "Wildlife You May Encounter · Birdlife & Wetland Wildlife",
+    "src": "https://images.unsplash.com/photo-1511208687438-2c5a5abb810c?auto=format&fit=crop&w=1000&q=82&v=idx15",
+    "alt": "Birdlife & Wetland Wildlife"
+  },
+  {
+    "slotId": "index_html__slot_16",
+    "page": "index.html",
+    "slotIndex": 16,
+    "type": "img",
+    "label": "Janaka with safari guests beside a jeep at Yala National Park",
+    "sectionContext": "Meet Janaka & the Team",
+    "src": "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1000&q=82&v=idx16",
+    "alt": "Janaka with safari guests beside a jeep at Yala National Park"
+  },
+  {
+    "slotId": "index_html__slot_17",
+    "page": "index.html",
+    "slotIndex": 17,
+    "type": "img",
+    "label": "TripAdvisor",
+    "sectionContext": "What Our Guests Say · Travelers’ Choice 2024",
+    "src": "https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/tripadvisor.svg",
+    "alt": "TripAdvisor"
+  },
+  {
+    "slotId": "index_html__slot_18",
+    "page": "index.html",
+    "slotIndex": 18,
+    "type": "img",
+    "label": "Tripadvisor",
+    "sectionContext": "What Our Guests Say · Travelers’ Choice 2024",
+    "src": "https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/tripadvisor.svg",
+    "alt": "Tripadvisor"
+  },
+  {
+    "slotId": "index_html__slot_19",
+    "page": "index.html",
+    "slotIndex": 19,
+    "type": "img",
+    "label": "Yala Safari (Hambantota Port Excursion)",
+    "sectionContext": "Arriving at Hambantota Port? · Yala Safari",
+    "src": "https://images.unsplash.com/photo-1575550959106-5a7defe28b56?auto=format&fit=crop&w=1000&q=82&v=idx19",
+    "alt": "Yala Safari from Hambantota Port"
+  },
+  {
+    "slotId": "index_html__slot_20",
+    "page": "index.html",
+    "slotIndex": 20,
+    "type": "img",
+    "label": "Bundala Safari (Hambantota Port Excursion)",
+    "sectionContext": "Arriving at Hambantota Port? · Bundala Safari",
+    "src": "https://images.unsplash.com/photo-1497206365907-f5e630693df0?auto=format&fit=crop&w=1000&q=82&v=idx20",
+    "alt": "Bundala Birding Safari from Hambantota Port"
+  },
+  {
+    "slotId": "index_html__slot_21",
+    "page": "index.html",
+    "slotIndex": 21,
+    "type": "img",
+    "label": "Udawalawe Safari (Hambantota Port Excursion)",
+    "sectionContext": "Arriving at Hambantota Port? · Udawalawe Safari",
+    "src": "https://images.unsplash.com/photo-1557050543-4d5f4e07ef46?auto=format&fit=crop&w=1000&q=82&v=idx21",
+    "alt": "Udawalawe Elephant Safari from Hambantota Port"
+  },
+  {
+    "slotId": "index_html__slot_22",
+    "page": "index.html",
+    "slotIndex": 22,
+    "type": "img",
+    "label": "Safari Janaka Taxi Service",
+    "sectionContext": "Transfers & Stays with Janaka · Safari Janaka Taxi Service",
+    "src": "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=1000&q=82&v=idx22",
+    "alt": "Safari Janaka Taxi Service"
+  },
+  {
+    "slotId": "index_html__slot_23",
+    "page": "index.html",
+    "slotIndex": 23,
+    "type": "img",
+    "label": "My Resort Yala",
+    "sectionContext": "Transfers & Stays with Janaka · My Resort Yala",
+    "src": "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=1000&q=82&v=idx23",
+    "alt": "My Resort Yala"
+  },
+  {
+    "slotId": "index_html__slot_24",
+    "page": "index.html",
+    "slotIndex": 24,
+    "type": "img",
+    "label": "Lake Face Cabana",
+    "sectionContext": "Transfers & Stays with Janaka · Lake Face Cabana",
+    "src": "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1000&q=82&v=idx24",
+    "alt": "Lake Face Cabana"
+  },
+  {
+    "slotId": "index_html__slot_25",
+    "page": "index.html",
+    "slotIndex": 25,
+    "type": "logo",
+    "label": "Janaka Safari Logo",
+    "sectionContext": "Footer Brand Logo",
+    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "alt": "Janaka Safari Logo"
+  },
+  {
+    "slotId": "about_html__slot_0",
+    "page": "about.html",
+    "slotIndex": 0,
+    "type": "logo",
+    "label": "Janaka Safari",
+    "sectionContext": "Header Navigation Logo",
+    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "alt": "Janaka Safari"
+  },
+  {
+    "slotId": "about_html__slot_1",
+    "page": "about.html",
+    "slotIndex": 1,
+    "type": "hero-bg",
+    "label": "About Janaka Safari Jeep Tours",
+    "sectionContext": "Hero Banner (About Janaka Safari Jeep Tours)",
+    "src": "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1600&q=85&v=hero-about",
+    "alt": "About Janaka Safari Jeep Tours"
+  },
+  {
+    "slotId": "about_html__slot_2",
+    "page": "about.html",
+    "slotIndex": 2,
+    "type": "img",
+    "label": "Janaka with German visitors",
+    "sectionContext": "About Janaka Safari Jeep Tours",
+    "src": "https://images.unsplash.com/photo-1523805009345-7448845a9e53?auto=format&fit=crop&w=1000&q=82&v=ab2",
+    "alt": "Janaka with German visitors"
+  },
+  {
+    "slotId": "about_html__slot_3",
+    "page": "about.html",
+    "slotIndex": 3,
+    "type": "img",
+    "label": "Wild elephants at Yala National Park",
+    "sectionContext": "Explore with Us · Yala • Udawalawe • Bundala • Wilpattu • Minneriya • Kumana",
+    "src": "https://images.unsplash.com/photo-1585468274952-66591eb14165?auto=format&fit=crop&w=1000&q=82&v=ab3",
+    "alt": "Wild elephants at Yala National Park"
+  },
+  {
+    "slotId": "about_html__slot_4",
+    "page": "about.html",
+    "slotIndex": 4,
+    "type": "logo",
+    "label": "Janaka Safari Logo",
+    "sectionContext": "Footer Brand Logo",
+    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "alt": "Janaka Safari Logo"
+  },
+  {
+    "slotId": "safari-parks_html__slot_0",
+    "page": "safari-parks.html",
+    "slotIndex": 0,
+    "type": "logo",
+    "label": "Janaka Safari",
+    "sectionContext": "Header Navigation Logo",
+    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "alt": "Janaka Safari"
+  },
+  {
+    "slotId": "safari-parks_html__slot_1",
+    "page": "safari-parks.html",
+    "slotIndex": 1,
+    "type": "hero-bg",
+    "label": "Sri Lanka Safari Parks",
+    "sectionContext": "Hero Banner (Sri Lanka Safari Parks)",
+    "src": "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=1600&q=85&v=hero-parks",
+    "alt": "Sri Lanka Safari Parks"
+  },
+  {
+    "slotId": "safari-parks_html__slot_2",
+    "page": "safari-parks.html",
+    "slotIndex": 2,
+    "type": "img",
+    "label": "Kumana Safari",
+    "sectionContext": "Find Your Sri Lankan Safari · Kumana Safari",
+    "src": "https://images.unsplash.com/photo-1552728089-57bdde30beb3?auto=format&fit=crop&w=1000&q=82&v=pk2",
+    "alt": "Kumana Safari"
+  },
+  {
+    "slotId": "safari-parks_html__slot_3",
+    "page": "safari-parks.html",
+    "slotIndex": 3,
+    "type": "img",
+    "label": "Yala Safari",
+    "sectionContext": "Find Your Sri Lankan Safari · Yala Safari",
+    "src": "https://images.unsplash.com/photo-1602491453631-e2a5ad90a131?auto=format&fit=crop&w=1000&q=82&v=pk3",
+    "alt": "Yala Safari"
+  },
+  {
+    "slotId": "safari-parks_html__slot_4",
+    "page": "safari-parks.html",
+    "slotIndex": 4,
+    "type": "img",
+    "label": "Udawalawe Safari",
+    "sectionContext": "Find Your Sri Lankan Safari · Udawalawe Safari",
+    "src": "https://images.unsplash.com/photo-1507668077129-56e32842fceb?auto=format&fit=crop&w=1000&q=82&v=pk4",
+    "alt": "Udawalawe Safari"
+  },
+  {
+    "slotId": "safari-parks_html__slot_5",
+    "page": "safari-parks.html",
+    "slotIndex": 5,
+    "type": "img",
+    "label": "Bundala Birding Safari",
+    "sectionContext": "Find Your Sri Lankan Safari · Bundala Birding Safari",
+    "src": "https://images.unsplash.com/photo-1549608276-5786777e6587?auto=format&fit=crop&w=1000&q=82&v=pk5",
+    "alt": "Bundala Birding Safari"
+  },
+  {
+    "slotId": "safari-parks_html__slot_6",
+    "page": "safari-parks.html",
+    "slotIndex": 6,
+    "type": "img",
+    "label": "Wilpattu Safari",
+    "sectionContext": "Find Your Sri Lankan Safari · Wilpattu Safari",
+    "src": "https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&w=1000&q=82&v=pk6",
+    "alt": "Wilpattu Safari"
+  },
+  {
+    "slotId": "safari-parks_html__slot_7",
+    "page": "safari-parks.html",
+    "slotIndex": 7,
+    "type": "img",
+    "label": "Minneriya Safari",
+    "sectionContext": "Find Your Sri Lankan Safari · Minneriya Safari",
+    "src": "https://images.unsplash.com/photo-1564760055775-d63b17a55c44?auto=format&fit=crop&w=1000&q=82&v=pk7",
+    "alt": "Minneriya Safari"
+  },
+  {
+    "slotId": "safari-parks_html__slot_8",
+    "page": "safari-parks.html",
+    "slotIndex": 8,
+    "type": "logo",
+    "label": "Janaka Safari Logo",
+    "sectionContext": "Footer Brand Logo",
+    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "alt": "Janaka Safari Logo"
+  },
+  {
+    "slotId": "yala-safari_html__slot_0",
+    "page": "yala-safari.html",
+    "slotIndex": 0,
+    "type": "logo",
+    "label": "Janaka Safari",
+    "sectionContext": "Header Navigation Logo",
+    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "alt": "Janaka Safari"
+  },
+  {
+    "slotId": "yala-safari_html__slot_1",
+    "page": "yala-safari.html",
+    "slotIndex": 1,
+    "type": "hero-bg",
+    "label": "Yala National Park Safari",
+    "sectionContext": "Hero Banner (Yala National Park Safari)",
+    "src": "https://images.unsplash.com/photo-1534567153574-2b12153a87f0?auto=format&fit=crop&w=1600&q=85&v=hero-yala",
+    "alt": "Yala National Park Safari"
+  },
+  {
+    "slotId": "yala-safari_html__slot_2",
+    "page": "yala-safari.html",
+    "slotIndex": 2,
+    "type": "img",
+    "label": "Yala Full Day Safari",
+    "sectionContext": "Choose Your Yala Safari · Full Day Safari",
+    "src": "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1000&q=82&v=yl2",
+    "alt": "Yala Full Day Safari"
+  },
+  {
+    "slotId": "yala-safari_html__slot_3",
+    "page": "yala-safari.html",
+    "slotIndex": 3,
+    "type": "img",
+    "label": "Special Leopard and Elephants Safari",
+    "sectionContext": "Choose Your Yala Safari · Special Leopard & Elephants Safari",
+    "src": "https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&w=1000&q=82&v=yl3",
+    "alt": "Special Leopard Safari"
+  },
+  {
+    "slotId": "yala-safari_html__slot_4",
+    "page": "yala-safari.html",
+    "slotIndex": 4,
+    "type": "img",
+    "label": "Yala Evening Safari",
+    "sectionContext": "Choose Your Yala Safari · Evening Safari",
+    "src": "https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?auto=format&fit=crop&w=1000&q=82&v=yl4",
+    "alt": "Yala Evening Safari"
+  },
+  {
+    "slotId": "yala-safari_html__slot_5",
+    "page": "yala-safari.html",
+    "slotIndex": 5,
+    "type": "img",
+    "label": "Visa",
+    "sectionContext": "Payment Badge — Visa",
+    "src": "https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/visa.svg",
+    "alt": "Visa"
+  },
+  {
+    "slotId": "yala-safari_html__slot_6",
+    "page": "yala-safari.html",
+    "slotIndex": 6,
+    "type": "img",
+    "label": "Mastercard",
+    "sectionContext": "Payment Badge — Mastercard",
+    "src": "https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/mastercard.svg",
+    "alt": "Mastercard"
+  },
+  {
+    "slotId": "yala-safari_html__slot_7",
+    "page": "yala-safari.html",
+    "slotIndex": 7,
+    "type": "img",
+    "label": "Sri Lankan Leopard on the rock at Yala",
+    "sectionContext": "Discover Yala National Park · Sri Lankan Leopards",
+    "src": "https://images.unsplash.com/photo-1517825738774-7de9363ef735?auto=format&fit=crop&w=1000&q=82&v=yl7",
+    "alt": "Sri Lankan Leopard on the rock at Yala"
+  },
+  {
+    "slotId": "yala-safari_html__slot_8",
+    "page": "yala-safari.html",
+    "slotIndex": 8,
+    "type": "img",
+    "label": "Wild Elephants",
+    "sectionContext": "Discover Yala National Park · Wild Elephants",
+    "src": "https://images.unsplash.com/photo-1551316679-9c6ae9dec224?auto=format&fit=crop&w=1000&q=82&v=yl8",
+    "alt": "Wild Elephants"
+  },
+  {
+    "slotId": "yala-safari_html__slot_9",
+    "page": "yala-safari.html",
+    "slotIndex": 9,
+    "type": "img",
+    "label": "Sloth Bears",
+    "sectionContext": "Discover Yala National Park · Sloth Bears",
+    "src": "https://images.unsplash.com/photo-1589656966895-2f33e7653819?auto=format&fit=crop&w=1000&q=82&v=yl9",
+    "alt": "Sloth Bears"
+  },
+  {
+    "slotId": "yala-safari_html__slot_10",
+    "page": "yala-safari.html",
+    "slotIndex": 10,
+    "type": "img",
+    "label": "Tuskers",
+    "sectionContext": "Discover Yala National Park · Tuskers",
+    "src": "https://images.unsplash.com/photo-1549366021-9f761d450615?auto=format&fit=crop&w=1000&q=82&v=yl10",
+    "alt": "Tuskers"
+  },
+  {
+    "slotId": "yala-safari_html__slot_11",
+    "page": "yala-safari.html",
+    "slotIndex": 11,
+    "type": "img",
+    "label": "Birds",
+    "sectionContext": "Discover Yala National Park · Birdlife",
+    "src": "https://images.unsplash.com/photo-1552728089-57bdde30beb3?auto=format&fit=crop&w=1000&q=82&v=yl11",
+    "alt": "Birds"
+  },
+  {
+    "slotId": "yala-safari_html__slot_12",
+    "page": "yala-safari.html",
+    "slotIndex": 12,
+    "type": "lightbox-img",
+    "label": "National park location map",
+    "sectionContext": "Yala National Park — Location & Safari Access",
+    "src": "https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=1000&q=80&v=map-yala",
+    "lightboxHref": "https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=1200&q=85&v=map-yala",
+    "alt": "National park location map"
+  },
+  {
+    "slotId": "yala-safari_html__slot_13",
+    "page": "yala-safari.html",
+    "slotIndex": 13,
+    "type": "img",
+    "label": "Mr. Janaka with guests and a safari jeep.",
+    "sectionContext": "Your Safari Experience",
+    "src": "https://images.unsplash.com/photo-1519066629447-267fffa62d4b?auto=format&fit=crop&w=1000&q=82&v=yl13",
+    "alt": "Mr. Janaka with guests and a safari jeep."
+  },
+  {
+    "slotId": "yala-safari_html__slot_14",
+    "page": "yala-safari.html",
+    "slotIndex": 14,
+    "type": "lightbox-img",
+    "label": "Janaka Safari Jeep in Yala",
+    "sectionContext": "Your Safari Experience",
+    "src": "https://images.unsplash.com/photo-1523805009345-7448845a9e53?auto=format&fit=crop&w=1000&q=82&v=yl14",
+    "lightboxHref": "https://images.unsplash.com/photo-1523805009345-7448845a9e53?auto=format&fit=crop&w=1200&q=85&v=yl14",
+    "alt": "Janaka Safari Jeep in Yala"
+  },
+  {
+    "slotId": "yala-safari_html__slot_15",
+    "page": "yala-safari.html",
+    "slotIndex": 15,
+    "type": "lightbox-img",
+    "label": "Janaka Safari Guests on Game Drive",
+    "sectionContext": "Your Safari Experience",
+    "src": "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1000&q=82&v=yl15",
+    "lightboxHref": "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=85&v=yl15",
+    "alt": "Janaka Safari Guests on Game Drive"
+  },
+  {
+    "slotId": "yala-safari_html__slot_16",
+    "page": "yala-safari.html",
+    "slotIndex": 16,
+    "type": "logo",
+    "label": "Janaka Safari Logo",
+    "sectionContext": "Footer Brand Logo",
+    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "alt": "Janaka Safari Logo"
+  },
+  {
+    "slotId": "udawalawe-safari_html__slot_0",
+    "page": "udawalawe-safari.html",
+    "slotIndex": 0,
+    "type": "logo",
+    "label": "Janaka Safari",
+    "sectionContext": "Header Navigation Logo",
+    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "alt": "Janaka Safari"
+  },
+  {
+    "slotId": "udawalawe-safari_html__slot_1",
+    "page": "udawalawe-safari.html",
+    "slotIndex": 1,
+    "type": "hero-bg",
+    "label": "Udawalawe National Park Safari",
+    "sectionContext": "Hero Banner (Udawalawe National Park Safari)",
+    "src": "https://images.unsplash.com/photo-1557050543-4d5f4e07ef46?auto=format&fit=crop&w=1600&q=85&v=hero-udawalawe",
+    "alt": "Udawalawe National Park Safari"
+  },
+  {
+    "slotId": "udawalawe-safari_html__slot_2",
+    "page": "udawalawe-safari.html",
+    "slotIndex": 2,
+    "type": "img",
+    "label": "Udawalawe Full Day Safari",
+    "sectionContext": "Choose Your Udawalawe Safari · Full Day Safari",
+    "src": "https://images.unsplash.com/photo-1585468274952-66591eb14165?auto=format&fit=crop&w=1000&q=82&v=ud2",
+    "alt": "Udawalawe Full Day Safari"
+  },
+  {
+    "slotId": "udawalawe-safari_html__slot_3",
+    "page": "udawalawe-safari.html",
+    "slotIndex": 3,
+    "type": "img",
+    "label": "Udawalawe Morning Safari",
+    "sectionContext": "Choose Your Udawalawe Safari · Morning Safari",
+    "src": "https://images.unsplash.com/photo-1551316679-9c6ae9dec224?auto=format&fit=crop&w=1000&q=82&v=ud3",
+    "alt": "Udawalawe Morning Safari"
+  },
+  {
+    "slotId": "udawalawe-safari_html__slot_4",
+    "page": "udawalawe-safari.html",
+    "slotIndex": 4,
+    "type": "img",
+    "label": "Udawalawe Evening Safari",
+    "sectionContext": "Choose Your Udawalawe Safari · Evening Safari",
+    "src": "https://images.unsplash.com/photo-1526336024174-e58f5cdd8e13?auto=format&fit=crop&w=1000&q=82&v=ud4",
+    "alt": "Udawalawe Evening Safari"
+  },
+  {
+    "slotId": "udawalawe-safari_html__slot_5",
+    "page": "udawalawe-safari.html",
+    "slotIndex": 5,
+    "type": "img",
+    "label": "Sri Lankan Elephants at Udawalawe National Park",
+    "sectionContext": "Discover Udawalawe National Park · Sri Lankan Elephants",
+    "src": "https://images.unsplash.com/photo-1603483080228-04f2313d9f10?auto=format&fit=crop&w=1000&q=82&v=ud5",
+    "alt": "Sri Lankan Elephants at Udawalawe National Park"
+  },
+  {
+    "slotId": "udawalawe-safari_html__slot_6",
+    "page": "udawalawe-safari.html",
+    "slotIndex": 6,
+    "type": "img",
+    "label": "Water Buffalo at Udawalawe",
+    "sectionContext": "Discover Udawalawe National Park · Water Buffalo",
+    "src": "https://images.unsplash.com/photo-1527118732049-c88155f2107c?auto=format&fit=crop&w=1000&q=82&v=ud6",
+    "alt": "Water Buffalo at Udawalawe"
+  },
+  {
+    "slotId": "udawalawe-safari_html__slot_7",
+    "page": "udawalawe-safari.html",
+    "slotIndex": 7,
+    "type": "img",
+    "label": "Spotted Deer",
+    "sectionContext": "Discover Udawalawe National Park · Spotted Deer",
+    "src": "https://images.unsplash.com/photo-1484406566174-9da000fda645?auto=format&fit=crop&w=1000&q=82&v=ud7",
+    "alt": "Spotted Deer"
+  },
+  {
+    "slotId": "udawalawe-safari_html__slot_8",
+    "page": "udawalawe-safari.html",
+    "slotIndex": 8,
+    "type": "img",
+    "label": "Crocodiles",
+    "sectionContext": "Discover Udawalawe National Park · Crocodiles",
+    "src": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1000&q=82&v=ud8",
+    "alt": "Crocodiles"
+  },
+  {
+    "slotId": "udawalawe-safari_html__slot_9",
+    "page": "udawalawe-safari.html",
+    "slotIndex": 9,
+    "type": "img",
+    "label": "Stork-billed Kingfisher",
+    "sectionContext": "Discover Udawalawe National Park · Birdlife",
+    "src": "https://images.unsplash.com/photo-1555169062-013468b47731?auto=format&fit=crop&w=1000&q=82&v=ud9",
+    "alt": "Stork-billed Kingfisher"
+  },
+  {
+    "slotId": "udawalawe-safari_html__slot_10",
+    "page": "udawalawe-safari.html",
+    "slotIndex": 10,
+    "type": "lightbox-img",
+    "label": "National park location map",
+    "sectionContext": "Udawalawe — Location & Safari Access",
+    "src": "https://images.unsplash.com/photo-1569336415962-a4bd9f69cd83?auto=format&fit=crop&w=1000&q=80&v=map-udawalawe",
+    "lightboxHref": "https://images.unsplash.com/photo-1569336415962-a4bd9f69cd83?auto=format&fit=crop&w=1200&q=85&v=map-udawalawe",
+    "alt": "National park location map"
+  },
+  {
+    "slotId": "udawalawe-safari_html__slot_11",
+    "page": "udawalawe-safari.html",
+    "slotIndex": 11,
+    "type": "img",
+    "label": "Mr. Janaka with guests and a safari jeep.",
+    "sectionContext": "Your Safari Experience",
+    "src": "https://images.unsplash.com/photo-1519066629447-267fffa62d4b?auto=format&fit=crop&w=1000&q=82&v=ud11",
+    "alt": "Mr. Janaka with guests and a safari jeep."
+  },
+  {
+    "slotId": "udawalawe-safari_html__slot_12",
+    "page": "udawalawe-safari.html",
+    "slotIndex": 12,
+    "type": "lightbox-img",
+    "label": "Safari Janaka and Team in Udawalawe",
+    "sectionContext": "Your Safari Experience",
+    "src": "https://images.unsplash.com/photo-1534759846116-5799c33ce22a?auto=format&fit=crop&w=1000&q=82&v=ud12",
+    "lightboxHref": "https://images.unsplash.com/photo-1534759846116-5799c33ce22a?auto=format&fit=crop&w=1200&q=85&v=ud12",
+    "alt": "Safari Janaka and Team"
+  },
+  {
+    "slotId": "udawalawe-safari_html__slot_13",
+    "page": "udawalawe-safari.html",
+    "slotIndex": 13,
+    "type": "lightbox-img",
+    "label": "Udawalawe 4x4 Jeep Adventure",
+    "sectionContext": "Your Safari Experience",
+    "src": "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=1000&q=82&v=ud13",
+    "lightboxHref": "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=1200&q=85&v=ud13",
+    "alt": "Safari Janaka and Team"
+  },
+  {
+    "slotId": "udawalawe-safari_html__slot_14",
+    "page": "udawalawe-safari.html",
+    "slotIndex": 14,
+    "type": "logo",
+    "label": "Janaka Safari Logo",
+    "sectionContext": "Footer Brand Logo",
+    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "alt": "Janaka Safari Logo"
+  },
+  {
+    "slotId": "bundala-birding-safari_html__slot_0",
+    "page": "bundala-birding-safari.html",
+    "slotIndex": 0,
+    "type": "logo",
+    "label": "Janaka Safari",
+    "sectionContext": "Header Navigation Logo",
+    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "alt": "Janaka Safari"
+  },
+  {
+    "slotId": "bundala-birding-safari_html__slot_1",
+    "page": "bundala-birding-safari.html",
+    "slotIndex": 1,
+    "type": "hero-bg",
+    "label": "Bundala Birding Safari",
+    "sectionContext": "Hero Banner (Bundala Birding Safari)",
+    "src": "https://images.unsplash.com/photo-1497206365907-f5e630693df0?auto=format&fit=crop&w=1600&q=85&v=hero-bundala",
+    "alt": "Bundala Birding Safari"
+  },
+  {
+    "slotId": "bundala-birding-safari_html__slot_2",
+    "page": "bundala-birding-safari.html",
+    "slotIndex": 2,
+    "type": "img",
+    "label": "Bundala Morning Birding Safari",
+    "sectionContext": "Choose Your Bundala Safari · Morning Safari",
+    "src": "https://images.unsplash.com/photo-1480044965905-02098d419e96?auto=format&fit=crop&w=1000&q=82&v=bn2",
+    "alt": "Bundala Morning Birding Safari"
+  },
+  {
+    "slotId": "bundala-birding-safari_html__slot_3",
+    "page": "bundala-birding-safari.html",
+    "slotIndex": 3,
+    "type": "img",
+    "label": "Bundala Evening Birding Safari",
+    "sectionContext": "Choose Your Bundala Safari · Evening Safari",
+    "src": "https://images.unsplash.com/photo-1522926193341-e9ffd686c60f?auto=format&fit=crop&w=1000&q=82&v=bn3",
+    "alt": "Bundala Evening Birding Safari"
+  },
+  {
+    "slotId": "bundala-birding-safari_html__slot_4",
+    "page": "bundala-birding-safari.html",
+    "slotIndex": 4,
+    "type": "img",
+    "label": "Visa",
+    "sectionContext": "Payment Badge — Visa",
+    "src": "https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/visa.svg",
+    "alt": "Visa"
+  },
+  {
+    "slotId": "bundala-birding-safari_html__slot_5",
+    "page": "bundala-birding-safari.html",
+    "slotIndex": 5,
+    "type": "img",
+    "label": "Mastercard",
+    "sectionContext": "Payment Badge — Mastercard",
+    "src": "https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/mastercard.svg",
+    "alt": "Mastercard"
+  },
+  {
+    "slotId": "bundala-birding-safari_html__slot_6",
+    "page": "bundala-birding-safari.html",
+    "slotIndex": 6,
+    "type": "img",
+    "label": "Waterbirds & Wetland Life",
+    "sectionContext": "Discover Bundala National Park · Waterbirds & Wetland Life",
+    "src": "https://images.unsplash.com/photo-1555169062-013468b47731?auto=format&fit=crop&w=1000&q=82&v=bn6",
+    "alt": "Waterbirds & Wetland Life in Bundala"
+  },
+  {
+    "slotId": "bundala-birding-safari_html__slot_7",
+    "page": "bundala-birding-safari.html",
+    "slotIndex": 7,
+    "type": "img",
+    "label": "Sri Lankan Elephants in Bundala",
+    "sectionContext": "Discover Bundala National Park · Sri Lankan Elephants",
+    "src": "https://images.unsplash.com/photo-1535941339077-2dd1c7963098?auto=format&fit=crop&w=1000&q=82&v=bn7",
+    "alt": "Sri Lankan Elephants in Bundala"
+  },
+  {
+    "slotId": "bundala-birding-safari_html__slot_8",
+    "page": "bundala-birding-safari.html",
+    "slotIndex": 8,
+    "type": "img",
+    "label": "Spotted Deer in Bundala",
+    "sectionContext": "Discover Bundala National Park · Spotted Deer",
+    "src": "https://images.unsplash.com/photo-1543946207-39bd91e70ca7?auto=format&fit=crop&w=1000&q=82&v=bn8",
+    "alt": "Spotted Deer in Bundala"
+  },
+  {
+    "slotId": "bundala-birding-safari_html__slot_9",
+    "page": "bundala-birding-safari.html",
+    "slotIndex": 9,
+    "type": "img",
+    "label": "Crocodiles in Bundala Lagoon",
+    "sectionContext": "Discover Bundala National Park · Crocodiles",
+    "src": "https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?auto=format&fit=crop&w=1000&q=82&v=bn9",
+    "alt": "Crocodiles in Bundala Lagoon"
+  },
+  {
+    "slotId": "bundala-birding-safari_html__slot_10",
+    "page": "bundala-birding-safari.html",
+    "slotIndex": 10,
+    "type": "img",
+    "label": "Seasonal Migratory Birds",
+    "sectionContext": "Discover Bundala National Park · Seasonal Migratory Birds",
+    "src": "https://images.unsplash.com/photo-1522926193341-e9ffd686c60f?auto=format&fit=crop&w=1000&q=82&v=bn10",
+    "alt": "Seasonal Migratory Birds in Bundala"
+  },
+  {
+    "slotId": "bundala-birding-safari_html__slot_11",
+    "page": "bundala-birding-safari.html",
+    "slotIndex": 11,
+    "type": "lightbox-img",
+    "label": "National park location map",
+    "sectionContext": "Bundala — Location & Safari Access",
+    "src": "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&w=1000&q=80&v=map-bundala",
+    "lightboxHref": "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&w=1200&q=85&v=map-bundala",
+    "alt": "National park location map"
+  },
+  {
+    "slotId": "bundala-birding-safari_html__slot_12",
+    "page": "bundala-birding-safari.html",
+    "slotIndex": 12,
+    "type": "img",
+    "label": "Bundala Birding Guide with Binoculars",
+    "sectionContext": "Your Safari Experience",
+    "src": "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=950&q=82&v=bn12",
+    "alt": "Bundala Safari Guide & Jeep"
+  },
+  {
+    "slotId": "bundala-birding-safari_html__slot_13",
+    "page": "bundala-birding-safari.html",
+    "slotIndex": 13,
+    "type": "lightbox-img",
+    "label": "Bundala Safari Jeep on Lagoon Track",
+    "sectionContext": "Your Safari Experience",
+    "src": "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=950&q=82&v=bn13",
+    "lightboxHref": "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=85&v=bn13",
+    "alt": "Bundala Safari Jeep on Lagoon Track"
+  },
+  {
+    "slotId": "bundala-birding-safari_html__slot_14",
+    "page": "bundala-birding-safari.html",
+    "slotIndex": 14,
+    "type": "lightbox-img",
+    "label": "Bundala Birdwatching Jeep Tour",
+    "sectionContext": "Your Safari Experience",
+    "src": "https://images.unsplash.com/photo-1523805009345-7448845a9e53?auto=format&fit=crop&w=950&q=82&v=bn14",
+    "lightboxHref": "https://images.unsplash.com/photo-1523805009345-7448845a9e53?auto=format&fit=crop&w=1200&q=85&v=bn14",
+    "alt": "Bundala Birdwatching Jeep Tour"
+  },
+  {
+    "slotId": "bundala-birding-safari_html__slot_15",
+    "page": "bundala-birding-safari.html",
+    "slotIndex": 15,
+    "type": "logo",
+    "label": "Janaka Safari Logo",
+    "sectionContext": "Footer Brand Logo",
+    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "alt": "Janaka Safari Logo"
+  },
+  {
+    "slotId": "wilpattu-safari_html__slot_0",
+    "page": "wilpattu-safari.html",
+    "slotIndex": 0,
+    "type": "logo",
+    "label": "Janaka Safari",
+    "sectionContext": "Header Navigation Logo",
+    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "alt": "Janaka Safari"
+  },
+  {
+    "slotId": "wilpattu-safari_html__slot_1",
+    "page": "wilpattu-safari.html",
+    "slotIndex": 1,
+    "type": "hero-bg",
+    "label": "Wilpattu National Park Safari",
+    "sectionContext": "Hero Banner (Wilpattu National Park Safari)",
+    "src": "https://images.unsplash.com/photo-1564349683136-77e08dba1ef7?auto=format&fit=crop&w=1600&q=85&v=wp1",
+    "alt": "Wilpattu National Park Safari"
+  },
+  {
+    "slotId": "wilpattu-safari_html__slot_2",
+    "page": "wilpattu-safari.html",
+    "slotIndex": 2,
+    "type": "img",
+    "label": "Wilpattu Full Day Safari",
+    "sectionContext": "Choose Your Wilpattu Safari · Full Day Safari",
+    "src": "https://images.unsplash.com/photo-1551969014-7d2c4cddf0b6?auto=format&fit=crop&w=1000&q=82&v=wp2",
+    "alt": "Wilpattu Full Day Safari"
+  },
+  {
+    "slotId": "wilpattu-safari_html__slot_3",
+    "page": "wilpattu-safari.html",
+    "slotIndex": 3,
+    "type": "img",
+    "label": "Wilpattu Morning Safari",
+    "sectionContext": "Choose Your Wilpattu Safari · Morning Safari",
+    "src": "https://images.unsplash.com/photo-1504173010664-32509aeebb62?auto=format&fit=crop&w=1000&q=82&v=wp3",
+    "alt": "Wilpattu Morning Safari"
+  },
+  {
+    "slotId": "wilpattu-safari_html__slot_4",
+    "page": "wilpattu-safari.html",
+    "slotIndex": 4,
+    "type": "img",
+    "label": "Wilpattu Evening Safari",
+    "sectionContext": "Choose Your Wilpattu Safari · Evening Safari",
+    "src": "https://images.unsplash.com/photo-1534188753412-3e26d0d618d6?auto=format&fit=crop&w=1000&q=82&v=wp4",
+    "alt": "Wilpattu Evening Safari"
+  },
+  {
+    "slotId": "wilpattu-safari_html__slot_5",
+    "page": "wilpattu-safari.html",
+    "slotIndex": 5,
+    "type": "img",
+    "label": "Sri Lankan Leopards in Wilpattu",
+    "sectionContext": "Discover Wilpattu National Park · Sri Lankan Leopards",
+    "src": "https://images.unsplash.com/photo-1456926631375-92c8ce872def?auto=format&fit=crop&w=950&q=82&v=wp5",
+    "alt": "Sri Lankan Leopards in Wilpattu"
+  },
+  {
+    "slotId": "wilpattu-safari_html__slot_6",
+    "page": "wilpattu-safari.html",
+    "slotIndex": 6,
+    "type": "img",
+    "label": "Sri Lankan Sloth Bears in Wilpattu",
+    "sectionContext": "Discover Wilpattu National Park · Sri Lankan Sloth Bears",
+    "src": "https://images.unsplash.com/photo-1589656966895-2f33e7653819?auto=format&fit=crop&w=1000&q=82&v=wp6",
+    "alt": "Sri Lankan Sloth Bears in Wilpattu"
+  },
+  {
+    "slotId": "wilpattu-safari_html__slot_7",
+    "page": "wilpattu-safari.html",
+    "slotIndex": 7,
+    "type": "img",
+    "label": "Deer & Forest Wildlife in Wilpattu",
+    "sectionContext": "Discover Wilpattu National Park · Deer & Forest Wildlife",
+    "src": "https://images.unsplash.com/photo-1516934024742-b461fba47600?auto=format&fit=crop&w=1000&q=82&v=wp7",
+    "alt": "Deer & Forest Wildlife in Wilpattu"
+  },
+  {
+    "slotId": "wilpattu-safari_html__slot_8",
+    "page": "wilpattu-safari.html",
+    "slotIndex": 8,
+    "type": "img",
+    "label": "Crocodiles in Wilpattu Villu",
+    "sectionContext": "Discover Wilpattu National Park · Crocodiles",
+    "src": "https://images.unsplash.com/photo-1579380656108-f98e4df8ea62?auto=format&fit=crop&w=1000&q=82&v=wp8",
+    "alt": "Crocodiles in Wilpattu Villu"
+  },
+  {
+    "slotId": "wilpattu-safari_html__slot_9",
+    "page": "wilpattu-safari.html",
+    "slotIndex": 9,
+    "type": "img",
+    "label": "Birdlife in Wilpattu",
+    "sectionContext": "Discover Wilpattu National Park · Birdlife",
+    "src": "https://images.unsplash.com/photo-1452570053594-1b985d6ea890?auto=format&fit=crop&w=1000&q=82&v=wp9",
+    "alt": "Birdlife in Wilpattu"
+  },
+  {
+    "slotId": "wilpattu-safari_html__slot_10",
+    "page": "wilpattu-safari.html",
+    "slotIndex": 10,
+    "type": "lightbox-img",
+    "label": "National park location map",
+    "sectionContext": "Wilpattu — Location & Safari Access",
+    "src": "https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?auto=format&fit=crop&w=1000&q=80&v=map-wilpattu",
+    "lightboxHref": "https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?auto=format&fit=crop&w=1200&q=85&v=map-wilpattu",
+    "alt": "National park location map"
+  },
+  {
+    "slotId": "wilpattu-safari_html__slot_11",
+    "page": "wilpattu-safari.html",
+    "slotIndex": 11,
+    "type": "img",
+    "label": "Wilpattu Safari Experience",
+    "sectionContext": "Your Safari Experience",
+    "src": "https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?auto=format&fit=crop&w=950&q=82&v=wp11",
+    "alt": "Wilpattu Safari Experience"
+  },
+  {
+    "slotId": "wilpattu-safari_html__slot_12",
+    "page": "wilpattu-safari.html",
+    "slotIndex": 12,
+    "type": "lightbox-img",
+    "label": "Wilpattu 4x4 Jeep on Sandy Trail",
+    "sectionContext": "Your Safari Experience",
+    "src": "https://images.unsplash.com/photo-1519066629447-267fffa62d4b?auto=format&fit=crop&w=950&q=82&v=wp12",
+    "lightboxHref": "https://images.unsplash.com/photo-1519066629447-267fffa62d4b?auto=format&fit=crop&w=1200&q=85&v=wp12",
+    "alt": "Wilpattu 4x4 Jeep on Sandy Trail"
+  },
+  {
+    "slotId": "wilpattu-safari_html__slot_13",
+    "page": "wilpattu-safari.html",
+    "slotIndex": 13,
+    "type": "lightbox-img",
+    "label": "Wilpattu Forest Track Safari",
+    "sectionContext": "Your Safari Experience",
+    "src": "https://images.unsplash.com/photo-1534759846116-5799c33ce22a?auto=format&fit=crop&w=950&q=82&v=wp13",
+    "lightboxHref": "https://images.unsplash.com/photo-1534759846116-5799c33ce22a?auto=format&fit=crop&w=1200&q=85&v=wp13",
+    "alt": "Wilpattu Forest Track Safari"
+  },
+  {
+    "slotId": "wilpattu-safari_html__slot_14",
+    "page": "wilpattu-safari.html",
+    "slotIndex": 14,
+    "type": "logo",
+    "label": "Janaka Safari Logo",
+    "sectionContext": "Footer Brand Logo",
+    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "alt": "Janaka Safari Logo"
+  },
+  {
+    "slotId": "minneriya-safari_html__slot_0",
+    "page": "minneriya-safari.html",
+    "slotIndex": 0,
+    "type": "logo",
+    "label": "Janaka Safari",
+    "sectionContext": "Header Navigation Logo",
+    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "alt": "Janaka Safari"
+  },
+  {
+    "slotId": "minneriya-safari_html__slot_1",
+    "page": "minneriya-safari.html",
+    "slotIndex": 1,
+    "type": "hero-bg",
+    "label": "Minneriya Safari",
+    "sectionContext": "Hero Banner (Minneriya Safari)",
+    "src": "https://images.unsplash.com/photo-1564760055775-d63b17a55c44?auto=format&fit=crop&w=1600&q=85&v=hero-minneriya",
+    "alt": "Minneriya Safari"
+  },
+  {
+    "slotId": "minneriya-safari_html__slot_2",
+    "page": "minneriya-safari.html",
+    "slotIndex": 2,
+    "type": "img",
+    "label": "Minneriya Morning Safari",
+    "sectionContext": "Choose Your Minneriya Safari · Morning Safari",
+    "src": "https://images.unsplash.com/photo-1526336024174-e58f5cdd8e13?auto=format&fit=crop&w=1000&q=82&v=mn2",
+    "alt": "Minneriya Morning Safari"
+  },
+  {
+    "slotId": "minneriya-safari_html__slot_3",
+    "page": "minneriya-safari.html",
+    "slotIndex": 3,
+    "type": "img",
+    "label": "Minneriya Evening Safari",
+    "sectionContext": "Choose Your Minneriya Safari · Evening Safari",
+    "src": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1000&q=82&v=mn3",
+    "alt": "Minneriya Evening Safari"
+  },
+  {
+    "slotId": "minneriya-safari_html__slot_4",
+    "page": "minneriya-safari.html",
+    "slotIndex": 4,
+    "type": "img",
+    "label": "Sri Lankan Elephants at Minneriya Reservoir",
+    "sectionContext": "Discover Minneriya National Park · Sri Lankan Elephants",
+    "src": "https://images.unsplash.com/photo-1564760055775-d63b17a55c44?auto=format&fit=crop&w=950&q=82&v=mn4",
+    "alt": "Sri Lankan Elephants at Minneriya Reservoir"
+  },
+  {
+    "slotId": "minneriya-safari_html__slot_5",
+    "page": "minneriya-safari.html",
+    "slotIndex": 5,
+    "type": "img",
+    "label": "Wild Buffalo at Minneriya",
+    "sectionContext": "Discover Minneriya National Park · Wild Buffalo",
+    "src": "https://images.unsplash.com/photo-1508817628294-5a453fa0b8fb?auto=format&fit=crop&w=1000&q=82&v=mn5",
+    "alt": "Wild Buffalo at Minneriya"
+  },
+  {
+    "slotId": "minneriya-safari_html__slot_6",
+    "page": "minneriya-safari.html",
+    "slotIndex": 6,
+    "type": "img",
+    "label": "Spotted Deer at Minneriya",
+    "sectionContext": "Discover Minneriya National Park · Spotted Deer",
+    "src": "https://images.unsplash.com/photo-1501706362039-c06b2d715385?auto=format&fit=crop&w=1000&q=82&v=mn6",
+    "alt": "Spotted Deer at Minneriya"
+  },
+  {
+    "slotId": "minneriya-safari_html__slot_7",
+    "page": "minneriya-safari.html",
+    "slotIndex": 7,
+    "type": "img",
+    "label": "Crocodiles at Minneriya Tank",
+    "sectionContext": "Discover Minneriya National Park · Crocodiles",
+    "src": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=950&q=82&v=mn7",
+    "alt": "Crocodiles at Minneriya Tank"
+  },
+  {
+    "slotId": "minneriya-safari_html__slot_8",
+    "page": "minneriya-safari.html",
+    "slotIndex": 8,
+    "type": "img",
+    "label": "Birdlife at Minneriya Reservoir",
+    "sectionContext": "Discover Minneriya National Park · Birdlife",
+    "src": "https://images.unsplash.com/photo-1444464666168-49d633b86797?auto=format&fit=crop&w=950&q=82&v=mn8",
+    "alt": "Birdlife at Minneriya Reservoir"
+  },
+  {
+    "slotId": "minneriya-safari_html__slot_9",
+    "page": "minneriya-safari.html",
+    "slotIndex": 9,
+    "type": "lightbox-img",
+    "label": "National park location map",
+    "sectionContext": "Minneriya — Location & Safari Access",
+    "src": "https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?auto=format&fit=crop&w=1000&q=80&v=map-minneriya",
+    "lightboxHref": "https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?auto=format&fit=crop&w=1200&q=85&v=map-minneriya",
+    "alt": "National park location map"
+  },
+  {
+    "slotId": "minneriya-safari_html__slot_10",
+    "page": "minneriya-safari.html",
+    "slotIndex": 10,
+    "type": "img",
+    "label": "Minneriya Safari Jeep Experience",
+    "sectionContext": "Your Safari Experience",
+    "src": "https://images.unsplash.com/photo-1534759846116-5799c33ce22a?auto=format&fit=crop&w=1000&q=82&v=mn10",
+    "alt": "Minneriya Safari Jeep Experience"
+  },
+  {
+    "slotId": "minneriya-safari_html__slot_11",
+    "page": "minneriya-safari.html",
+    "slotIndex": 11,
+    "type": "lightbox-img",
+    "label": "Minneriya Reservoir Jeep Drive",
+    "sectionContext": "Your Safari Experience",
+    "src": "https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?auto=format&fit=crop&w=1000&q=82&v=mn11",
+    "lightboxHref": "https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?auto=format&fit=crop&w=1200&q=85&v=mn11",
+    "alt": "Minneriya Reservoir Jeep Drive"
+  },
+  {
+    "slotId": "minneriya-safari_html__slot_12",
+    "page": "minneriya-safari.html",
+    "slotIndex": 12,
+    "type": "lightbox-img",
+    "label": "Minneriya Evening Jeep Viewing",
+    "sectionContext": "Your Safari Experience",
+    "src": "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1000&q=82&v=mn12",
+    "lightboxHref": "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=85&v=mn12",
+    "alt": "Minneriya Evening Jeep Viewing"
+  },
+  {
+    "slotId": "minneriya-safari_html__slot_13",
+    "page": "minneriya-safari.html",
+    "slotIndex": 13,
+    "type": "logo",
+    "label": "Janaka Safari Logo",
+    "sectionContext": "Footer Brand Logo",
+    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "alt": "Janaka Safari Logo"
+  },
+  {
+    "slotId": "kumana-birding-safari_html__slot_0",
+    "page": "kumana-birding-safari.html",
+    "slotIndex": 0,
+    "type": "logo",
+    "label": "Janaka Safari",
+    "sectionContext": "Header Navigation Logo",
+    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "alt": "Janaka Safari"
+  },
+  {
+    "slotId": "kumana-birding-safari_html__slot_1",
+    "page": "kumana-birding-safari.html",
+    "slotIndex": 1,
+    "type": "hero-bg",
+    "label": "Kumana Safari",
+    "sectionContext": "Hero Banner (Kumana Safari)",
+    "src": "https://images.unsplash.com/photo-1444464666168-49d633b86797?auto=format&fit=crop&w=1600&q=85&v=hero-kumana",
+    "alt": "Kumana Safari"
+  },
+  {
+    "slotId": "kumana-birding-safari_html__slot_2",
+    "page": "kumana-birding-safari.html",
+    "slotIndex": 2,
+    "type": "img",
+    "label": "Kumana Morning Birding Safari",
+    "sectionContext": "Choose Your Kumana Safari · Morning Safari",
+    "src": "https://images.unsplash.com/photo-1511208687438-2c5a5abb810c?auto=format&fit=crop&w=950&q=82&v=km2",
+    "alt": "Kumana Morning Birding Safari"
+  },
+  {
+    "slotId": "kumana-birding-safari_html__slot_3",
+    "page": "kumana-birding-safari.html",
+    "slotIndex": 3,
+    "type": "img",
+    "label": "Kumana Evening Birding Safari",
+    "sectionContext": "Choose Your Kumana Safari · Evening Safari",
+    "src": "https://images.unsplash.com/photo-1611689342806-0863700ce1e4?auto=format&fit=crop&w=950&q=82&v=km3",
+    "alt": "Kumana Evening Birding Safari"
+  },
+  {
+    "slotId": "kumana-birding-safari_html__slot_4",
+    "page": "kumana-birding-safari.html",
+    "slotIndex": 4,
+    "type": "img",
+    "label": "Waterbirds & Wetland Life in Kumana",
+    "sectionContext": "Discover Kumana National Park · Waterbirds & Wetland Life",
+    "src": "https://images.unsplash.com/photo-1497206365907-f5e630693df0?auto=format&fit=crop&w=920&q=82&v=km4",
+    "alt": "Waterbirds & Wetland Life in Kumana"
+  },
+  {
+    "slotId": "kumana-birding-safari_html__slot_5",
+    "page": "kumana-birding-safari.html",
+    "slotIndex": 5,
+    "type": "img",
+    "label": "Sri Lankan Elephants in Kumana",
+    "sectionContext": "Discover Kumana National Park · Sri Lankan Elephants",
+    "src": "https://images.unsplash.com/photo-1581852017103-68ac65514cf7?auto=format&fit=crop&w=920&q=82&v=km5",
+    "alt": "Sri Lankan Elephants in Kumana"
+  },
+  {
+    "slotId": "kumana-birding-safari_html__slot_6",
+    "page": "kumana-birding-safari.html",
+    "slotIndex": 6,
+    "type": "img",
+    "label": "Spotted Deer in Kumana",
+    "sectionContext": "Discover Kumana National Park · Spotted Deer",
+    "src": "https://images.unsplash.com/photo-1484406566174-9da000fda645?auto=format&fit=crop&w=920&q=82&v=km6",
+    "alt": "Spotted Deer in Kumana"
+  },
+  {
+    "slotId": "kumana-birding-safari_html__slot_7",
+    "page": "kumana-birding-safari.html",
+    "slotIndex": 7,
+    "type": "img",
+    "label": "Sri Lankan Leopards in Kumana",
+    "sectionContext": "Discover Kumana National Park · Sri Lankan Leopards",
+    "src": "https://images.unsplash.com/photo-1534567153574-2b12153a87f0?auto=format&fit=crop&w=920&q=82&v=km7",
+    "alt": "Sri Lankan Leopards in Kumana"
+  },
+  {
+    "slotId": "kumana-birding-safari_html__slot_8",
+    "page": "kumana-birding-safari.html",
+    "slotIndex": 8,
+    "type": "img",
+    "label": "Seasonal Migratory Birds in Kumana",
+    "sectionContext": "Discover Kumana National Park · Seasonal Migratory Birds",
+    "src": "https://images.unsplash.com/photo-1552728089-57bdde30beb3?auto=format&fit=crop&w=920&q=82&v=km8",
+    "alt": "Seasonal Migratory Birds in Kumana"
+  },
+  {
+    "slotId": "kumana-birding-safari_html__slot_9",
+    "page": "kumana-birding-safari.html",
+    "slotIndex": 9,
+    "type": "lightbox-img",
+    "label": "National park location map",
+    "sectionContext": "Kumana — Location & Safari Access",
+    "src": "https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=1000&q=80&v=map-kumana",
+    "lightboxHref": "https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=1200&q=85&v=map-kumana",
+    "alt": "National park location map"
+  },
+  {
+    "slotId": "kumana-birding-safari_html__slot_10",
+    "page": "kumana-birding-safari.html",
+    "slotIndex": 10,
+    "type": "img",
+    "label": "Kumana Safari Guide & Jeep",
+    "sectionContext": "Your Safari Experience",
+    "src": "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=920&q=82&v=km10",
+    "alt": "Kumana Safari Guide & Jeep"
+  },
+  {
+    "slotId": "kumana-birding-safari_html__slot_11",
+    "page": "kumana-birding-safari.html",
+    "slotIndex": 11,
+    "type": "lightbox-img",
+    "label": "Kumana Wetland Jeep Trail",
+    "sectionContext": "Your Safari Experience",
+    "src": "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=920&q=82&v=km11",
+    "lightboxHref": "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=85&v=km11",
+    "alt": "Kumana Wetland Jeep Trail"
+  },
+  {
+    "slotId": "kumana-birding-safari_html__slot_12",
+    "page": "kumana-birding-safari.html",
+    "slotIndex": 12,
+    "type": "lightbox-img",
+    "label": "Kumana East Coast Safari Drive",
+    "sectionContext": "Your Safari Experience",
+    "src": "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=920&q=82&v=km12",
+    "lightboxHref": "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=85&v=km12",
+    "alt": "Kumana East Coast Safari Drive"
+  },
+  {
+    "slotId": "kumana-birding-safari_html__slot_13",
+    "page": "kumana-birding-safari.html",
+    "slotIndex": 13,
+    "type": "logo",
+    "label": "Janaka Safari Logo",
+    "sectionContext": "Footer Brand Logo",
+    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "alt": "Janaka Safari Logo"
+  },
+  {
+    "slotId": "gallery_html__slot_0",
+    "page": "gallery.html",
+    "slotIndex": 0,
+    "type": "logo",
+    "label": "Janaka Safari",
+    "sectionContext": "Header Navigation Logo",
+    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "alt": "Janaka Safari"
+  },
+  {
+    "slotId": "gallery_html__slot_1",
+    "page": "gallery.html",
+    "slotIndex": 1,
+    "type": "lightbox-img",
+    "label": "Sri Lankan leopard resting on a rock beneath trees",
+    "sectionContext": "Wildlife & Landscapes",
+    "src": "https://images.unsplash.com/photo-1456926631375-92c8ce872def?auto=format&fit=crop&w=900&q=82&v=gal1",
+    "lightboxHref": "https://images.unsplash.com/photo-1456926631375-92c8ce872def?auto=format&fit=crop&w=1200&q=85&v=gal1",
+    "alt": "Sri Lankan leopard resting on a rock beneath trees"
+  },
+  {
+    "slotId": "gallery_html__slot_2",
+    "page": "gallery.html",
+    "slotIndex": 2,
+    "type": "lightbox-img",
+    "label": "Sri Lankan sloth bear walking through woodland",
+    "sectionContext": "Wildlife & Landscapes",
+    "src": "https://images.unsplash.com/photo-1525382455947-f319bc05fb35?auto=format&fit=crop&w=900&q=82&v=gal2",
+    "lightboxHref": "https://images.unsplash.com/photo-1525382455947-f319bc05fb35?auto=format&fit=crop&w=1200&q=85&v=gal2",
+    "alt": "Sri Lankan sloth bear walking through woodland"
+  },
+  {
+    "slotId": "gallery_html__slot_3",
+    "page": "gallery.html",
+    "slotIndex": 3,
+    "type": "lightbox-img",
+    "label": "Elephant herd with calves beside a muddy waterhole",
+    "sectionContext": "Wildlife & Landscapes",
+    "src": "https://images.unsplash.com/photo-1557050543-4d5f4e07ef46?auto=format&fit=crop&w=900&q=82&v=gal3",
+    "lightboxHref": "https://images.unsplash.com/photo-1557050543-4d5f4e07ef46?auto=format&fit=crop&w=1200&q=85&v=gal3",
+    "alt": "Elephant herd with calves beside a muddy waterhole"
+  },
+  {
+    "slotId": "gallery_html__slot_4",
+    "page": "gallery.html",
+    "slotIndex": 4,
+    "type": "lightbox-img",
+    "label": "Owl perched on a branch among green leaves",
+    "sectionContext": "Wildlife & Landscapes",
+    "src": "https://images.unsplash.com/photo-1543549790-8b5f4a028cfb?auto=format&fit=crop&w=900&q=82&v=gal4",
+    "lightboxHref": "https://images.unsplash.com/photo-1543549790-8b5f4a028cfb?auto=format&fit=crop&w=1200&q=85&v=gal4",
+    "alt": "Owl perched on a branch among green leaves"
+  },
+  {
+    "slotId": "gallery_html__slot_5",
+    "page": "gallery.html",
+    "slotIndex": 5,
+    "type": "lightbox-img",
+    "label": "Jackal standing on a sandy track",
+    "sectionContext": "Wildlife & Landscapes",
+    "src": "https://images.unsplash.com/photo-1474511320723-9a56873867b5?auto=format&fit=crop&w=900&q=82&v=gal5",
+    "lightboxHref": "https://images.unsplash.com/photo-1474511320723-9a56873867b5?auto=format&fit=crop&w=1200&q=85&v=gal5",
+    "alt": "Jackal standing on a sandy track"
+  },
+  {
+    "slotId": "gallery_html__slot_6",
+    "page": "gallery.html",
+    "slotIndex": 6,
+    "type": "lightbox-img",
+    "label": "Two Sri Lankan leopards resting on a tree branch",
+    "sectionContext": "Wildlife & Landscapes",
+    "src": "https://images.unsplash.com/photo-1534567153574-2b12153a87f0?auto=format&fit=crop&w=900&q=82&v=gal6",
+    "lightboxHref": "https://images.unsplash.com/photo-1534567153574-2b12153a87f0?auto=format&fit=crop&w=1200&q=85&v=gal6",
+    "alt": "Two Sri Lankan leopards resting on a tree branch"
+  },
+  {
+    "slotId": "gallery_html__slot_7",
+    "page": "gallery.html",
+    "slotIndex": 7,
+    "type": "lightbox-img",
+    "label": "Crocodile resting on a bank surrounded by an algae-covered pond",
+    "sectionContext": "Wildlife & Landscapes",
+    "src": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=900&q=82&v=gal7",
+    "lightboxHref": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1200&q=85&v=gal7",
+    "alt": "Crocodile resting on a bank surrounded by an algae-covered pond"
+  },
+  {
+    "slotId": "gallery_html__slot_8",
+    "page": "gallery.html",
+    "slotIndex": 8,
+    "type": "lightbox-img",
+    "label": "Bird of prey perched on a tree branch in Yala",
+    "sectionContext": "Wildlife & Landscapes",
+    "src": "https://images.unsplash.com/photo-1611689342806-0863700ce1e4?auto=format&fit=crop&w=900&q=82&v=gal8",
+    "lightboxHref": "https://images.unsplash.com/photo-1611689342806-0863700ce1e4?auto=format&fit=crop&w=1200&q=85&v=gal8",
+    "alt": "Bird of prey perched on a tree branch in Yala"
+  },
+  {
+    "slotId": "gallery_html__slot_9",
+    "page": "gallery.html",
+    "slotIndex": 9,
+    "type": "lightbox-img",
+    "label": "Sri Lankan leopard stalking through dry scrub",
+    "sectionContext": "Wildlife & Landscapes",
+    "src": "https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&w=900&q=82&v=gal9",
+    "lightboxHref": "https://images.unsplash.com/photo-1541701494587-cb58502866ab?auto=format&fit=crop&w=1200&q=85&v=gal9",
+    "alt": "Sri Lankan leopard stalking through dry scrub"
+  },
+  {
+    "slotId": "gallery_html__slot_10",
+    "page": "gallery.html",
+    "slotIndex": 10,
+    "type": "lightbox-img",
+    "label": "Sri Lankan leopard drinking from a waterhole",
+    "sectionContext": "Wildlife & Landscapes",
+    "src": "https://images.unsplash.com/photo-1602491453631-e2a5ad90a131?auto=format&fit=crop&w=900&q=82&v=gal10",
+    "lightboxHref": "https://images.unsplash.com/photo-1602491453631-e2a5ad90a131?auto=format&fit=crop&w=1200&q=85&v=gal10",
+    "alt": "Sri Lankan leopard drinking from a waterhole"
+  },
+  {
+    "slotId": "gallery_html__slot_11",
+    "page": "gallery.html",
+    "slotIndex": 11,
+    "type": "lightbox-img",
+    "label": "Sri Lankan leopard resting on golden savannah grass",
+    "sectionContext": "Wildlife & Landscapes",
+    "src": "https://images.unsplash.com/photo-1575550959106-5a7defe28b56?auto=format&fit=crop&w=900&q=82&v=gal11",
+    "lightboxHref": "https://images.unsplash.com/photo-1575550959106-5a7defe28b56?auto=format&fit=crop&w=1200&q=85&v=gal11",
+    "alt": "Sri Lankan leopard resting on golden savannah grass"
+  },
+  {
+    "slotId": "gallery_html__slot_12",
+    "page": "gallery.html",
+    "slotIndex": 12,
+    "type": "lightbox-img",
+    "label": "Two hornbills perched on bare branches against a blue sky",
+    "sectionContext": "Wildlife & Landscapes",
+    "src": "https://images.unsplash.com/photo-1552728089-57bdde30beb3?auto=format&fit=crop&w=900&q=82&v=gal12",
+    "lightboxHref": "https://images.unsplash.com/photo-1552728089-57bdde30beb3?auto=format&fit=crop&w=1200&q=85&v=gal12",
+    "alt": "Two hornbills perched on bare branches against a blue sky"
+  },
+  {
+    "slotId": "gallery_html__slot_13",
+    "page": "gallery.html",
+    "slotIndex": 13,
+    "type": "lightbox-img",
+    "label": "Flamingos spreading their pink and black wings in shallow water",
+    "sectionContext": "Wildlife & Landscapes",
+    "src": "https://images.unsplash.com/photo-1549608276-5786777e6587?auto=format&fit=crop&w=900&q=82&v=gal13",
+    "lightboxHref": "https://images.unsplash.com/photo-1549608276-5786777e6587?auto=format&fit=crop&w=1200&q=85&v=gal13",
+    "alt": "Flamingos spreading their pink and black wings in shallow water"
+  },
+  {
+    "slotId": "gallery_html__slot_14",
+    "page": "gallery.html",
+    "slotIndex": 14,
+    "type": "lightbox-img",
+    "label": "Sri Lankan leopard walking towards the camera through dry grass",
+    "sectionContext": "Wildlife & Landscapes",
+    "src": "https://images.unsplash.com/photo-1517825738774-7de9363ef735?auto=format&fit=crop&w=900&q=82&v=gal14",
+    "lightboxHref": "https://images.unsplash.com/photo-1517825738774-7de9363ef735?auto=format&fit=crop&w=1200&q=85&v=gal14",
+    "alt": "Sri Lankan leopard walking towards the camera through dry grass"
+  },
+  {
+    "slotId": "gallery_html__slot_15",
+    "page": "gallery.html",
+    "slotIndex": 15,
+    "type": "lightbox-img",
+    "label": "Elephants wading in water beside a grassy bank",
+    "sectionContext": "Wildlife & Landscapes",
+    "src": "https://images.unsplash.com/photo-1564760055775-d63b17a55c44?auto=format&fit=crop&w=900&q=82&v=gal15",
+    "lightboxHref": "https://images.unsplash.com/photo-1564760055775-d63b17a55c44?auto=format&fit=crop&w=1200&q=85&v=gal15",
+    "alt": "Elephants wading in water beside a grassy bank"
+  },
+  {
+    "slotId": "gallery_html__slot_16",
+    "page": "gallery.html",
+    "slotIndex": 16,
+    "type": "lightbox-img",
+    "label": "Janaka standing beside a safari jeep with guests seated inside",
+    "sectionContext": "Our Guests & Safari Moments",
+    "src": "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=900&q=82&v=gal16",
+    "lightboxHref": "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=85&v=gal16",
+    "alt": "Janaka standing beside a safari jeep with guests seated inside"
+  },
+  {
+    "slotId": "gallery_html__slot_17",
+    "page": "gallery.html",
+    "slotIndex": 17,
+    "type": "lightbox-img",
+    "label": "Safari guide taking a group selfie with guests beside a jeep",
+    "sectionContext": "Our Guests & Safari Moments",
+    "src": "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=900&q=82&v=gal17",
+    "lightboxHref": "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=85&v=gal17",
+    "alt": "Safari guide taking a group selfie with guests beside a jeep"
+  },
+  {
+    "slotId": "gallery_html__slot_18",
+    "page": "gallery.html",
+    "slotIndex": 18,
+    "type": "lightbox-img",
+    "label": "Safari guide standing beside a jeep with guests in the passenger seats",
+    "sectionContext": "Our Guests & Safari Moments",
+    "src": "https://images.unsplash.com/photo-1523805009345-7448845a9e53?auto=format&fit=crop&w=900&q=82&v=gal18",
+    "lightboxHref": "https://images.unsplash.com/photo-1523805009345-7448845a9e53?auto=format&fit=crop&w=1200&q=85&v=gal18",
+    "alt": "Safari guide standing beside a jeep with guests in the passenger seats"
+  },
+  {
+    "slotId": "gallery_html__slot_19",
+    "page": "gallery.html",
+    "slotIndex": 19,
+    "type": "lightbox-img",
+    "label": "Safari guests and guide posing on a dirt road beside safari jeeps",
+    "sectionContext": "Our Guests & Safari Moments",
+    "src": "https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?auto=format&fit=crop&w=900&q=82&v=gal19",
+    "lightboxHref": "https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?auto=format&fit=crop&w=1200&q=85&v=gal19",
+    "alt": "Safari guests and guide posing on a dirt road beside safari jeeps"
+  },
+  {
+    "slotId": "gallery_html__slot_20",
+    "page": "gallery.html",
+    "slotIndex": 20,
+    "type": "lightbox-img",
+    "label": "Safari guests and guide posing together in front of a jeep",
+    "sectionContext": "Our Guests & Safari Moments",
+    "src": "https://images.unsplash.com/photo-1519066629447-267fffa62d4b?auto=format&fit=crop&w=900&q=82&v=gal20",
+    "lightboxHref": "https://images.unsplash.com/photo-1519066629447-267fffa62d4b?auto=format&fit=crop&w=1200&q=85&v=gal20",
+    "alt": "Safari guests and guide posing together in front of a jeep"
+  },
+  {
+    "slotId": "gallery_html__slot_21",
+    "page": "gallery.html",
+    "slotIndex": 21,
+    "type": "lightbox-img",
+    "label": "Four safari jeeps parked together on grass under a blue sky",
+    "sectionContext": "Our Guests & Safari Moments",
+    "src": "https://images.unsplash.com/photo-1534759846116-5799c33ce22a?auto=format&fit=crop&w=900&q=82&v=gal21",
+    "lightboxHref": "https://images.unsplash.com/photo-1534759846116-5799c33ce22a?auto=format&fit=crop&w=1200&q=85&v=gal21",
+    "alt": "Four safari jeeps parked together on grass under a blue sky"
+  },
+  {
+    "slotId": "gallery_html__slot_22",
+    "page": "gallery.html",
+    "slotIndex": 22,
+    "type": "logo",
+    "label": "Janaka Safari Logo",
+    "sectionContext": "Footer Brand Logo",
+    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "alt": "Janaka Safari Logo"
+  },
+  {
+    "slotId": "reviews_html__slot_0",
+    "page": "reviews.html",
+    "slotIndex": 0,
+    "type": "logo",
+    "label": "Janaka Safari",
+    "sectionContext": "Header Navigation Logo",
+    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "alt": "Janaka Safari"
+  },
+  {
+    "slotId": "reviews_html__slot_1",
+    "page": "reviews.html",
+    "slotIndex": 1,
+    "type": "img",
+    "label": "Janaka with safari guests beside a jeep at Yala National Park",
+    "sectionContext": "Featured in Travel Stories",
+    "src": "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=1000&q=82&v=rev1",
+    "alt": "Janaka with safari guests beside a jeep at Yala National Park"
+  },
+  {
+    "slotId": "reviews_html__slot_2",
+    "page": "reviews.html",
+    "slotIndex": 2,
+    "type": "img",
+    "label": "Cover of Iwanowski’s Sri Lanka travel guide, 14th edition",
+    "sectionContext": "Mentioned in Travel Guides",
+    "src": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=1000&q=82&v=rev2",
+    "alt": "Cover of Iwanowski’s Sri Lanka travel guide, 14th edition"
+  },
+  {
+    "slotId": "reviews_html__slot_3",
+    "page": "reviews.html",
+    "slotIndex": 3,
+    "type": "logo",
+    "label": "Janaka Safari Logo",
+    "sectionContext": "Footer Brand Logo",
+    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "alt": "Janaka Safari Logo"
+  },
+  {
+    "slotId": "contact_html__slot_0",
+    "page": "contact.html",
+    "slotIndex": 0,
+    "type": "logo",
+    "label": "Janaka Safari",
+    "sectionContext": "Header Navigation Logo",
+    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "alt": "Janaka Safari"
+  },
+  {
+    "slotId": "contact_html__slot_1",
+    "page": "contact.html",
+    "slotIndex": 1,
+    "type": "logo",
+    "label": "Janaka Safari Logo",
+    "sectionContext": "Footer Brand Logo",
+    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "alt": "Janaka Safari Logo"
+  }
+];

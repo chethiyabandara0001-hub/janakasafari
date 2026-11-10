@@ -1,6 +1,6 @@
-/* Yala Safari Page Styles */
+/* Sri Lanka Yala Safaris — Yala Safari Packages, Wildlife & Park Information */
 .wsite-background-11 {
-  background-color: #faf5ec !important;
+  background: #faf5ec !important;
 }
 
 .wsite-background-11 .wsite-multicol-table-wrap,
@@ -38,19 +38,33 @@
 }
 
 .wsite-background-11 .wsite-multicol-col {
+  position: relative;
   display: flex !important;
   flex-direction: column;
   width: auto !important;
-  padding: 0 !important;
+  padding: 28px !important;
   background: #ffffff;
-  border-radius: 22px;
+  border: 1px solid #e2dac9;
+  border-top: 5px solid #18382b;
+  border-radius: 18px;
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(35, 45, 30, 0.08);
+  box-shadow: 0 12px 32px rgba(24, 56, 43, 0.08);
+}
+
+.wsite-background-11 .wsite-multicol-col:nth-child(2) {
+  border-top-color: #f5a623;
+}
+
+.wsite-background-11 .wsite-multicol-col:nth-child(3) {
+  border-top-color: #b85d19;
 }
 
 .wsite-background-11 .wsite-image {
   padding: 0 !important;
-  margin: 0 !important;
+  margin: 0 0 20px !important;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e5ddd0;
 }
 
 .wsite-background-11 .wsite-image img {
@@ -61,19 +75,34 @@
 }
 
 .wsite-background-11 .wsite-multicol-col > .paragraph {
-  padding: 0 24px !important;
+  padding: 0 !important;
   margin: 0 0 14px !important;
   text-align: left !important;
 }
 
 .wsite-background-11 .wsite-multicol-col > .paragraph:nth-of-type(1) {
-  padding-top: 20px !important;
-  color: #756b5d;
-  font-size: 14px;
+  color: #b85d19 !important;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.wsite-background-11 .wsite-multicol-col > .paragraph:nth-of-type(2) {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 26px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  color: #18382b !important;
 }
 
 .wsite-background-11 .wsite-multicol-col > .paragraph:nth-of-type(3) {
   flex-grow: 1;
+}
+
+.wsite-background-11 .wsite-multicol-col > .paragraph:nth-of-type(4) {
+  padding-top: 16px !important;
+  border-top: 1px solid #ebe4d6;
 }
 
 .safari-inclusions {
@@ -84,17 +113,17 @@
 
 .safari-inclusions li {
   display: flex;
-  gap: 8px;
-  margin-bottom: 6px;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
 .safari-tick {
-  color: #18382b;
-  font-weight: 700;
+  color: #15803d;
+  font-weight: 800;
 }
 
 .wsite-background-11 .wsite-multicol-col > div:last-child {
-  margin: 12px 24px 24px !important;
+  margin: 18px 0 0 !important;
 }
 
 .wsite-background-11 .wsite-button {
@@ -111,26 +140,31 @@
   width: auto !important;
   padding: 28px !important;
   background: #ffffff;
-  border: 1px solid #e2ddd3;
-  border-radius: 22px;
-  box-shadow: 0 6px 20px rgba(35, 45, 30, 0.06);
+  border: 1px solid #dfe6da;
+  border-top: 4px solid #18382b;
+  border-radius: 18px;
+  box-shadow: 0 10px 26px rgba(24, 56, 43, 0.07);
 }
 
 .port-safari-card {
   max-width: 1000px;
-  margin: 24px auto 0;
+  margin: 28px auto 0;
+  border-top: 4px solid #f5a623;
 }
 
-/* Discover Yala Dark Section */
+/* Discover Yala Deep Jungle Green Section (#13231b) */
 .wsite-background-12 {
-  background-color: #13231b !important;
+  background: linear-gradient(180deg, #13231b 0%, #18382b 100%) !important;
 }
 
 .wsite-background-12 h2,
-.wsite-background-12 h2 *,
-.wsite-background-12 .paragraph,
-.wsite-background-12 .paragraph * {
+.wsite-background-12 h2 * {
   color: #faf5ec !important;
+}
+
+.wsite-background-12 > .wsite-section-content > .container > .wsite-section-elements > .paragraph,
+.wsite-background-12 > .wsite-section-content > .container > .wsite-section-elements > .paragraph * {
+  color: #e2ede7 !important;
 }
 
 .wsite-background-12 .wsite-multicol {
@@ -149,31 +183,47 @@
 
 .wsite-background-12 .wsite-multicol-col {
   width: auto !important;
-  padding: 0 !important;
-  background: #223a2b;
-  border-radius: 22px;
+  padding: 24px !important;
+  background: #faf5ec;
+  border: 1px solid rgba(245, 166, 35, 0.45);
+  border-radius: 18px;
   overflow: hidden;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.25);
+}
+
+.wsite-background-12 .wsite-multicol-col .paragraph,
+.wsite-background-12 .wsite-multicol-col .paragraph * {
+  color: #35453c !important;
+}
+
+.wsite-background-12 .wsite-multicol-col .paragraph strong,
+.wsite-background-12 .wsite-multicol-col .paragraph strong * {
+  color: #18382b !important;
 }
 
 .wsite-background-12 .wsite-image {
   padding: 0 !important;
+  margin-bottom: 18px !important;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e2dac9;
 }
 
 .wsite-background-12 .wsite-image img {
   display: block;
   width: 100% !important;
-  height: 260px !important;
+  height: 250px !important;
   object-fit: cover;
 }
 
 .wsite-background-12 .wsite-multicol-col > .paragraph {
-  padding: 12px 22px 0 !important;
+  padding: 0 !important;
 }
 
 .janaka-payment {
   text-align: center;
-  padding: 20px 0 8px;
-  color: #18382b;
+  padding: 28px 0 8px;
+  color: #3f4942;
 }
 
 .janaka-payment-logos {
@@ -187,10 +237,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 80px;
-  height: 50px;
-  background: #fff;
-  border: 1px solid #e1e5dc;
+  width: 82px;
+  height: 48px;
+  background: #ffffff;
+  border: 1px solid #dfd6c5;
   border-radius: 8px;
 }
 

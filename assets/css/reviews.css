@@ -1,10 +1,15 @@
-/* Reviews Widgets & Carousels */
+/* Sri Lanka Yala Safaris — Reviews Widgets & Carousels */
 .reviews-widget {
   background: #ffffff;
-  border: 1px solid #e2ddd3;
-  border-radius: 24px;
-  padding: 28px;
-  box-shadow: 0 8px 24px rgba(24, 56, 43, 0.06);
+  border: 1px solid #dfd3bd;
+  border-top: 5px solid #00aa6c;
+  border-radius: 14px;
+  padding: 36px;
+  box-shadow: 0 12px 32px rgba(24, 56, 43, 0.08);
+}
+
+.reviews-google {
+  border-top-color: #f5a623;
 }
 
 .reviews-widget-head {
@@ -13,17 +18,23 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 22px;
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e6dbc8;
 }
 
 .reviews-widget-head h3 {
   margin: 0 0 6px;
-  font-size: 22px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 26px;
+  font-weight: 700;
   color: #18382b;
 }
 
 .reviews-rating {
-  font-size: 16px;
+  font-size: 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 700;
   color: #18382b;
 }
 
@@ -41,16 +52,24 @@
 
 .reviews-post {
   display: inline-block;
-  padding: 10px 18px;
-  background: #18382b;
-  color: #ffffff !important;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
+  padding: 12px 22px;
+  background: linear-gradient(135deg, #f7aa19 0%, #f5980c 100%);
+  color: #08291f !important;
+  border: 1px solid #e08900;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  box-shadow: 0 4px 12px rgba(245, 166, 35, 0.25);
+  transition: transform 0.2s ease, background 0.2s ease;
 }
 
 .reviews-post:hover {
-  background: #25523f;
+  background: #18382b;
+  color: #faf5ec !important;
+  border-color: #18382b;
+  transform: translateY(-1px);
 }
 
 .review-carousel {
@@ -76,12 +95,13 @@
 .review-card {
   scroll-snap-align: start;
   background: #faf5ec;
-  border: 1px solid #e7e1d6;
-  border-radius: 18px;
-  padding: 20px;
+  border: 1px solid #e4d8c3;
+  border-radius: 12px;
+  padding: 26px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  box-shadow: 0 4px 14px rgba(24, 56, 43, 0.05);
 }
 
 .review-author {
@@ -91,39 +111,47 @@
 }
 
 .review-avatar {
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: #18382b;
-  color: #faf5ec;
+  color: #f5a623;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 13px;
   flex-shrink: 0;
+  border: 2px solid #f5a623;
 }
 
 .review-author a {
   font-weight: 700;
+  font-size: 14.5px;
   color: #18382b;
 }
 
 .review-date {
-  font-size: 13px;
-  color: #667268;
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #92501e;
 }
 
 .review-title {
-  font-size: 16px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 19px;
+  font-weight: 700;
   color: #18382b;
 }
 
 .review-summary {
   margin: 0;
-  font-size: 15px;
-  color: #3f4942;
-  line-height: 1.6;
+  font-size: 14.5px;
+  color: #2c352d;
+  line-height: 1.75;
   flex-grow: 1;
 }
 
@@ -132,42 +160,46 @@
   background: transparent;
   border: 0;
   padding: 0;
-  color: #92501e;
+  color: #b85d19;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
   font-weight: 700;
-  font-size: 14px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   cursor: pointer;
   text-decoration: underline;
+  text-underline-offset: 4px;
 }
 
 .review-arrow {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  border: 1px solid #d5d9d2;
-  background: #ffffff;
-  color: #18382b;
-  font-size: 22px;
+  border: 2px solid #f5a623;
+  background: #18382b;
+  color: #faf5ec;
+  font-size: 20px;
   line-height: 1;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .review-prev {
-  left: -14px;
+  left: -16px;
 }
 
 .review-next {
-  right: -14px;
+  right: -16px;
 }
 
 .review-dots {
   display: flex;
   justify-content: center;
   gap: 8px;
-  margin-top: 14px;
+  margin-top: 18px;
 }
 
 .review-dot {
@@ -176,22 +208,24 @@
   border-radius: 50%;
   border: 0;
   padding: 0;
-  background: #d5d9d2;
+  background: #d8cbb4;
   cursor: pointer;
 }
 
 .review-dot[aria-current="true"] {
-  background: #18382b;
+  background: #f5a623;
+  transform: scale(1.2);
 }
 
 /* GetYourGuide Section */
 .janaka-gyg {
   background: #ffffff;
-  border: 1px solid #e2ddd3;
-  border-radius: 24px;
-  padding: 28px;
-  margin: 0 30px;
-  box-shadow: 0 8px 24px rgba(24, 56, 43, 0.06);
+  border: 1px solid #dfd3bd;
+  border-top: 5px solid #ff5533;
+  border-radius: 14px;
+  padding: 36px;
+  margin: 0 32px;
+  box-shadow: 0 12px 32px rgba(24, 56, 43, 0.08);
 }
 
 .janaka-gyg-header {
@@ -200,24 +234,33 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 22px;
+  margin-bottom: 24px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #e6dbc8;
 }
 
 .janaka-gyg-header h3 {
   margin: 0 0 4px;
-  font-size: 22px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 26px;
+  font-weight: 700;
   color: #18382b;
 }
 
 .janaka-gyg-note {
-  font-size: 14px;
-  color: #667268;
+  font-size: 13.5px;
+  color: #5b665d;
 }
 
 .janaka-gyg-link {
-  font-size: 13px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11.5px;
   font-weight: 700;
-  color: #92501e;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #b85d19;
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 
 .janaka-gyg-grid {
@@ -228,9 +271,9 @@
 
 .janaka-gyg-card {
   background: #faf5ec;
-  border: 1px solid #e7e1d6;
-  border-radius: 18px;
-  padding: 20px;
+  border: 1px solid #e4d8c3;
+  border-radius: 12px;
+  padding: 26px;
 }
 
 .janaka-gyg-name {
@@ -239,25 +282,32 @@
 }
 
 .janaka-gyg-date {
-  font-size: 13px;
-  color: #667268;
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #92501e;
   margin-bottom: 8px;
 }
 
 .janaka-gyg-stars {
   color: #f5a623;
   margin-bottom: 10px;
+  letter-spacing: 2px;
 }
 
 .janaka-gyg-card blockquote {
   margin: 0 0 12px;
-  font-size: 15px;
-  color: #3f4942;
+  font-size: 14.5px;
+  line-height: 1.75;
+  color: #2c352d;
 }
 
 .janaka-gyg-source {
-  font-size: 12px;
-  color: #756b5d;
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 600;
+  color: #18382b;
 }
 
 @media screen and (max-width: 900px) {
@@ -275,5 +325,6 @@
   }
   .janaka-gyg {
     margin: 0;
+    padding: 24px 20px;
   }
 }

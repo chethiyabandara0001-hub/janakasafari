@@ -22,6 +22,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'cdn.jsdelivr.net',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
   async rewrites() {
@@ -40,10 +46,23 @@ const nextConfig: NextConfig = {
           source: '/assets/media/:path*',
           destination: '/api/media/:path*',
         },
+        {
+          source: '/admin.html',
+          destination: '/admin',
+        },
       ],
       afterFiles: [],
       fallback: [],
     };
+  },
+  async redirects() {
+    return [
+      {
+        source: '/admin.html',
+        destination: '/admin',
+        permanent: false,
+      },
+    ];
   },
   output: 'standalone',
   transpilePackages: ['motion'],

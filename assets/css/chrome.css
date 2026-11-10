@@ -1,151 +1,174 @@
-/* Global footer background */
-.footer-wrap {
-  background: #18382b !important;
-}
+/* Sri Lanka Yala Safaris — Rich Jungle Emerald, Safari Gold & Warm Sand Chrome */
 
-.footer-wrap > .container,
-.footer-wrap .footer,
-.footer-wrap .wsite-footer {
-  background: transparent !important;
-}
-
-/* Footer body text */
-.footer-wrap .paragraph,
-.footer-wrap p,
-.footer-wrap .paragraph *,
-.footer-wrap p *,
-.footer-wrap a {
-  color: #ddd8ce !important;
-  text-shadow: none !important;
-}
-
-/* Footer headings */
-.footer-wrap h2,
-.footer-wrap h2 *,
-.footer-wrap h3,
-.footer-wrap h3 * {
-  color: #faf5ec !important;
-  text-shadow: none !important;
-}
-
-/* Links */
-.footer-wrap a:hover {
-  color: #f7aa19 !important;
-}
-
-/* Divider */
-.footer-wrap hr.styled-hr {
-  border-color: rgba(250, 245, 236, 0.25) !important;
-  background: none !important;
-}
-
-/* Footer button text */
-.footer-wrap .wsite-button .wsite-button-inner {
-  color: #ffffff !important;
-}
-
-/* Footer contact icons */
-.footer-wrap .paragraph.footer-contact-row {
-  position: relative;
-  padding-left: 32px !important;
-  overflow-wrap: anywhere;
-}
-
-.footer-contact-icon {
-  position: absolute;
-  left: 0;
-  top: 4px;
-  width: 20px;
-  height: 20px;
-  color: #faf5ec;
-}
-
-.footer-contact-icon svg {
-  display: block;
+/* Top Masthead Strip (if present) */
+.arch-telemetry-bar {
   width: 100%;
-  height: 100%;
+  background: #012f23;
+  border-bottom: 1px solid rgba(245, 166, 35, 0.28);
+  padding: 9px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: #eff3f1;
+  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.06em;
 }
 
-/* Subtle separator above copyright */
-.footer-wrap hr.styled-hr {
-  border: 0 !important;
-  border-top: 1px solid rgba(250, 245, 236, 0.25) !important;
-  height: 0 !important;
+.arch-telemetry-group {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
 }
 
-/* Desktop: lines between footer columns */
-@media screen and (min-width: 768px) {
-  .footer-wrap .wsite-multicol-col +
-  .wsite-multicol-col {
-    border-left: 1px solid rgba(250, 245, 236, 0.28) !important;
+.arch-telemetry-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #d8e6df;
+}
+
+.arch-telemetry-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f5a623;
+  display: inline-block;
+}
+
+.arch-telemetry-link {
+  color: #f5a623 !important;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.arch-telemetry-link:hover {
+  color: #ffd166 !important;
+}
+
+@media screen and (max-width: 920px) {
+  .arch-telemetry-bar {
+    padding: 8px 16px;
+    font-size: 11px;
+  }
+  .arch-telemetry-hide-mobile {
+    display: none;
   }
 }
 
-/* Mobile: lines between stacked sections */
-@media screen and (max-width: 767px) {
-  .footer-wrap .wsite-multicol-col +
-  .wsite-multicol-col {
-    border-left: 0 !important;
-    border-top: 1px solid rgba(250, 245, 236, 0.28) !important;
-    margin-top: 24px !important;
-    padding-top: 24px !important;
-  }
-}
-
-/* Header */
+/* Header — Warm Sunlit Sand & Deep Jungle Emerald Bar */
 .dusk-header {
-  background: #ffffff;
-  box-shadow: 0 3px 18px rgba(24, 56, 43, 0.07);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+  background: rgba(250, 245, 236, 0.97) !important;
+  backdrop-filter: blur(10px);
+  border-bottom: 2px solid #e4dccb;
+  box-shadow: 0 4px 20px rgba(1, 47, 35, 0.08) !important;
 }
 
-/* Desktop navigation */
+.dusk-header .nav-wrap > .container {
+  max-width: 1320px;
+  padding: 0 32px;
+  min-height: 78px;
+}
+
+.dusk-header .logo a {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+/* Desktop navigation — Deep Yala Forest Green with Safari Gold Accents */
+.dusk-header .desktop-nav .wsite-menu-default {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+  gap: 28px;
+}
+
 .dusk-header .desktop-nav .wsite-menu-item {
   color: #18382b !important;
-  font-size: 16px !important;
-  font-weight: 600;
-  letter-spacing: 0 !important;
-  text-transform: none !important;
+  font-size: 13.5px !important;
+  font-weight: 700;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
   text-decoration: none;
+  border-radius: 0;
+  padding: 26px 0;
+  border-bottom: 3px solid transparent;
+  background: transparent !important;
+  transition: color 0.18s ease, border-color 0.18s ease;
 }
 
 .dusk-header .desktop-nav li#active > .wsite-menu-item,
+.dusk-header .desktop-nav .nav-current > .wsite-menu-item,
 .dusk-header .desktop-nav .wsite-menu-item:hover {
-  color: #92501e !important;
+  color: #b85d19 !important;
+  background: transparent !important;
+  border-bottom-color: #f5a623;
+  box-shadow: none;
 }
 
-/* Dropdown panel */
+/* Dropdown panel — Rich Yala Jungle Green Sheet with Golden Highlights */
 .desktop-nav .wsite-menu-wrap > .wsite-menu {
-  min-width: 250px;
-  padding: 8px;
+  min-width: 260px;
+  margin-top: 0;
+  padding: 10px 0;
   box-sizing: border-box;
-  background: #ffffff;
-  border: 1px solid #e2e7df;
-  border-top: 3px solid #f7aa19;
-  border-radius: 0 0 16px 16px;
-  box-shadow: 0 14px 32px rgba(24, 56, 43, 0.15);
+  background: #18382b;
+  border: 1px solid rgba(245, 166, 35, 0.4);
+  border-radius: 14px;
+  box-shadow: 0 18px 40px rgba(1, 47, 35, 0.28);
+  overflow: hidden;
 }
 
 .desktop-nav .wsite-menu-subitem-wrap {
   width: 100% !important;
   border: 0 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.desktop-nav .wsite-menu-subitem-wrap:last-child {
+  border-bottom: 0 !important;
 }
 
 .desktop-nav .wsite-menu-subitem-wrap a {
   background: transparent !important;
-  color: #18382b !important;
-  border-radius: 9px;
-  font-size: 15px !important;
-  line-height: 1.5 !important;
+  color: #faf5ec !important;
+  border-radius: 0;
+  font-size: 13px !important;
+  font-weight: 600;
+  letter-spacing: 0.04em !important;
+  text-transform: none !important;
+  line-height: 1.4 !important;
 }
 
 .desktop-nav .wsite-menu-subitem-wrap a span {
-  padding: 12px 14px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.desktop-nav .wsite-menu-subitem-wrap a span::after {
+  content: "→";
+  font-size: 13px;
+  color: #f5a623;
 }
 
 .desktop-nav .wsite-menu-subitem-wrap a:hover,
 .desktop-nav .wsite-nav-current > a {
-  background: #edf1e7 !important;
-  color: #18382b !important;
+  background: #012f23 !important;
+  color: #f5a623 !important;
 }
 
 /* Keyboard navigation */
@@ -157,100 +180,207 @@
 .dusk-header a:focus-visible,
 .mobile-nav a:focus-visible,
 .mobile-nav button:focus-visible {
-  outline: 2px solid #92501e;
+  outline: 2px solid #f5a623;
   outline-offset: 3px;
 }
 
-/* Mobile menu: solid background */
+/* Mobile menu — Deep Jungle Emerald Drawer */
 .mobile-nav {
-  background: #faf5ec !important;
+  background: #012f23 !important;
 }
 
 .mobile-nav .wsite-menu-default {
   width: 100%;
-  max-width: 520px;
+  max-width: 560px;
   margin: 0 auto;
-  padding: 12px 24px 36px !important;
+  padding: 16px 28px 40px !important;
   box-sizing: border-box;
   text-align: left !important;
+  border: 0 !important;
 }
 
 .mobile-nav .wsite-menu-default > li {
   padding: 0 !important;
-  border-bottom: 1px solid #e2ddd3;
+  border: 0 !important;
+}
+
+.mobile-nav .wsite-menu-default > li > a.wsite-menu-item {
+  border-bottom: 1px solid rgba(250, 245, 236, 0.14) !important;
 }
 
 .mobile-nav .wsite-menu-item {
   display: block !important;
   margin: 0 !important;
-  padding: 16px 54px 16px 14px;
-  color: #18382b !important;
-  font-size: 19px !important;
+  padding: 18px 48px 18px 0;
+  color: #faf5ec !important;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 24px !important;
   font-weight: 600;
-  line-height: 1.5 !important;
-  letter-spacing: 0 !important;
+  line-height: 1.3 !important;
+  letter-spacing: -0.01em !important;
   text-transform: none !important;
-  border-radius: 10px;
+  border-radius: 0;
 }
 
 .mobile-nav .wsite-menu-item:hover,
-.mobile-nav li#active > .wsite-menu-item {
-  background: #e6ecdf;
-  color: #18382b !important;
+.mobile-nav li#active > .wsite-menu-item,
+.mobile-nav .nav-current > .wsite-menu-item {
+  background: transparent !important;
+  color: #f5a623 !important;
 }
 
-/* Expand arrow tap area */
 .mobile-nav .icon-caret {
-  top: 8px;
-  right: 4px;
+  top: 10px;
+  right: 0;
   width: 44px;
   height: 44px;
+  color: #f5a623;
 }
 
-/* Park links */
 .mobile-nav .wsite-menu-wrap {
-  margin: 0 0 12px 14px;
-  padding-left: 12px;
-  border-left: 2px solid #f7aa19;
+  margin: 8px 0 16px 0;
+  padding-left: 16px;
+  border-left: 2px solid #f5a623;
 }
 
 .mobile-nav .wsite-menu-subitem {
   display: block;
-  padding: 12px 14px;
-  border-radius: 8px;
-  color: #3f4942 !important;
-  font-size: 16px !important;
+  padding: 10px 0;
+  color: #d8e6df !important;
+  font-size: 14px !important;
+  font-weight: 600;
+  letter-spacing: 0.04em !important;
   line-height: 1.5 !important;
 }
 
 .mobile-nav .wsite-menu-subitem:hover {
-  background: #e6ecdf;
+  color: #f5a623 !important;
 }
 
-/* Menu controls */
 .mobile-nav-toggle {
-  margin: 12px 14px 0 0;
+  margin: 14px 18px 0 0;
   padding: 16px;
-  color: #18382b !important;
+  color: #faf5ec !important;
 }
 
 .dusk-header .hamburger {
   color: #18382b !important;
+  background: #f2eadb;
+  border: 1px solid #d8cebc;
+  border-radius: 10px;
 }
 
-/* Remove borders from menu containers and empty items */
-.mobile-nav .wsite-menu-default,
-.mobile-nav .wsite-menu-default > li {
-  border: 0 !important;
+.mobile-nav .mobile-login {
+  display: none !important;
+}
+
+.arch-compass-rail,
+.arch-park-dock {
+  display: none !important;
+}
+
+/* Global Footer — Deep Jungle Emerald with Warm Safari Gold Accents */
+.footer-wrap {
+  width: 100%;
+  margin: 0;
+  border-radius: 0;
+  background: linear-gradient(180deg, #0d281e 0%, #071912 100%) !important;
+  border-top: 4px solid #f5a623;
   box-shadow: none !important;
 }
 
-/* Dividers only beneath actual navigation links */
-.mobile-nav .wsite-menu-default > li > a.wsite-menu-item {
-  border-bottom: 1px solid #e2ddd3 !important;
+.footer-wrap > .container,
+.footer-wrap .footer,
+.footer-wrap .wsite-footer {
+  background: transparent !important;
 }
 
-/* Hide unused login item */
-.mobile-nav .mobile-login {
-  display: none !important;
+.footer-wrap .paragraph,
+.footer-wrap p,
+.footer-wrap .paragraph *,
+.footer-wrap p *,
+.footer-wrap a {
+  color: #dce7e1 !important;
+  font-size: 14.5px !important;
+  line-height: 1.75 !important;
+  text-shadow: none !important;
+}
+
+.footer-wrap h2,
+.footer-wrap h2 *,
+.footer-wrap h3,
+.footer-wrap h3 * {
+  color: #f5a623 !important;
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em !important;
+  text-transform: none !important;
+  text-shadow: none !important;
+}
+
+.footer-wrap a:hover {
+  color: #f5a623 !important;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.footer-wrap hr.styled-hr {
+  border: 0 !important;
+  border-top: 1px solid rgba(245, 166, 35, 0.22) !important;
+  background: none !important;
+  height: 0 !important;
+}
+
+.footer-wrap .wsite-button {
+  background: #f5a623 !important;
+  color: #08291f !important;
+  border: 2px solid #f5a623 !important;
+  border-radius: 10px !important;
+}
+
+.footer-wrap .wsite-button .wsite-button-inner {
+  color: #08291f !important;
+  font-weight: 700 !important;
+}
+
+.footer-wrap .wsite-button:hover {
+  background: #f7b733 !important;
+  border-color: #f7b733 !important;
+}
+
+.footer-wrap .paragraph.footer-contact-row {
+  position: relative;
+  padding-left: 28px !important;
+  overflow-wrap: anywhere;
+}
+
+.footer-contact-icon {
+  position: absolute;
+  left: 0;
+  top: 4px;
+  width: 17px;
+  height: 17px;
+  color: #f5a623;
+}
+
+.footer-contact-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@media screen and (min-width: 768px) {
+  .footer-wrap .wsite-multicol-col + .wsite-multicol-col {
+    border-left: 1px solid rgba(245, 166, 35, 0.18) !important;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  .footer-wrap .wsite-multicol-col + .wsite-multicol-col {
+    border-left: 0 !important;
+    border-top: 1px solid rgba(245, 166, 35, 0.18) !important;
+    margin-top: 28px !important;
+    padding-top: 28px !important;
+  }
 }

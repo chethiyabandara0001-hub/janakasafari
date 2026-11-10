@@ -1,9 +1,9 @@
-/* Udawalawe, Wilpattu, Minneriya, Kumana shared park styles */
+/* Sri Lanka Yala Safaris — Udawalawe, Wilpattu, Minneriya, Kumana Shared Styles */
 .wsite-background-20,
 .wsite-background-37,
 .wsite-background-44,
 .wsite-background-51 {
-  background-color: #faf5ec !important;
+  background: #faf5ec !important;
 }
 
 .wsite-background-20 .wsite-multicol-table-wrap,
@@ -59,30 +59,71 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
   align-items: stretch;
+  counter-reset: park-pkg;
 }
 
 .wsite-background-44 .wsite-multicol-tr,
 .wsite-background-51 .wsite-multicol-tr {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
+  gap: 28px;
   align-items: stretch;
-  max-width: 1000px;
+  max-width: 1080px;
   margin: 0 auto;
+  counter-reset: park-pkg;
 }
 
 .wsite-background-20 .wsite-multicol-col,
 .wsite-background-37 .wsite-multicol-col,
 .wsite-background-44 .wsite-multicol-col,
 .wsite-background-51 .wsite-multicol-col {
+  position: relative;
   display: flex !important;
   flex-direction: column;
   width: auto !important;
-  padding: 0 !important;
+  padding: 32px !important;
   background: #ffffff;
-  border-radius: 22px;
+  border: 1px solid #dfd3bd;
+  border-top: 5px solid #18382b;
+  border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(35, 45, 30, 0.08);
+  box-shadow: 0 12px 32px rgba(24, 56, 43, 0.08);
+  counter-increment: park-pkg;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.wsite-background-20 .wsite-multicol-col:nth-child(2),
+.wsite-background-37 .wsite-multicol-col:nth-child(2),
+.wsite-background-44 .wsite-multicol-col:nth-child(2),
+.wsite-background-51 .wsite-multicol-col:nth-child(2) {
+  border-top-color: #f5a623;
+}
+
+.wsite-background-20 .wsite-multicol-col:nth-child(3),
+.wsite-background-37 .wsite-multicol-col:nth-child(3) {
+  border-top-color: #b85d19;
+}
+
+.wsite-background-20 .wsite-multicol-col:hover,
+.wsite-background-37 .wsite-multicol-col:hover,
+.wsite-background-44 .wsite-multicol-col:hover,
+.wsite-background-51 .wsite-multicol-col:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px rgba(24, 56, 43, 0.14);
+}
+
+.wsite-background-20 .wsite-multicol-col::before,
+.wsite-background-37 .wsite-multicol-col::before,
+.wsite-background-44 .wsite-multicol-col::before,
+.wsite-background-51 .wsite-multicol-col::before {
+  content: "PACKAGE 0" counter(park-pkg);
+  display: block;
+  margin-bottom: 14px;
+  color: #b85d19;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
 }
 
 .wsite-background-20 .wsite-image,
@@ -90,7 +131,10 @@
 .wsite-background-44 .wsite-image,
 .wsite-background-51 .wsite-image {
   padding: 0 !important;
-  margin: 0 !important;
+  margin: 0 0 24px !important;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #dfd3bd;
 }
 
 .wsite-background-20 .wsite-image img,
@@ -107,7 +151,7 @@
 .wsite-background-37 .wsite-multicol-col > .paragraph,
 .wsite-background-44 .wsite-multicol-col > .paragraph,
 .wsite-background-51 .wsite-multicol-col > .paragraph {
-  padding: 0 24px !important;
+  padding: 0 !important;
   margin: 0 0 14px !important;
   text-align: left !important;
 }
@@ -116,9 +160,23 @@
 .wsite-background-37 .wsite-multicol-col > .paragraph:nth-of-type(1),
 .wsite-background-44 .wsite-multicol-col > .paragraph:nth-of-type(1),
 .wsite-background-51 .wsite-multicol-col > .paragraph:nth-of-type(1) {
-  padding-top: 20px !important;
-  color: #756b5d;
-  font-size: 14px;
+  color: #92501e !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.wsite-background-20 .wsite-multicol-col > .paragraph:nth-of-type(2),
+.wsite-background-37 .wsite-multicol-col > .paragraph:nth-of-type(2),
+.wsite-background-44 .wsite-multicol-col > .paragraph:nth-of-type(2),
+.wsite-background-51 .wsite-multicol-col > .paragraph:nth-of-type(2) {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 26px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  color: #18382b !important;
 }
 
 .wsite-background-20 .wsite-multicol-col > .paragraph:nth-of-type(3),
@@ -128,11 +186,19 @@
   flex-grow: 1;
 }
 
+.wsite-background-20 .wsite-multicol-col > .paragraph:nth-of-type(4),
+.wsite-background-37 .wsite-multicol-col > .paragraph:nth-of-type(4),
+.wsite-background-44 .wsite-multicol-col > .paragraph:nth-of-type(4),
+.wsite-background-51 .wsite-multicol-col > .paragraph:nth-of-type(4) {
+  padding-top: 18px !important;
+  border-top: 1px solid #e6dbc8;
+}
+
 .wsite-background-20 .wsite-multicol-col > div:last-child,
 .wsite-background-37 .wsite-multicol-col > div:last-child,
 .wsite-background-44 .wsite-multicol-col > div:last-child,
 .wsite-background-51 .wsite-multicol-col > div:last-child {
-  margin: 12px 24px 24px !important;
+  margin: 18px 0 0 !important;
 }
 
 .wsite-background-20 .wsite-button,
@@ -145,19 +211,39 @@
 
 .udawalawe-port-card {
   max-width: 1000px;
-  margin: 24px auto 0;
-  padding: 32px;
+  margin: 28px auto 0;
+  padding: 40px;
   background: #ffffff;
-  border: 1px solid #e2ddd3;
-  border-radius: 24px;
-  box-shadow: 0 8px 24px rgba(35, 45, 30, 0.06);
+  border: 1px solid #c6d8be;
+  border-top: 5px solid #18382b;
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(24, 56, 43, 0.08);
+}
+
+/* Deep Jungle Green Wildlife Sections */
+body.header-page #wsite-content .udawalawe-wildlife,
+body.header-page #wsite-content .wilpattu-wildlife,
+body.header-page #wsite-content .minneriya-wildlife,
+body.header-page #wsite-content .kumana-wildlife {
+  background: linear-gradient(180deg, #13231b 0%, #18382b 100%) !important;
+}
+
+body.header-page #wsite-content .udawalawe-wildlife h2,
+body.header-page #wsite-content .udawalawe-wildlife h2 *,
+body.header-page #wsite-content .wilpattu-wildlife h2,
+body.header-page #wsite-content .wilpattu-wildlife h2 *,
+body.header-page #wsite-content .minneriya-wildlife h2,
+body.header-page #wsite-content .minneriya-wildlife h2 *,
+body.header-page #wsite-content .kumana-wildlife h2,
+body.header-page #wsite-content .kumana-wildlife h2 * {
+  color: #faf5ec !important;
 }
 
 .udawalawe-wildlife .wsite-multicol,
 .wilpattu-wildlife .wsite-multicol,
 .minneriya-wildlife .wsite-multicol,
 .kumana-wildlife .wsite-multicol {
-  margin-bottom: 24px;
+  margin-bottom: 0;
 }
 
 .udawalawe-wildlife .wsite-multicol-tr,
@@ -166,7 +252,7 @@
 .kumana-wildlife .wsite-multicol-tr {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
+  gap: 20px;
 }
 
 .udawalawe-wildlife .wsite-multicol-tr:has(> .wsite-multicol-col:nth-child(2):last-child),
@@ -181,10 +267,13 @@
 .minneriya-wildlife .wsite-multicol-col,
 .kumana-wildlife .wsite-multicol-col {
   width: auto !important;
-  padding: 0 !important;
-  background: #223a2b;
-  border-radius: 22px;
+  padding: 26px !important;
+  background: #faf5ec;
+  border: 1px solid rgba(245, 166, 35, 0.3);
+  border-top: 4px solid #f5a623;
+  border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
 }
 
 .udawalawe-wildlife .wsite-multicol-col .paragraph,
@@ -195,7 +284,14 @@
 .minneriya-wildlife .wsite-multicol-col .paragraph *,
 .kumana-wildlife .wsite-multicol-col .paragraph,
 .kumana-wildlife .wsite-multicol-col .paragraph * {
-  color: #faf5ec !important;
+  color: #2c352d !important;
+}
+
+.udawalawe-wildlife .wsite-multicol-col .paragraph strong,
+.wilpattu-wildlife .wsite-multicol-col .paragraph strong,
+.minneriya-wildlife .wsite-multicol-col .paragraph strong,
+.kumana-wildlife .wsite-multicol-col .paragraph strong {
+  color: #18382b !important;
 }
 
 .udawalawe-wildlife .wsite-image,
@@ -203,6 +299,10 @@
 .minneriya-wildlife .wsite-image,
 .kumana-wildlife .wsite-image {
   padding: 0 !important;
+  margin-bottom: 20px !important;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #dfd3bd;
 }
 
 .udawalawe-wildlife .wsite-image img,
@@ -219,7 +319,7 @@
 .wilpattu-wildlife .wsite-multicol-col > .paragraph,
 .minneriya-wildlife .wsite-multicol-col > .paragraph,
 .kumana-wildlife .wsite-multicol-col > .paragraph {
-  padding: 12px 22px 0 !important;
+  padding: 0 !important;
 }
 
 .udawalawe-info .wsite-multicol-col,
@@ -229,11 +329,26 @@
   display: flex !important;
   flex-direction: column;
   width: auto !important;
-  padding: 28px !important;
+  padding: 32px !important;
   background: #ffffff;
-  border: 1px solid #e2ddd3;
-  border-radius: 20px;
-  box-shadow: 0 6px 18px rgba(35, 45, 30, 0.06);
+  border: 1px solid #dfd3bd;
+  border-top: 4px solid #18382b;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(24, 56, 43, 0.06);
+}
+
+.udawalawe-info .wsite-multicol-col:nth-child(2),
+.wilpattu-info .wsite-multicol-col:nth-child(2),
+.minneriya-info .wsite-multicol-col:nth-child(2),
+.kumana-info .wsite-multicol-col:nth-child(2) {
+  border-top-color: #f5a623;
+}
+
+.udawalawe-info .wsite-multicol-col:nth-child(3),
+.wilpattu-info .wsite-multicol-col:nth-child(3),
+.minneriya-info .wsite-multicol-col:nth-child(3),
+.kumana-info .wsite-multicol-col:nth-child(3) {
+  border-top-color: #b85d19;
 }
 
 @media screen and (max-width: 767px) {

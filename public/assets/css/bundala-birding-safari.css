@@ -1,6 +1,6 @@
-/* Bundala safari packages */
+/* Sri Lanka Yala Safaris — Bundala Safari Packages & Wildlife Monograph */
 body.header-page #wsite-content .wsite-background-29 {
-  background-color: #faf5ec !important;
+  background: #faf5ec !important;
 }
 
 body.header-page #wsite-content .wsite-background-29 h2,
@@ -20,35 +20,56 @@ body.header-page #wsite-content .wsite-background-29 h2 * {
 }
 
 .wsite-background-29 .wsite-multicol {
-  max-width: 1000px;
+  max-width: 1080px;
   margin: 0 auto;
 }
 
 .wsite-background-29 .wsite-multicol-tr {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
+  gap: 28px;
   align-items: stretch;
+  counter-reset: pkg-counter;
 }
 
-/* Cards */
 .wsite-background-29 .wsite-multicol-col {
+  position: relative;
   display: flex !important;
   flex-direction: column;
   width: auto !important;
   min-width: 0;
-  padding: 0 !important;
+  padding: 36px !important;
   box-sizing: border-box;
   background: #ffffff;
-  border-radius: 22px;
+  border: 1px solid #dfd3bd;
+  border-top: 5px solid #18382b;
+  border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 8px 24px rgba(35, 45, 30, 0.08);
+  box-shadow: 0 12px 32px rgba(24, 56, 43, 0.08);
+  counter-increment: pkg-counter;
 }
 
-/* Images */
+.wsite-background-29 .wsite-multicol-col:nth-child(2) {
+  border-top-color: #f5a623;
+}
+
+.wsite-background-29 .wsite-multicol-col::before {
+  content: "PACKAGE 0" counter(pkg-counter);
+  display: block;
+  margin-bottom: 14px;
+  color: #b85d19;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
 .wsite-background-29 .wsite-image {
-  margin: 0 !important;
+  margin: 0 0 24px !important;
   padding: 0 !important;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #dfd3bd;
 }
 
 .wsite-background-29 .wsite-image a {
@@ -64,45 +85,42 @@ body.header-page #wsite-content .wsite-background-29 h2 * {
   object-fit: cover;
 }
 
-/* Reset inherited text spacing */
 body.header-page #wsite-content
 .wsite-background-29 .wsite-multicol-col > .paragraph {
   min-height: 0 !important;
   margin: 0 !important;
-  padding: 0 24px !important;
+  padding: 0 !important;
   box-sizing: border-box;
   text-align: left !important;
-  color: #3f4942 !important;
-  font-size: 16px !important;
-  line-height: 1.7 !important;
-}
-
-body.header-page #wsite-content
-.wsite-background-29 .wsite-multicol-col > .paragraph * {
-  color: inherit !important;
-  font-size: inherit !important;
-  line-height: inherit !important;
+  color: #2c352d !important;
+  font-size: 15px !important;
+  line-height: 1.75 !important;
 }
 
 /* Times */
 body.header-page #wsite-content
 .wsite-background-29 .wsite-multicol-col > .paragraph:nth-of-type(2) {
-  padding-top: 20px !important;
-  padding-bottom: 10px !important;
-  color: #756b5d !important;
-  font-size: 14px !important;
+  padding-bottom: 8px !important;
+  color: #92501e !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 /* Package names */
 body.header-page #wsite-content
 .wsite-background-29 .wsite-multicol-col > .paragraph:nth-of-type(3) {
-  margin-bottom: 20px !important;
+  margin-bottom: 18px !important;
   color: #18382b !important;
-  font-size: 22px !important;
-  line-height: 1.4 !important;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
 }
 
-/* Inclusions expand to align prices */
+/* Inclusions expand */
 body.header-page #wsite-content
 .wsite-background-29 .wsite-multicol-col > .paragraph:nth-of-type(4) {
   flex-grow: 1;
@@ -112,29 +130,33 @@ body.header-page #wsite-content
 body.header-page #wsite-content
 .wsite-background-29 .wsite-multicol-col > .paragraph:nth-of-type(5) {
   padding-top: 20px !important;
-  color: #756b5d !important;
-  font-size: 14px !important;
+  margin-top: 20px !important;
+  border-top: 1px solid #e6dbc8;
+  color: #704831 !important;
+  font-size: 13px !important;
 }
 
 /* Prices */
 body.header-page #wsite-content
 .wsite-background-29 .wsite-multicol-col > .paragraph:nth-of-type(6) {
-  padding-top: 18px !important;
-  font-size: 14px !important;
+  padding-top: 14px !important;
+  font-size: 13px !important;
 }
 
 body.header-page #wsite-content
 .wsite-background-29 .wsite-multicol-col > .paragraph:nth-of-type(6) strong,
 body.header-page #wsite-content
 .wsite-background-29 .wsite-multicol-col > .paragraph:nth-of-type(6) strong * {
-  color: #92501e !important;
-  font-size: 36px !important;
-  line-height: 1.2 !important;
+  color: #18382b !important;
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-size: 38px !important;
+  font-weight: 700 !important;
+  line-height: 1.15 !important;
 }
 
 /* Buttons */
 .wsite-background-29 .wsite-multicol-col > div:last-child {
-  margin: 18px 24px 24px !important;
+  margin: 22px 0 0 !important;
 }
 
 .wsite-background-29 .wsite-multicol-col > div:last-child > div {
@@ -147,19 +169,18 @@ body.header-page #wsite-content
   box-sizing: border-box;
 }
 
-.wsite-background-29 .wsite-button-inner {
-  padding: 12px 16px;
-}
-
 @media screen and (max-width: 767px) {
   .wsite-background-29 .wsite-multicol-tr {
     grid-template-columns: 1fr;
   }
+  .wsite-background-29 .wsite-multicol-col {
+    padding: 24px 20px !important;
+  }
 }
 
-/* Discover Bundala */
+/* Discover Bundala — Deep Jungle Green Wildlife Section */
 body.header-page #wsite-content .bundala-wildlife {
-  background-color: #13231b !important;
+  background: linear-gradient(180deg, #13231b 0%, #18382b 100%) !important;
 }
 
 body.header-page #wsite-content .bundala-wildlife h2,
@@ -167,21 +188,13 @@ body.header-page #wsite-content .bundala-wildlife h2 * {
   color: #faf5ec !important;
 }
 
-/* Readable text and natural spacing */
-body.header-page #wsite-content .bundala-wildlife .paragraph {
-  min-height: 0 !important;
-  color: #ddd8ce !important;
-  line-height: 1.7 !important;
+body.header-page #wsite-content .bundala-wildlife > .wsite-section-content > .container > .wsite-section-elements > .paragraph,
+body.header-page #wsite-content .bundala-wildlife > .wsite-section-content > .container > .wsite-section-elements > .paragraph * {
+  color: #eff3f1 !important;
 }
 
-body.header-page #wsite-content .bundala-wildlife .paragraph * {
-  color: inherit !important;
-  line-height: inherit !important;
-}
-
-/* Wildlife card rows */
 .bundala-wildlife .wsite-multicol {
-  margin-bottom: 24px;
+  margin-bottom: 0;
 }
 
 .bundala-wildlife .wsite-multicol-table-wrap {
@@ -198,34 +211,37 @@ body.header-page #wsite-content .bundala-wildlife .paragraph * {
 .bundala-wildlife .wsite-multicol-tr {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
+  gap: 20px;
   align-items: stretch;
 }
 
-/* Larger birdlife card in the two-card row */
 .bundala-wildlife .wsite-multicol-tr:has(
   > .wsite-multicol-col:nth-child(2):last-child
 ) {
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
 }
 
-/* Cards */
 .bundala-wildlife .wsite-multicol-col {
   display: flex !important;
   flex-direction: column;
   width: auto !important;
   min-width: 0;
-  padding: 0 !important;
+  padding: 26px !important;
   box-sizing: border-box;
-  background: #223a2b;
-  border-radius: 22px;
+  background: #faf5ec;
+  border: 1px solid rgba(245, 166, 35, 0.3);
+  border-top: 4px solid #f5a623;
+  border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
 }
 
-/* Images */
 .bundala-wildlife .wsite-image {
-  margin: 0 !important;
+  margin: 0 0 20px !important;
   padding: 0 !important;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #dfd3bd;
 }
 
 .bundala-wildlife .wsite-image a {
@@ -247,38 +263,32 @@ body.header-page #wsite-content .bundala-wildlife .paragraph * {
   height: 360px !important;
 }
 
-/* Remove card spacers */
 .bundala-wildlife .wsite-multicol-col > .wsite-spacer {
   display: none !important;
 }
 
-/* Card descriptions */
 body.header-page #wsite-content
 .bundala-wildlife .wsite-multicol-col > .paragraph {
   margin: 0 !important;
-  padding: 0 22px 24px !important;
+  padding: 0 !important;
   box-sizing: border-box;
   text-align: left !important;
-  font-size: 16px !important;
+  font-size: 15px !important;
+  color: #2c352d !important;
 }
 
 body.header-page #wsite-content
-.bundala-wildlife .wsite-multicol-col > .paragraph * {
-  font-size: inherit !important;
-}
-
-/* First text paragraph in each card */
+.bundala-wildlife .wsite-multicol-col > .bundala-card-title,
 body.header-page #wsite-content
-.bundala-wildlife .wsite-multicol-col > .bundala-card-title {
-  padding-top: 20px !important;
-  padding-bottom: 12px !important;
-  color: #faf5ec !important;
-  font-size: 20px !important;
-  font-weight: 700;
-  line-height: 1.4 !important;
+.bundala-wildlife .wsite-multicol-col > .bundala-card-title * {
+  padding-bottom: 10px !important;
+  color: #18382b !important;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
 }
 
-/* Mobile */
 @media screen and (max-width: 767px) {
   .bundala-wildlife .wsite-multicol-tr,
   .bundala-wildlife .wsite-multicol-tr:has(
@@ -297,18 +307,9 @@ body.header-page #wsite-content
   }
 }
 
-@media screen and (max-width: 767px) {
-  .bundala-wildlife .wsite-multicol-tr:has(
-    > .wsite-multicol-col:nth-child(2):last-child
-  ) > .wsite-multicol-col:first-child .wsite-image img {
-    height: auto !important;
-    aspect-ratio: 2 / 1;
-  }
-}
-
 /* Bundala safari information */
 body.header-page #wsite-content .bundala-info {
-  background-color: #faf5ec !important;
+  background: #faf5ec !important;
 }
 
 body.header-page #wsite-content .bundala-info h2,
@@ -316,7 +317,6 @@ body.header-page #wsite-content .bundala-info h2 * {
   color: #18382b !important;
 }
 
-/* Three equal cards */
 .bundala-info .wsite-multicol-table-wrap {
   margin: 0 !important;
   overflow: visible;
@@ -340,192 +340,129 @@ body.header-page #wsite-content .bundala-info h2 * {
   flex-direction: column;
   width: auto !important;
   min-width: 0;
-  padding: 28px !important;
+  padding: 32px !important;
   box-sizing: border-box;
   background: #ffffff;
-  border: 1px solid #e2ddd3;
-  border-radius: 20px;
-  box-shadow: 0 6px 18px rgba(35, 45, 30, 0.06);
+  border: 1px solid #dfd3bd;
+  border-top: 4px solid #18382b;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(24, 56, 43, 0.06);
 }
 
-/* Card text */
+.bundala-info .wsite-multicol-col:nth-child(2) {
+  border-top-color: #f5a623;
+}
+
+.bundala-info .wsite-multicol-col:nth-child(3) {
+  border-top-color: #b85d19;
+}
+
 body.header-page #wsite-content
 .bundala-info .wsite-multicol-col > .paragraph {
   min-height: 0 !important;
   margin: 0 0 16px !important;
   padding: 0 !important;
   text-align: left !important;
-  color: #3f4942 !important;
-  font-size: 16px !important;
-  line-height: 1.7 !important;
+  color: #2c352d !important;
+  font-size: 15px !important;
+  line-height: 1.75 !important;
 }
 
 body.header-page #wsite-content
-.bundala-info .wsite-multicol-col > .paragraph * {
-  color: inherit !important;
-  font-size: inherit !important;
-  line-height: inherit !important;
-}
-
-/* Card titles */
+.bundala-info .wsite-multicol-col > .bundala-info-title,
 body.header-page #wsite-content
-.bundala-info .wsite-multicol-col > .bundala-info-title {
-  margin-bottom: 18px !important;
+.bundala-info .wsite-multicol-col > .bundala-info-title * {
+  margin-bottom: 14px !important;
   color: #18382b !important;
-  font-size: 20px !important;
-  font-weight: 700;
-  line-height: 1.4 !important;
-}
-
-body.header-page #wsite-content
-.bundala-info .wsite-multicol-col > .paragraph:last-child {
-  margin-bottom: 0 !important;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
 }
 
 .bundala-info .wsite-multicol-col > .wsite-spacer {
   display: none !important;
 }
 
-/* Mobile */
 @media screen and (max-width: 767px) {
   .bundala-info .wsite-multicol-tr {
     grid-template-columns: 1fr;
-    gap: 18px;
-  }
-
-  .bundala-info .wsite-multicol-col {
-    padding: 24px !important;
   }
 }
 
 /* Bundala safari from Hambantota Port */
 body.header-page #wsite-content .bundala-port {
-  background-color: #edf1e7 !important;
+  background: #edf1e7 !important;
 }
 
-body.header-page #wsite-content .bundala-port h2,
-body.header-page #wsite-content .bundala-port h2 * {
-  color: #18382b !important;
-}
-
-/* White package card */
 .bundala-port .bundala-port-card {
   max-width: 1000px;
   margin: 28px auto 0;
-  padding: 36px;
+  padding: 40px;
   box-sizing: border-box;
   background: #ffffff;
-  border: 1px solid #e2ddd3;
-  border-radius: 24px;
-  box-shadow: 0 8px 24px rgba(35, 45, 30, 0.06);
+  border: 1px solid #c6d8be;
+  border-top: 5px solid #18382b;
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(24, 56, 43, 0.08);
 }
 
-/* Text and spacing */
-body.header-page #wsite-content
-.bundala-port-card .paragraph {
-  min-height: 0 !important;
-  margin: 0 0 22px !important;
-  padding: 0 !important;
-  text-align: left !important;
-  color: #3f4942 !important;
-  font-size: 16px !important;
-  line-height: 1.7 !important;
-}
-
-body.header-page #wsite-content
-.bundala-port-card .paragraph * {
-  color: inherit !important;
-  font-size: inherit !important;
-  line-height: inherit !important;
-}
-
-/* Package title */
-body.header-page #wsite-content
-.bundala-port-card .bundala-port-title {
-  color: #18382b !important;
-  font-size: 24px !important;
-  font-weight: 700;
-  line-height: 1.4 !important;
-}
-
-/* Price */
-body.header-page #wsite-content
-.bundala-port-card .bundala-port-price strong,
-body.header-page #wsite-content
-.bundala-port-card .bundala-port-price strong * {
-  color: #92501e !important;
-  font-size: 30px !important;
-}
-
-/* Remove unused spacers */
-.bundala-port-card .wsite-spacer {
-  display: none !important;
-}
-
-/* Button */
-.bundala-port-card .wsite-button {
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.bundala-port-card .wsite-button-inner {
-  padding: 12px 28px;
-}
-
-/* Mobile */
-@media screen and (max-width: 767px) {
-  .bundala-port .bundala-port-card {
-    margin-top: 20px;
-    padding: 24px;
-    border-radius: 20px;
-  }
-
-  body.header-page #wsite-content
-  .bundala-port-card .bundala-port-title {
-    font-size: 21px !important;
-  }
-}
-
-/* Reset package text size and weight */
 body.header-page #wsite-content
 .bundala-port-card .paragraph,
 body.header-page #wsite-content
 .bundala-port-card .paragraph * {
-  font-size: 16px !important;
+  font-size: 15.5px !important;
   font-weight: 400 !important;
-  line-height: 1.7 !important;
-  color: #3f4942 !important;
+  line-height: 1.75 !important;
+  color: #2c352d !important;
 }
 
-/* Package title only */
 body.header-page #wsite-content
 .bundala-port-card .paragraph .port-title-text {
-  font-size: 21px !important;
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-size: 26px !important;
   font-weight: 700 !important;
-  line-height: 1.4 !important;
+  line-height: 1.25 !important;
   color: #18382b !important;
 }
 
-/* Price only */
 body.header-page #wsite-content
 .bundala-port-card .paragraph .port-price-text {
-  font-size: 28px !important;
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-size: 32px !important;
   font-weight: 700 !important;
   color: #92501e !important;
 }
 
-#hambantota-port-safari {
-  scroll-margin-top: 140px;
-}
-
-body.wsite-page-bundala-birding-safari .banner-wrap
-.wsite-header-section::before,
-body.wsite-page-bundala-birding-safari .banner-wrap::after {
+.bundala-port-card .wsite-spacer {
   display: none !important;
 }
 
-.janaka-payment {text-align:center; padding:20px 0 8px; color:#18382b; font-family:inherit;}
-.janaka-payment .janaka-payment-label {margin:0 0 12px!important; padding:0!important; min-height:0!important; font-size:16px; line-height:1.5;}
-.janaka-payment-logos {display:flex; justify-content:center; align-items:center; gap:12px;}
-.janaka-payment-card {display:flex; align-items:center; justify-content:center; width:80px; height:50px; box-sizing:border-box; background:#fff; border:1px solid #e1e5dc; border-radius:8px; box-shadow:0 2px 5px rgba(24,56,43,.05);}
-.janaka-payment-card img {display:block; object-fit:contain; margin:0; padding:0; border:0;}
+#hambantota-port-safari {
+  scroll-margin-top: 120px;
+}
+
+.janaka-payment {
+  text-align: center;
+  padding: 28px 0 8px;
+  color: #2c352d;
+}
+
+.janaka-payment-logos {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.janaka-payment-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 76px;
+  height: 46px;
+  background: #ffffff;
+  border: 1px solid #dfd3bd;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(24, 56, 43, 0.06);
+}

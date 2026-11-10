@@ -1,4 +1,29 @@
-/* Base reset & typography */
+/* Sri Lanka Yala Safaris (www.srilankayalasafaris.com) — Core Palette, Typography & Layout */
+:root {
+  --bg-canvas: #faf5ec;
+  --bg-sage: #edf1e7;
+  --bg-sage-soft: #eef2e8;
+  --bg-jungle-deep: #012f23;
+  --bg-jungle: #18382b;
+  --bg-jungle-night: #13231b;
+  --bg-jungle-canopy: #193d2f;
+  --bg-pure: #ffffff;
+  --ink-primary: #18382b;
+  --ink-dark: #08291f;
+  --ink-secondary: #3f4942;
+  --ink-muted: #667268;
+  --ink-terracotta: #92501e;
+  --ink-ochre: #704831;
+  --safari-gold: #f5a623;
+  --safari-gold-bright: #f7aa19;
+  --safari-gold-deep: #e08e0b;
+  --rule-sand: #e2dac9;
+  --rule-sage: #d3ddd0;
+  --font-display: "Playfair Display", Georgia, "Times New Roman", serif;
+  --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
 *,
 *::before,
 *::after {
@@ -13,11 +38,13 @@ html {
 body {
   margin: 0;
   padding: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  color: #3f4942;
-  background-color: #faf5ec;
-  line-height: 1.65;
+  font-family: var(--font-sans);
+  color: var(--ink-secondary);
+  background-color: var(--bg-canvas);
+  background-image: none;
+  line-height: 1.7;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
 img {
@@ -26,13 +53,13 @@ img {
 }
 
 a {
-  color: #18382b;
+  color: var(--ink-primary);
   text-decoration: none;
-  transition: color 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
+  transition: color 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
 }
 
 a:hover {
-  color: #92501e;
+  color: var(--ink-terracotta);
 }
 
 .sr-only {
@@ -53,10 +80,11 @@ a:hover {
   top: 12px;
   z-index: 2000;
   padding: 10px 16px;
-  background: #18382b;
-  color: #ffffff !important;
+  background: var(--safari-gold);
+  color: var(--ink-dark) !important;
+  font-weight: 700;
+  font-size: 12px;
   border-radius: 8px;
-  font-weight: 600;
 }
 
 .skip-link:focus {
@@ -82,33 +110,28 @@ main#main-content {
 
 .container {
   width: 100%;
-  max-width: 1180px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 32px;
 }
 
-/* Header & Navigation */
-.dusk-header {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  width: 100%;
-  background: #ffffff;
+@media screen and (max-width: 767px) {
+  .container {
+    padding: 0 20px;
+  }
 }
 
+/* Header structural helpers */
 .dusk-header .nav-wrap > .container {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 82px;
-  padding-top: 10px;
-  padding-bottom: 10px;
   gap: 24px;
 }
 
 .dusk-header .logo img {
   display: block;
-  max-height: 54px;
+  max-height: 48px;
   width: auto;
 }
 
@@ -116,21 +139,17 @@ main#main-content {
   display: none;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   padding: 0;
-  background: transparent;
-  border: 0;
   cursor: pointer;
 }
 
 .desktop-nav .wsite-menu-default {
   display: flex;
   align-items: center;
-  gap: 6px;
   list-style: none;
   margin: 0;
-  padding: 0;
 }
 
 .desktop-nav .wsite-menu-item-wrap {
@@ -140,15 +159,13 @@ main#main-content {
 .desktop-nav .wsite-menu-item {
   display: inline-flex;
   align-items: center;
-  padding: 10px 14px;
-  border-radius: 8px;
 }
 
 .desktop-nav .wsite-menu-item-wrap.has-submenu > .wsite-menu-item::after {
   content: "▾";
   margin-left: 6px;
   font-size: 12px;
-  opacity: 0.75;
+  color: #b85d19;
 }
 
 .desktop-nav .wsite-menu-wrap {
@@ -158,8 +175,8 @@ main#main-content {
   z-index: 1100;
   visibility: hidden;
   opacity: 0;
-  transform: translateY(6px);
-  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+  transform: translateY(4px);
+  transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s ease;
 }
 
 .desktop-nav .wsite-menu-item-wrap:hover > .wsite-menu-wrap,
@@ -176,10 +193,6 @@ main#main-content {
 }
 
 .desktop-nav .wsite-menu-subitem {
-  display: block;
-}
-
-.desktop-nav .wsite-menu-subitem span {
   display: block;
 }
 
@@ -222,9 +235,7 @@ main#main-content {
   justify-content: center;
   background: transparent;
   border: 0;
-  color: #18382b;
   cursor: pointer;
-  border-radius: 8px;
 }
 
 .mobile-nav .icon-caret[aria-expanded="true"] svg {
@@ -246,64 +257,233 @@ main#main-content {
   }
 }
 
-/* Banner / Hero Section */
+/* Hero Banner — Full-Bleed Wildlife Photography with Jungle Scrim & Golden Accents */
 .banner-wrap {
   position: relative;
   width: 100%;
+  margin: 0;
+  border-radius: 0;
+  border-bottom: 4px solid var(--safari-gold);
 }
 
 .wsite-header-section {
   position: relative;
-  min-height: 500px;
+  min-height: 580px;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  justify-content: center;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
 }
 
+.wsite-header-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    rgba(1, 35, 24, 0.82) 0%,
+    rgba(12, 48, 35, 0.62) 52%,
+    rgba(8, 28, 20, 0.38) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
 .wsite-header-section .wsite-section-content {
+  position: relative;
+  z-index: 2;
   width: 100%;
+  flex: 1;
+  display: flex;
+  align-items: center;
 }
 
 .wsite-header-section .container {
-  padding-top: 72px;
-  padding-bottom: 72px;
+  padding-top: 76px;
+  padding-bottom: 76px;
 }
 
-.banner h2.wsite-content-title {
-  margin: 0;
+body:not(.janaka-contact) .banner-wrap .banner > .wsite-section-elements {
+  position: relative;
+  display: inline-block;
+  max-width: 720px;
+  padding: 36px 42px;
+  background: rgba(8, 36, 26, 0.72);
+  backdrop-filter: blur(8px);
   color: #ffffff;
-  font-size: clamp(36px, 4.5vw, 60px);
-  font-weight: 800;
-  line-height: 1.12;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(245, 166, 35, 0.42);
+  border-radius: 20px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.38);
 }
 
-.banner .paragraph {
-  color: #faf5ec;
-  font-size: 18px;
+.banner h2.wsite-content-title,
+body.wsite-page-index .banner-wrap .banner h2,
+body.wsite-page-index .banner-wrap .banner h2 * {
+  margin: 0;
+  color: #ffffff !important;
+  font-family: var(--font-display) !important;
+  font-size: clamp(38px, 4.5vw, 62px) !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1.1 !important;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.45) !important;
 }
 
-/* Body Sections */
+.banner h2.wsite-content-title font[color="#f5a623"],
+body.wsite-page-index .banner-wrap .sri-lanka-tracks,
+body.wsite-page-index .banner-wrap .sri-lanka-tracks * {
+  color: #f5a623 !important;
+  font-style: italic;
+}
+
+.banner .paragraph,
+.banner .paragraph * {
+  color: #f2f7f4 !important;
+  font-size: 16.5px !important;
+  line-height: 1.7 !important;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Focus Mode Target Element — Why Choose Us Section (.wsite-background-75) */
+div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > div:nth-of-type(2) > div#wsite-content:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) {
+  background-color: #faf5ec !important;
+  background-image: radial-gradient(circle at 88% 22%, rgba(245, 166, 35, 0.14) 0%, rgba(24, 56, 43, 0.05) 45%, rgba(250, 245, 236, 0) 75%) !important;
+}
+
+/* Body Sections — Preserve Authentic Sri Lanka Yala Safaris Color Rhythm */
+.wsite-body-section {
+  position: relative;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  border-radius: 0;
+  background-color: var(--bg-canvas);
+  background-image: none !important;
+  border-bottom: 1px solid rgba(24, 56, 43, 0.08);
+  box-shadow: none !important;
+}
+
+/* Warm Sunlit Sand Sections */
+.wsite-body-section[style*="#faf5ec"],
+.wsite-body-section[style*="#FAF5EC"],
+.wsite-body-section[style*="#f7f3eb"],
+.wsite-body-section[style*="#f8f3ec"],
+.wsite-body-section[style*="#f8f4ec"] {
+  background-color: #faf5ec !important;
+  background-image: none !important;
+  color: #3f4942;
+}
+
+/* Soft Tropical Sage Sections */
+.wsite-body-section[style*="#edf1e7"],
+.wsite-body-section[style*="#eef2e8"],
+.wsite-body-section[style*="#ebefe5"],
+.wsite-body-section[style*="#edf0e8"] {
+  background-color: #e8f0e2 !important;
+  background-image: none !important;
+  color: #2f3e35;
+}
+
+/* Deep Jungle Emerald & Yala Forest Green Sections */
+.wsite-body-section[style*="#012f23"] {
+  background: linear-gradient(180deg, #012f23 0%, #06382a 100%) !important;
+  color: #eff3f1 !important;
+}
+
+.wsite-body-section[style*="#18382b"] {
+  background: linear-gradient(180deg, #18382b 0%, #112a20 100%) !important;
+  color: #faf5ec !important;
+}
+
+.wsite-body-section[style*="#13231b"] {
+  background: linear-gradient(180deg, #13231b 0%, #183124 100%) !important;
+  color: #faf5ec !important;
+}
+
+.wsite-body-section[style*="#193d2f"] {
+  background: linear-gradient(135deg, #193d2f 0%, #0d261c 100%) !important;
+  color: #faf5ec !important;
+}
+
 .wsite-body-section .container {
-  padding-top: 64px;
-  padding-bottom: 64px;
+  padding-top: 76px;
+  padding-bottom: 76px;
 }
 
+/* Display Headings */
 h2.wsite-content-title {
   margin: 0 0 24px;
-  color: #18382b;
-  font-size: clamp(26px, 3vw, 38px);
-  font-weight: 700;
-  line-height: 1.25;
+  color: var(--ink-primary);
+  font-family: var(--font-display) !important;
+  font-size: clamp(30px, 3.5vw, 44px) !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.015em !important;
+  line-height: 1.18 !important;
+}
+
+/* Headings inside Dark Jungle Sections */
+.wsite-body-section[style*="#012f23"] h2.wsite-content-title,
+.wsite-body-section[style*="#012f23"] h2.wsite-content-title *,
+.wsite-body-section[style*="#18382b"] h2.wsite-content-title,
+.wsite-body-section[style*="#18382b"] h2.wsite-content-title *,
+.wsite-body-section[style*="#13231b"] h2.wsite-content-title,
+.wsite-body-section[style*="#13231b"] h2.wsite-content-title *,
+.wsite-body-section[style*="#193d2f"] h2.wsite-content-title,
+.wsite-body-section[style*="#193d2f"] h2.wsite-content-title * {
+  color: #faf5ec !important;
 }
 
 .paragraph {
   margin: 0 0 18px;
-  font-size: 16px;
-  line-height: 1.7;
-  color: #3f4942;
+  font-size: 15.5px;
+  line-height: 1.75;
+  color: var(--ink-secondary);
+}
+
+/* Honor Authentic Inline <font> Colors from www.srilankayalasafaris.com */
+font[color="#18382b"],
+font[color="#112520"],
+font[color="#08291f"],
+font[color="#063329"],
+font[color="#002315"] {
+  color: #18382b !important;
+}
+
+font[color="#2a2a2a"] {
+  color: #26332c !important;
+}
+
+font[color="#faf5ec"],
+font[color="#eff3f1"],
+font[color="#f2eadb"],
+font[color="#ffffff"] {
+  color: #faf5ec !important;
+}
+
+font[color="#ddd8ce"] {
+  color: #dce5df !important;
+}
+
+font[color="#3f4942"] {
+  color: #35453c !important;
+}
+
+font[color="#667268"],
+font[color="#756b5d"] {
+  color: #55665c !important;
+}
+
+font[color="#92501e"],
+font[color="#704831"] {
+  color: #a85518 !important;
+}
+
+font[color="#f69609"],
+font[color="#f7aa19"],
+font[color="#f5a623"] {
+  color: #f5a623 !important;
 }
 
 /* Multicolumn Tables */
@@ -322,12 +502,16 @@ h2.wsite-content-title {
 
 @media screen and (max-width: 767px) {
   .wsite-body-section .container {
-    padding-top: 44px;
-    padding-bottom: 44px;
+    padding-top: 52px;
+    padding-bottom: 52px;
   }
 
   .wsite-header-section {
-    min-height: 360px;
+    min-height: 430px;
+  }
+
+  body:not(.janaka-contact) .banner-wrap .banner > .wsite-section-elements {
+    padding: 26px 22px;
   }
 
   .wsite-multicol-table,
@@ -349,45 +533,57 @@ h2.wsite-content-title {
   }
 }
 
-/* Buttons */
+/* Buttons — Vibrant Safari Amber Gold & Deep Yala Forest Green Actions */
 .wsite-button {
   display: inline-block;
-  background: #f5a623;
-  color: #18382b !important;
-  border: 0;
-  border-radius: 999px;
+  background: linear-gradient(135deg, #f7aa19 0%, #f5980c 100%);
+  color: #08291f !important;
+  border: 2px solid #f5a623;
+  border-radius: 10px !important;
+  font-family: var(--font-sans);
   font-weight: 700;
-  font-size: 14px;
-  letter-spacing: 0.04em;
+  font-size: 12.5px;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   text-align: center;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(245, 166, 35, 0.28);
-  transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  box-shadow: 0 6px 18px rgba(245, 166, 35, 0.28) !important;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
 }
 
 .wsite-button:hover {
-  background: #e59400;
-  color: #18382b !important;
+  background: #18382b;
+  color: #faf5ec !important;
+  border-color: #18382b;
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(229, 148, 0, 0.35);
+}
+
+/* Buttons inside dark jungle sections invert on hover to bright gold/white */
+.wsite-body-section[style*="#18382b"] .wsite-button:hover,
+.wsite-body-section[style*="#012f23"] .wsite-button:hover,
+.wsite-body-section[style*="#13231b"] .wsite-button:hover,
+.wsite-body-section[style*="#193d2f"] .wsite-button:hover,
+.wsite-header-section .wsite-button:hover {
+  background: #ffffff;
+  color: #08291f !important;
+  border-color: #ffffff;
 }
 
 .wsite-button-inner {
   display: inline-block;
   padding: 13px 26px;
-  color: #18382b !important;
+  color: inherit !important;
   font-weight: 700;
 }
 
 /* Dividers */
 hr.styled-hr {
   border: 0;
-  border-top: 1px solid rgba(24, 56, 43, 0.15);
-  margin: 12px 0;
+  border-top: 1px solid var(--rule-sand);
+  margin: 16px 0;
 }
 
-/* Image Gallery */
+/* Image Gallery — Rounded Safari Frames */
 .imageGallery::after {
   content: "";
   display: table;
@@ -397,11 +593,13 @@ hr.styled-hr {
 .imageGallery .galleryImageHolder {
   border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 4px 14px rgba(24, 56, 43, 0.08);
+  border: 2px solid #e4dccb;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(24, 56, 43, 0.08);
 }
 
 .imageGallery .galleryImage {
-  transition: transform 0.3s ease;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .imageGallery a:hover .galleryImage {
@@ -417,13 +615,14 @@ hr.styled-hr {
   }
 }
 
-/* Footer */
+/* Footer inner spacing */
 .footer-wrap .container {
-  padding-top: 56px;
-  padding-bottom: 40px;
+  padding-top: 68px;
+  padding-bottom: 52px;
 }
 
 .footer-wrap .wsite-image img {
-  max-height: 64px;
+  max-height: 54px;
   width: auto;
+  border-radius: 8px;
 }
