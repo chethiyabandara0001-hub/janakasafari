@@ -1,0 +1,300 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Safety Net (Default-Deny Catch-All)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Hardened Global Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidPageName(page) {
+      return page is string && page.size() >= 1 && page.size() <= 64 && page.matches('^[a-zA-Z0-9_.\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 'chethiyabandara0001@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // 3. Entity Validation Blueprints (Anti-Update-Gap)
+    function isValidAdminProfile(data) {
+      return data.keys().hasAll(['uid', 'email', 'role', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'email', 'role', 'createdAt']) &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 && data.uid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.uid == request.auth.uid &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 254 &&
+        data.role is string && data.role == 'admin' &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidSiteImage(data) {
+      return data.keys().hasAll([
+          'slotId',
+          'page',
+          'slotIndex',
+          'type',
+          'label',
+          'sectionContext',
+          'src',
+          'alt',
+          'visibility',
+          'authorId',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'slotId',
+          'page',
+          'slotIndex',
+          'type',
+          'label',
+          'sectionContext',
+          'src',
+          'lightboxHref',
+          'alt',
+          'visibility',
+          'authorId',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isValidId(data.slotId) &&
+        isValidPageName(data.page) &&
+        data.slotIndex is int && data.slotIndex >= 0 && data.slotIndex <= 1000 &&
+        data.type is string && data.type in ['hero-bg', 'img', 'lightbox-img', 'logo'] &&
+        data.label is string && data.label.size() >= 1 && data.label.size() <= 200 &&
+        data.sectionContext is string && data.sectionContext.size() >= 1 && data.sectionContext.size() <= 200 &&
+        data.src is string && data.src.size() >= 1 && data.src.size() <= 750000 &&
+        (!('lightboxHref' in data) || (data.lightboxHref is string && data.lightboxHref.size() <= 750000)) &&
+        data.alt is string && data.alt.size() <= 500 &&
+        data.visibility is string && data.visibility == 'public' &&
+        isValidId(data.authorId) &&
+        data.authorId == request.auth.uid &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidSectionGalleryItem(data) {
+      return data.keys().hasAll([
+          'itemId',
+          'page',
+          'sectionKey',
+          'sectionTitle',
+          'title',
+          'caption',
+          'src',
+          'alt',
+          'order',
+          'visibility',
+          'authorId',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'itemId',
+          'page',
+          'sectionKey',
+          'sectionTitle',
+          'title',
+          'caption',
+          'src',
+          'alt',
+          'order',
+          'visibility',
+          'authorId',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isValidId(data.itemId) &&
+        isValidPageName(data.page) &&
+        isValidId(data.sectionKey) &&
+        data.sectionTitle is string && data.sectionTitle.size() >= 1 && data.sectionTitle.size() <= 200 &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+        data.caption is string && data.caption.size() <= 600 &&
+        data.src is string && data.src.size() >= 1 && data.src.size() <= 750000 &&
+        data.alt is string && data.alt.size() >= 1 && data.alt.size() <= 300 &&
+        data.order is int && data.order >= 0 && data.order <= 10000 &&
+        data.visibility is string && data.visibility == 'public' &&
+        isValidId(data.authorId) &&
+        data.authorId == request.auth.uid &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidSiteText(data) {
+      return data.keys().hasAll([
+          'textId',
+          'page',
+          'textIndex',
+          'tagName',
+          'sectionContext',
+          'content',
+          'isDeleted',
+          'isCustomAdded',
+          'visibility',
+          'authorId',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'textId',
+          'page',
+          'textIndex',
+          'tagName',
+          'sectionContext',
+          'content',
+          'isDeleted',
+          'isCustomAdded',
+          'visibility',
+          'authorId',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isValidId(data.textId) &&
+        isValidPageName(data.page) &&
+        data.textIndex is int && data.textIndex >= -1 && data.textIndex <= 5000 &&
+        data.tagName is string && data.tagName in [
+          'H1',
+          'H2',
+          'H3',
+          'H4',
+          'P',
+          'SPAN',
+          'A',
+          'LI',
+          'DIV',
+          'BLOCKQUOTE',
+          'STRONG',
+          'TD',
+          'CUSTOM'
+        ] &&
+        data.sectionContext is string && data.sectionContext.size() >= 1 && data.sectionContext.size() <= 200 &&
+        data.content is string && data.content.size() <= 20000 &&
+        data.isDeleted is bool &&
+        data.isCustomAdded is bool &&
+        data.visibility is string && data.visibility == 'public' &&
+        isValidId(data.authorId) &&
+        data.authorId == request.auth.uid &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // 4. Connection Health Check Endpoint
+    match /test/{testId} {
+      allow get: if isValidId(testId);
+      allow list, create, update, delete: if false;
+    }
+
+    // 5. Admins Collection (PII-isolated)
+    match /admins/{adminUid} {
+      allow get: if isValidId(adminUid) && isSignedIn() && (request.auth.uid == adminUid || isAdmin());
+      allow list: if false;
+      allow create: if isAdmin() &&
+        isValidId(adminUid) &&
+        adminUid == request.auth.uid &&
+        isValidAdminProfile(incoming()) &&
+        incoming().createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    // 6. Site Image Slots Collection
+    match /site_images/{imageId} {
+      allow get: if isValidId(imageId) && (resource == null || existing().visibility == 'public' || isAdmin());
+      allow list: if existing().visibility == 'public' || isAdmin();
+      allow create: if isAdmin() &&
+        isValidId(imageId) &&
+        incoming().slotId == imageId &&
+        isValidSiteImage(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isAdmin() &&
+        isValidId(imageId) &&
+        isValidSiteImage(incoming()) &&
+        incoming().slotId == existing().slotId &&
+        incoming().page == existing().page &&
+        incoming().slotIndex == existing().slotIndex &&
+        (incoming().authorId == existing().authorId || isAdmin()) &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (
+          incoming().diff(existing()).affectedKeys().hasOnly(['src', 'lightboxHref', 'alt', 'label', 'sectionContext', 'authorId', 'updatedAt']) ||
+          isAdmin()
+        );
+      allow delete: if isAdmin() && isValidId(imageId);
+    }
+
+    // 7. Section Gallery Items Collection
+    match /section_gallery_items/{itemId} {
+      allow get: if isValidId(itemId) && (resource == null || existing().visibility == 'public' || isAdmin());
+      allow list: if existing().visibility == 'public' || isAdmin();
+      allow create: if isAdmin() &&
+        isValidId(itemId) &&
+        incoming().itemId == itemId &&
+        isValidSectionGalleryItem(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isAdmin() &&
+        isValidId(itemId) &&
+        isValidSectionGalleryItem(incoming()) &&
+        incoming().itemId == existing().itemId &&
+        incoming().page == existing().page &&
+        (incoming().authorId == existing().authorId || isAdmin()) &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (
+          incoming().diff(existing()).affectedKeys().hasOnly(['title', 'caption', 'src', 'alt', 'order', 'sectionKey', 'sectionTitle', 'authorId', 'updatedAt']) ||
+          isAdmin()
+        );
+      allow delete: if isAdmin() && isValidId(itemId);
+    }
+
+    // 8. Site Texts Collection
+    match /site_texts/{textId} {
+      allow get: if isValidId(textId) && (resource == null || existing().visibility == 'public' || isAdmin());
+      allow list: if existing().visibility == 'public' || isAdmin();
+      allow create: if isAdmin() &&
+        isValidId(textId) &&
+        incoming().textId == textId &&
+        isValidSiteText(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isAdmin() &&
+        isValidId(textId) &&
+        isValidSiteText(incoming()) &&
+        incoming().textId == existing().textId &&
+        incoming().page == existing().page &&
+        incoming().textIndex == existing().textIndex &&
+        (incoming().authorId == existing().authorId || isAdmin()) &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (
+          incoming().diff(existing()).affectedKeys().hasOnly(['content', 'isDeleted', 'sectionContext', 'authorId', 'updatedAt']) ||
+          isAdmin()
+        );
+      allow delete: if isAdmin() && isValidId(textId);
+    }
+  }
+}

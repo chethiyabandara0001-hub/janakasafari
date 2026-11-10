@@ -16,6 +16,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
   async rewrites() {
@@ -23,25 +29,21 @@ const nextConfig: NextConfig = {
       beforeFiles: [
         {
           source: '/',
-          destination: '/index.html',
+          destination: '/api/pages/index.html',
+        },
+        {
+          source:
+            '/:page(index\\.html|about\\.html|safari-parks\\.html|yala-safari\\.html|udawalawe-safari\\.html|bundala-birding-safari\\.html|wilpattu-safari\\.html|minneriya-safari\\.html|kumana-birding-safari\\.html|gallery\\.html|reviews\\.html|contact\\.html)',
+          destination: '/api/pages/:page',
+        },
+        {
+          source: '/assets/media/:path*',
+          destination: '/api/media/:path*',
         },
       ],
       afterFiles: [],
       fallback: [],
     };
-  },
-  async headers() {
-    return [
-      {
-        source: '/assets/media/:file*',
-        headers: [
-          {
-            key: 'Content-Type',
-            value: 'image/svg+xml',
-          },
-        ],
-      },
-    ];
   },
   output: 'standalone',
   transpilePackages: ['motion'],
