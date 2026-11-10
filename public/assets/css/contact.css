@@ -97,20 +97,47 @@ body.janaka-contact .contact-cards > .wsite-multicol-table-wrap > .wsite-multico
   min-width: 0;
   padding: 42px 38px !important;
   box-sizing: border-box;
-  background: #ffffff;
-  border: 1px solid #dfd3bd;
-  border-top: 5px solid #18382b;
-  border-radius: 14px;
-  box-shadow: 0 12px 32px rgba(24, 56, 43, 0.08);
+  background: #ffffff !important;
+  border: 1px solid #dfd3bd !important;
+  border-top: 5px solid #18382b !important;
+  border-radius: 14px !important;
+  box-shadow: 0 16px 40px rgba(24, 56, 43, 0.12) !important;
   text-align: left;
 }
 
 body.janaka-contact .contact-cards > .wsite-multicol-table-wrap > .wsite-multicol-table > .wsite-multicol-tbody > .wsite-multicol-tr > .wsite-multicol-col:nth-child(2) {
-  border-top-color: #f5a623;
+  border-top-color: #f5a623 !important;
 }
 
-body.janaka-contact .contact-cards .paragraph {
+body.janaka-contact .contact-cards,
+body.janaka-contact .contact-cards .paragraph,
+body.janaka-contact .contact-cards .paragraph *,
+body.janaka-contact .contact-cards font {
+  color: #1a2a22 !important;
+  text-shadow: none !important;
   text-align: left !important;
+}
+
+body.janaka-contact .contact-cards a {
+  color: #b87314 !important;
+  text-decoration: underline !important;
+}
+
+body.janaka-contact .contact-cards a:hover {
+  color: #f5a623 !important;
+}
+
+body.janaka-contact .contact-cards strong,
+body.janaka-contact .contact-cards b {
+  color: #18382b !important;
+  font-weight: 700 !important;
+}
+
+body.janaka-contact .contact-cards .paragraph font[size="5"],
+body.janaka-contact .contact-cards .paragraph font[size="5"] strong {
+  font-family: Georgia, serif !important;
+  font-size: 26px !important;
+  color: #18382b !important;
 }
 
 /* Form width */
