@@ -213,10 +213,14 @@ main#main-content {
   color: #000000 !important;
 }
 
-.dusk-header .logo img {
+.dusk-header .logo img,
+.dusk-header .logo .janaka-brand-logo {
   display: block;
-  max-height: 48px;
+  max-height: 54px;
+  height: auto;
   width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.85));
 }
 
 .dusk-header .hamburger {
@@ -341,10 +345,9 @@ main#main-content {
   }
 }
 
-/* Hero Banner — 110vh Extra Height Viewport with Rich Color Photography & Editorial Typography */
+/* Hero Banner — 110vh Extra Height Viewport with Zoomed Photography Covering the Expanded Size */
 .banner-wrap,
-.banner-wrap .wsite-section-wrap,
-.banner-wrap .wsite-header-section {
+.banner-wrap .wsite-section-wrap {
   position: relative;
   width: 100%;
   min-height: 110vh !important;
@@ -352,10 +355,15 @@ main#main-content {
   margin: 0;
   border-radius: 0;
   border-bottom: 2px solid rgba(245, 166, 35, 0.4);
+  overflow: hidden !important;
 }
 
-.wsite-header-section {
+.banner-wrap .wsite-header-section {
   position: relative;
+  width: 100%;
+  min-height: 110vh !important;
+  height: 110vh !important;
+  margin: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -364,6 +372,13 @@ main#main-content {
   background-repeat: no-repeat !important;
   /* Make the image highlights colorful and vivid */
   filter: saturate(1.18) contrast(1.06) brightness(1.03);
+}
+
+@media screen and (min-width: 768px) {
+  .banner-wrap .wsite-header-section {
+    background-size: max(104vw, 115vh * 1.6) max(115vh, 104vw * 0.65) !important;
+    background-position: center 38% !important;
+  }
 }
 
 /* Remove surface shades of green — Neutral photography gradient with fade to black for the extra expanded 10% height */
@@ -630,7 +645,7 @@ body.wsite-page-index .banner-wrap .sri-lanka-tracks * {
 }
 
 .cross-award-img {
-  height: 54px;
+  height: 58px;
   width: auto;
   max-width: 100%;
   object-fit: contain;
@@ -655,12 +670,13 @@ body.wsite-page-index .banner-wrap .sri-lanka-tracks * {
 }
 
 .cross-sub-icon-wrap.traveler-icon-wrap {
-  background: rgba(245, 166, 35, 0.12);
-  border-color: rgba(245, 166, 35, 0.35);
+  background: rgba(0, 182, 122, 0.14);
+  border-color: rgba(0, 182, 122, 0.4);
 }
 
-.cross-web-logo.traveler-logo {
-  filter: invert(72%) sepia(85%) saturate(760%) hue-rotate(352deg) brightness(101%) contrast(96%);
+.cross-web-logo.trustpilot-logo {
+  fill: #00b67a;
+  filter: drop-shadow(0 2px 6px rgba(0, 182, 122, 0.4));
 }
 
 .cross-sub-info {
