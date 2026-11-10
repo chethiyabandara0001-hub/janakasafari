@@ -351,6 +351,17 @@ body.header-page #wsite-content .kumana-wildlife h2 * {
   border-top-color: #b85d19;
 }
 
+@media screen and (max-width: 979px) {
+  .wsite-background-20 .wsite-multicol-tr,
+  .wsite-background-37 .wsite-multicol-tr,
+  .udawalawe-info .wsite-multicol-tr,
+  .wilpattu-info .wsite-multicol-tr,
+  .minneriya-info .wsite-multicol-tr,
+  .kumana-info .wsite-multicol-tr {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media screen and (max-width: 767px) {
   .wsite-background-20 .wsite-multicol-tr,
   .wsite-background-37 .wsite-multicol-tr,
@@ -369,5 +380,21 @@ body.header-page #wsite-content .kumana-wildlife h2 * {
   .minneriya-info .wsite-multicol-tr,
   .kumana-info .wsite-multicol-tr {
     grid-template-columns: 1fr;
+  }
+
+  .wsite-background-20 .wsite-multicol-col,
+  .wsite-background-37 .wsite-multicol-col,
+  .wsite-background-44 .wsite-multicol-col,
+  .wsite-background-51 .wsite-multicol-col,
+  .udawalawe-wildlife .wsite-multicol-col,
+  .wilpattu-wildlife .wsite-multicol-col,
+  .minneriya-wildlife .wsite-multicol-col,
+  .kumana-wildlife .wsite-multicol-col,
+  .udawalawe-info .wsite-multicol-col,
+  .wilpattu-info .wsite-multicol-col,
+  .minneriya-info .wsite-multicol-col,
+  .kumana-info .wsite-multicol-col,
+  .udawalawe-port-card {
+    padding: 22px 18px !important;
   }
 }

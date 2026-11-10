@@ -320,11 +320,26 @@
 }
 
 @media screen and (max-width: 640px) {
+  .reviews-widget {
+    padding: 22px 16px;
+  }
   .review-track {
     grid-auto-columns: 100%;
   }
+  .review-card {
+    padding: 20px 16px;
+  }
+  .review-prev {
+    left: 4px;
+  }
+  .review-next {
+    right: 4px;
+  }
   .janaka-gyg {
     margin: 0;
-    padding: 24px 20px;
+    padding: 22px 16px;
+  }
+  .janaka-gyg-card {
+    padding: 20px 16px;
   }
 }

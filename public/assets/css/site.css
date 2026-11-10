@@ -34,6 +34,8 @@ html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
   overscroll-behavior-y: none;
+  overflow-x: clip;
+  max-width: 100%;
 }
 
 html.ultra-smooth-active {
@@ -48,7 +50,8 @@ body {
   background-color: var(--bg-canvas);
   background-image: none;
   line-height: 1.7;
-  overflow-x: hidden;
+  overflow-x: clip;
+  max-width: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-overflow-scrolling: touch;
@@ -103,16 +106,22 @@ a:hover {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow-x: clip;
 }
 
 .site-canvas {
   flex: 1;
   display: flex;
   flex-direction: column;
+  overflow-x: clip;
 }
 
-main#main-content {
+main#main-content,
+.main-wrap,
+.wsite-section-wrap,
+.wsite-body-section {
   flex: 1;
+  overflow-x: clip;
 }
 
 .container {
@@ -128,41 +137,65 @@ main#main-content {
   }
 }
 
-/* Header structural helpers — 3-Column: Logo (Left), Nav (Center Screen), Contact CTA (Very Right) */
+/* Header structural helpers — Mobile-first Flex, 3-Column Grid on Desktop */
 .dusk-header .nav-wrap > .container {
-  display: grid;
-  grid-template-columns: minmax(180px, auto) 1fr minmax(140px, auto);
+  display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 12px;
   width: 100%;
   max-width: 1440px;
   margin: 0 auto;
 }
 
 .dusk-header .logo {
-  grid-column: 1;
-  justify-self: start;
+  order: 1;
   display: flex;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .dusk-header .desktop-nav,
 .dusk-header .desktop-nav-center {
-  grid-column: 2;
-  justify-self: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto;
+  display: none;
 }
 
 .dusk-header .header-action-contact {
-  grid-column: 3;
-  justify-self: end;
+  order: 2;
   display: flex;
   align-items: center;
   margin-left: auto;
+}
+
+@media screen and (min-width: 921px) {
+  .dusk-header .nav-wrap > .container {
+    display: grid;
+    grid-template-columns: minmax(180px, auto) 1fr minmax(140px, auto);
+    gap: 20px;
+  }
+
+  .dusk-header .logo {
+    grid-column: 1;
+    justify-self: start;
+    order: initial;
+  }
+
+  .dusk-header .desktop-nav,
+  .dusk-header .desktop-nav-center {
+    grid-column: 2;
+    justify-self: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+  }
+
+  .dusk-header .header-action-contact {
+    grid-column: 3;
+    justify-self: end;
+    order: initial;
+    margin-left: auto;
+  }
 }
 
 /* Contact Button: Theme Yellow Background, Black Text, 10% Border-Radius, White Background on Hover */
@@ -186,7 +219,7 @@ main#main-content {
   border: 2px solid #f5a623 !important;
   box-shadow: 0 4px 14px rgba(245, 166, 35, 0.45) !important;
   text-shadow: none !important;
-  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition: background-color 0.22s ease, color 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease !important;
   cursor: pointer !important;
   line-height: 1 !important;
 }
@@ -208,7 +241,6 @@ main#main-content {
   color: #000000 !important;
   border-color: #ffffff !important;
   box-shadow: 0 6px 20px rgba(255, 255, 255, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3) !important;
-  transform: translateY(-2px) !important;
   border-radius: 10% !important;
 }
 
@@ -223,21 +255,46 @@ main#main-content {
 .dusk-header .logo img,
 .dusk-header .logo .janaka-brand-logo {
   display: block;
-  max-height: 54px;
+  max-height: 44px;
   height: auto;
   width: auto;
   object-fit: contain;
   filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.85));
 }
 
+@media screen and (min-width: 768px) {
+  .dusk-header .logo img,
+  .dusk-header .logo .janaka-brand-logo {
+    max-height: 54px;
+  }
+}
+
 .dusk-header .hamburger {
-  display: none;
+  order: 3;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 42px;
   height: 42px;
   padding: 0;
   cursor: pointer;
+  flex-shrink: 0;
+}
+
+@media screen and (min-width: 921px) {
+  .dusk-header .hamburger {
+    display: none;
+  }
+}
+
+@media screen and (max-width: 640px) {
+  .nav-contact-btn,
+  .dusk-header .header-action-contact .nav-contact-btn {
+    padding: 8px 14px !important;
+    min-height: 36px !important;
+    font-size: 11.5px !important;
+    letter-spacing: 0.08em !important;
+  }
 }
 
 .desktop-nav .wsite-menu-default {
@@ -340,11 +397,16 @@ main#main-content {
 @media screen and (max-width: 920px) {
   .dusk-header .hamburger {
     display: inline-flex;
-    order: 2;
+    order: 3;
   }
 
   .dusk-header .logo {
     order: 1;
+  }
+
+  .dusk-header .header-action-contact {
+    order: 2;
+    margin-left: auto;
   }
 
   .dusk-header .desktop-nav {
@@ -352,15 +414,15 @@ main#main-content {
   }
 }
 
-/* Hero Banner — 110vh Extra Height Viewport with Zoomed Photography Reaching the Second Section */
-.banner-wrap,
-.banner-wrap > .wsite-elements,
-.banner-wrap .wsite-header-elements,
-.banner-wrap .wsite-section-wrap {
+/* Hero Banner — 112vh Extra Height Viewport on Home Page & Balanced Hero on Inner Pages (Excluding Contact Page) */
+body:not(.janaka-contact) .banner-wrap,
+body:not(.janaka-contact) .banner-wrap > .wsite-elements,
+body:not(.janaka-contact) .banner-wrap .wsite-header-elements,
+body:not(.janaka-contact) .banner-wrap .wsite-section-wrap {
   position: relative;
   width: 100%;
-  min-height: 112vh !important;
-  height: 112vh !important;
+  min-height: 68vh;
+  height: 68vh;
   margin: 0;
   border-radius: 0;
   overflow: hidden !important;
@@ -368,28 +430,40 @@ main#main-content {
   background-color: #012f23;
 }
 
-.banner-wrap .wsite-header-section {
+body.wsite-page-index .banner-wrap,
+body.wsite-page-index .banner-wrap > .wsite-elements,
+body.wsite-page-index .banner-wrap .wsite-header-elements,
+body.wsite-page-index .banner-wrap .wsite-section-wrap {
+  min-height: 112vh !important;
+  height: 112vh !important;
+}
+
+body:not(.janaka-contact) .banner-wrap .wsite-header-section {
   position: absolute !important;
   inset: 0 !important;
   width: 100% !important;
-  min-height: 112vh !important;
+  min-height: 68vh;
   height: 100% !important;
   margin: 0 !important;
   display: flex;
   flex-direction: column;
   justify-content: center;
   background-size: cover !important;
-  background-position: center 35% !important;
+  background-position: center 35%;
   background-repeat: no-repeat !important;
-  /* Zoom in the hero image so it fills and reaches all the way down to the second section */
-  transform: scale(1.22);
+  transform: scale(1.12);
   transform-origin: center center;
-  /* Make the image highlights colorful and vivid */
+  filter: saturate(1.15) contrast(1.05) brightness(1.02);
+}
+
+body.wsite-page-index .banner-wrap .wsite-header-section {
+  min-height: 112vh !important;
+  transform: scale(1.22);
   filter: saturate(1.18) contrast(1.06) brightness(1.03);
 }
 
-/* Remove surface shades of green — Neutral photography gradient with subtle bottom fade into the second section */
-.wsite-header-section::before {
+/* Neutral photography gradient with subtle bottom fade into the second section */
+body:not(.janaka-contact) .wsite-header-section::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -413,14 +487,14 @@ main#main-content {
 }
 
 /* Subtle bottom edge fade right at the boundary of the second section */
-.banner-wrap::after {
+body:not(.janaka-contact) .banner-wrap::after {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
   height: 9%;
-  min-height: 75px;
+  min-height: 60px;
   background: linear-gradient(
     180deg,
     rgba(0, 0, 0, 0) 0%,
@@ -431,21 +505,27 @@ main#main-content {
   z-index: 3;
 }
 
-.wsite-header-section .wsite-section-content {
+body:not(.janaka-contact) .wsite-header-section .wsite-section-content {
   position: relative;
   z-index: 4;
   width: 100%;
   flex: 1;
   display: flex;
   align-items: center;
+  min-height: 68vh;
+  padding-bottom: 40px;
+  transform: scale(0.89285);
+  transform-origin: center center;
+}
+
+body.wsite-page-index .wsite-header-section .wsite-section-content {
   min-height: 112vh;
   padding-bottom: 120px;
   /* Counteract parent 1.22 zoom scale so text and buttons remain crisp at 1:1 scale */
   transform: scale(0.81967);
-  transform-origin: center center;
 }
 
-.wsite-header-section .container {
+body:not(.janaka-contact) .wsite-header-section .container {
   max-width: 1360px;
   width: 100%;
   padding-left: clamp(24px, 5vw, 64px) !important;
@@ -465,8 +545,8 @@ main#main-content {
   text-align: left;
 }
 
-/* Remove "Discover the Wild Side of Sri Lanka" container box completely */
-body .banner-wrap .banner > .wsite-section-elements {
+/* Remove "Discover the Wild Side of Sri Lanka" container box on photo banners */
+body:not(.janaka-contact) .banner-wrap .banner > .wsite-section-elements {
   position: relative !important;
   display: flex !important;
   flex-direction: column !important;
@@ -511,21 +591,21 @@ body .banner-wrap .banner > .wsite-section-elements {
 }
 
 /* Editorial Headline Typography */
-.banner h2.wsite-content-title,
+body:not(.janaka-contact) .banner h2.wsite-content-title,
 body.wsite-page-index .banner-wrap .banner h2,
 body.wsite-page-index .banner-wrap .banner h2 * {
   margin: 0 0 20px 0 !important;
   color: #ffffff !important;
   font-family: "Playfair Display", Georgia, "Times New Roman", serif !important;
-  font-size: clamp(46px, 6.2vw, 84px) !important;
+  font-size: clamp(42px, 5.8vw, 80px) !important;
   font-weight: 700 !important;
   letter-spacing: -0.025em !important;
-  line-height: 1.05 !important;
+  line-height: 1.06 !important;
   text-align: left !important;
   text-shadow: 0 3px 22px rgba(0, 0, 0, 0.85), 0 1px 6px rgba(0, 0, 0, 0.95) !important;
 }
 
-.banner h2.wsite-content-title font[color="#f5a623"],
+body:not(.janaka-contact) .banner h2.wsite-content-title font[color="#f5a623"],
 body.wsite-page-index .banner-wrap .sri-lanka-tracks,
 body.wsite-page-index .banner-wrap .sri-lanka-tracks * {
   color: #f5a623 !important;
@@ -535,27 +615,28 @@ body.wsite-page-index .banner-wrap .sri-lanka-tracks * {
   text-shadow: 0 3px 26px rgba(245, 166, 35, 0.55), 0 2px 8px rgba(0, 0, 0, 0.95) !important;
 }
 
-/* Float all inner multicol elements to the very left */
-.banner .wsite-multicol,
-.banner .wsite-multicol-table-wrap,
-.banner .wsite-multicol-table,
-.banner .wsite-multicol-tbody,
-.banner .wsite-multicol-tr,
-.banner .wsite-multicol-col {
+/* Float inner multicol elements to the left ONLY on non-contact hero banners */
+body:not(.janaka-contact) .banner .wsite-multicol,
+body:not(.janaka-contact) .banner .wsite-multicol-table-wrap,
+body:not(.janaka-contact) .banner .wsite-multicol-table,
+body:not(.janaka-contact) .banner .wsite-multicol-tbody,
+body:not(.janaka-contact) .banner .wsite-multicol-tr,
+body:not(.janaka-contact) .banner .wsite-multicol-col {
   margin: 0 !important;
   padding: 0 !important;
   width: auto !important;
   text-align: left !important;
 }
 
-.banner .wsite-spacer {
+body:not(.janaka-contact) .banner .wsite-spacer {
   display: none !important;
 }
 
-.banner .wsite-button {
+body:not(.janaka-contact) .banner .wsite-button {
   margin-top: 14px !important;
   display: inline-flex !important;
   align-items: center !important;
+  justify-content: center !important;
   padding: 16px 36px !important;
   font-size: 13px !important;
   font-weight: 700 !important;
@@ -566,44 +647,122 @@ body.wsite-page-index .banner-wrap .sri-lanka-tracks * {
   color: #0b1510 !important;
   border: 1px solid #ffbe4d !important;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), 0 0 24px rgba(245, 166, 35, 0.4) !important;
-  transition: all 0.22s ease !important;
+  transition: background-color 0.22s ease, color 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease !important;
 }
 
-.banner .wsite-button:hover {
+body:not(.janaka-contact) .banner .wsite-button:hover {
   background: #ffffff !important;
   color: #0b1510 !important;
   border-color: #ffffff !important;
-  transform: translateY(-2px) !important;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7) !important;
 }
 
-/* Ensure banner paragraph text is white on photo banners, EXCEPT inside contact-cards */
-.banner .paragraph:not(.contact-cards *),
-.banner .paragraph:not(.contact-cards *) * {
+/* Ensure banner paragraph text is white on photo banners ONLY (excluding Contact page) */
+body:not(.janaka-contact) .banner .paragraph,
+body:not(.janaka-contact) .banner .paragraph * {
   color: #f2f7f4 !important;
   font-size: 16.5px !important;
   line-height: 1.7 !important;
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35) !important;
 }
 
+@media screen and (max-width: 767px) {
+  body:not(.janaka-contact) .banner-wrap,
+  body:not(.janaka-contact) .banner-wrap > .wsite-elements,
+  body:not(.janaka-contact) .banner-wrap .wsite-header-elements,
+  body:not(.janaka-contact) .banner-wrap .wsite-section-wrap {
+    min-height: 500px !important;
+    height: auto !important;
+  }
+
+  body.wsite-page-index .banner-wrap,
+  body.wsite-page-index .banner-wrap > .wsite-elements,
+  body.wsite-page-index .banner-wrap .wsite-header-elements,
+  body.wsite-page-index .banner-wrap .wsite-section-wrap {
+    min-height: 620px !important;
+    height: auto !important;
+  }
+
+  body:not(.janaka-contact) .banner-wrap .wsite-header-section,
+  body.wsite-page-index .banner-wrap .wsite-header-section {
+    position: relative !important;
+    inset: auto !important;
+    min-height: 500px !important;
+    height: auto !important;
+    transform: none !important;
+  }
+
+  body.wsite-page-index .banner-wrap .wsite-header-section {
+    min-height: 620px !important;
+  }
+
+  body:not(.janaka-contact) .wsite-header-section .wsite-section-content,
+  body.wsite-page-index .wsite-header-section .wsite-section-content {
+    min-height: 500px !important;
+    padding-bottom: 32px !important;
+    transform: none !important;
+  }
+
+  body.wsite-page-index .wsite-header-section .wsite-section-content {
+    min-height: 620px !important;
+    padding-bottom: 76px !important;
+  }
+
+  body:not(.janaka-contact) .wsite-header-section .container {
+    padding: 96px 18px 36px !important;
+  }
+
+  body:not(.janaka-contact) .banner h2.wsite-content-title,
+  body.wsite-page-index .banner-wrap .banner h2,
+  body.wsite-page-index .banner-wrap .banner h2 * {
+    font-size: clamp(30px, 8vw, 44px) !important;
+    line-height: 1.12 !important;
+    margin-bottom: 14px !important;
+  }
+
+  body:not(.janaka-contact) .banner .paragraph,
+  body:not(.janaka-contact) .banner .paragraph * {
+    font-size: 15px !important;
+    line-height: 1.65 !important;
+  }
+
+  body:not(.janaka-contact) .banner .wsite-button {
+    width: 100% !important;
+    max-width: 320px !important;
+    padding: 14px 22px !important;
+    text-align: center !important;
+  }
+}
+
 /* Hero Bottom Cross Section — Bridges Bottom of Hero Section and Second Section */
 .hero-cross-bridge-wrap,
-div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) {
+div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1),
+body.wsite-page-index div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) {
   position: relative;
   width: 100%;
   z-index: 35;
-  margin-top: -95px;
-  margin-bottom: -28px;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 24px !important;
   pointer-events: auto;
-  background: linear-gradient(180deg, transparent 0%, #012f23 42%, #012f23 100%);
+  overflow: visible !important;
+  background-color: #012f23 !important;
+  background: #012f23 !important;
 }
 
 .hero-cross-bridge-card,
-div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) > div:nth-of-type(1) {
+div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) > div:nth-of-type(1),
+body.wsite-page-index div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) > div:nth-of-type(1) {
+  position: relative;
+  bottom: 25%;
+  margin-top: -25%;
+  margin-bottom: 0;
+  z-index: 40;
   width: 90%;
   max-width: 1360px;
-  margin-left: 5%;
-  margin-right: 5%;
+  margin-left: auto;
+  margin-right: auto;
   border-radius: 24px;
   border: none !important;
   outline: none !important;
@@ -611,8 +770,8 @@ div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > sec
   background-image: none !important;
   color: #000000 !important;
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.22);
-  display: grid;
-  grid-template-columns: 1fr 1.25fr 1fr;
+  display: grid !important;
+  grid-template-columns: 1fr 1.25fr 1fr !important;
   align-items: center;
   padding: 26px 28px;
   overflow: hidden;
@@ -627,11 +786,13 @@ div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > sec
   text-align: center;
   gap: 16px;
   padding: 10px 24px;
+  min-width: 0;
   color: #000000 !important;
 }
 
 .hero-cross-sub-section:not(:last-child) {
   border-right: 1px solid rgba(0, 0, 0, 0.12);
+  border-bottom: none;
 }
 
 .cross-sub-center {
@@ -710,6 +871,8 @@ div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > sec
   flex-direction: column;
   align-items: center;
   text-align: center;
+  min-width: 0;
+  width: 100%;
   color: #000000 !important;
 }
 
@@ -729,6 +892,7 @@ div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > sec
   display: block;
   object-fit: contain;
   width: auto;
+  max-width: 100%;
 }
 
 .cross-top-google {
@@ -793,31 +957,138 @@ div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > sec
 
 @media screen and (max-width: 960px) {
   .hero-cross-bridge-card,
-  div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) > div:nth-of-type(1) {
-    grid-template-columns: 1fr;
-    gap: 18px;
-    padding: 22px 18px;
+  div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) > div:nth-of-type(1),
+  body.wsite-page-index div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) > div:nth-of-type(1) {
+    position: relative !important;
+    bottom: 25% !important;
+    margin-top: -25% !important;
+    margin-bottom: 0 !important;
+    width: calc(100% - 20px) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    align-items: stretch !important;
+    gap: 4px !important;
+    padding: 14px 8px !important;
+    border-radius: 18px !important;
   }
 
   .hero-cross-sub-section {
-    padding: 10px;
-    justify-content: center;
+    padding: 4px 6px !important;
+    justify-content: flex-start !important;
+    flex-direction: column !important;
+    gap: 4px !important;
   }
 
   .hero-cross-sub-section:not(:last-child) {
-    border-right: none;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    border-right: 1px solid rgba(0, 0, 0, 0.12) !important;
+    border-bottom: none !important;
+    padding-bottom: 4px !important;
   }
 
-  .hero-cross-bridge-wrap {
-    margin-top: -65px;
+  .cross-top-media {
+    margin-bottom: 4px;
+    min-height: 34px;
+  }
+
+  .cross-top-google,
+  .cross-top-traveler {
+    height: 28px;
+  }
+
+  .cross-top-tripadvisor {
+    height: 38px;
+  }
+
+  .cross-metric-row {
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-bottom: 2px;
+  }
+
+  .cross-score,
+  .cross-metric {
+    font-size: clamp(13px, 3.6vw, 18px);
+    line-height: 1.1;
+  }
+
+  .cross-stars {
+    font-size: clamp(9px, 2.4vw, 13px);
+    letter-spacing: 0.5px;
+  }
+
+  .cross-title,
+  .cross-title.gold-accent {
+    font-size: clamp(8.5px, 2.2vw, 11.5px);
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+    margin-bottom: 2px;
+  }
+
+  .cross-caption {
+    font-size: clamp(7.5px, 2vw, 10.5px);
+    line-height: 1.25;
+  }
+
+  .hero-cross-bridge-wrap,
+  div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1),
+  body.wsite-page-index div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 16px !important;
+    overflow: visible !important;
+    background-color: #012f23 !important;
+    background: #012f23 !important;
   }
 }
 
-/* Focus Mode Target Element — Why Choose Us Section (.wsite-background-75) */
-div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > div:nth-of-type(2) > div#wsite-content:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) {
+/* Focus Mode Target Element — Save Up to 30% Book Direct Section (.wsite-background-75 on index.html ONLY) */
+body.wsite-page-index div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > div:nth-of-type(2) > div#wsite-content:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) {
   background-color: #faf5ec !important;
   background-image: radial-gradient(circle at 88% 22%, rgba(245, 166, 35, 0.14) 0%, rgba(24, 56, 43, 0.05) 45%, rgba(250, 245, 236, 0) 75%) !important;
+  border-radius: 18px;
+}
+
+/* Focus Mode Target Element — Guest Reviews TripAdvisor Award Column (td:nth-of-type(1)) */
+div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > div:nth-of-type(2) > div#wsite-content:nth-of-type(1) > div:nth-of-type(7) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > table:nth-of-type(1) > tbody:nth-of-type(1) > tr:nth-of-type(1) > td:nth-of-type(1) {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  background: #ffffff !important;
+  border: 1px solid #e2dac9 !important;
+  border-top: 4px solid #00aa6c !important;
+  border-radius: 18px !important;
+  padding: 32px 24px !important;
+  box-shadow: 0 12px 30px rgba(24, 56, 43, 0.08) !important;
+}
+
+.home-review-award,
+.home-review-award ul,
+.home-review-award li,
+.home-review-award a {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+}
+
+#CDSWIDCOELOGO,
+.tripadvisor-user-award-img,
+.home-review-award img {
+  display: block !important;
+  width: 100% !important;
+  max-width: 300px !important;
+  height: auto !important;
+  max-height: 220px !important;
+  object-fit: contain !important;
+  margin: 8px auto 0 !important;
 }
 
 /* Body Sections — Preserve Authentic Sri Lanka Yala Safaris Color Rhythm */
@@ -828,7 +1099,6 @@ div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > div
   margin: 0;
   border-radius: 0;
   background-color: var(--bg-canvas);
-  background-image: none !important;
   border-bottom: 1px solid rgba(24, 56, 43, 0.08);
   box-shadow: none !important;
 }
@@ -840,7 +1110,6 @@ div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > div
 .wsite-body-section[style*="#f8f3ec"],
 .wsite-body-section[style*="#f8f4ec"] {
   background-color: #faf5ec !important;
-  background-image: none !important;
   color: #3f4942;
 }
 
@@ -850,28 +1119,40 @@ div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > div
 .wsite-body-section[style*="#ebefe5"],
 .wsite-body-section[style*="#edf0e8"] {
   background-color: #e8f0e2 !important;
-  background-image: none !important;
   color: #2f3e35;
 }
 
 /* Deep Jungle Emerald & Yala Forest Green Sections */
-.wsite-body-section[style*="#012f23"] {
-  background: linear-gradient(180deg, #012f23 0%, #06382a 100%) !important;
+.wsite-body-section[style*="#012f23"],
+#wsite-content .janaka-benefits {
+  background-color: #012f23 !important;
+  background-image: linear-gradient(180deg, #012f23 0%, #06382a 100%) !important;
   color: #eff3f1 !important;
 }
 
-.wsite-body-section[style*="#18382b"] {
-  background: linear-gradient(180deg, #18382b 0%, #112a20 100%) !important;
+.wsite-body-section[style*="#18382b"],
+#wsite-content .home-why-choose,
+#wsite-content .home-wildlife-section {
+  background-color: #18382b !important;
+  background-image: linear-gradient(180deg, #18382b 0%, #112a20 100%) !important;
   color: #faf5ec !important;
 }
 
-.wsite-body-section[style*="#13231b"] {
-  background: linear-gradient(180deg, #13231b 0%, #183124 100%) !important;
+.wsite-body-section[style*="#13231b"],
+#wsite-content .wsite-background-12,
+#wsite-content .udawalawe-wildlife,
+#wsite-content .bundala-wildlife,
+#wsite-content .wilpattu-wildlife,
+#wsite-content .minneriya-wildlife,
+#wsite-content .kumana-wildlife {
+  background-color: #13231b !important;
+  background-image: linear-gradient(180deg, #13231b 0%, #18382b 100%) !important;
   color: #faf5ec !important;
 }
 
 .wsite-body-section[style*="#193d2f"] {
-  background: linear-gradient(135deg, #193d2f 0%, #0d261c 100%) !important;
+  background-color: #193d2f !important;
+  background-image: linear-gradient(135deg, #193d2f 0%, #0d261c 100%) !important;
   color: #faf5ec !important;
 }
 
@@ -899,7 +1180,19 @@ h2.wsite-content-title {
 .wsite-body-section[style*="#13231b"] h2.wsite-content-title,
 .wsite-body-section[style*="#13231b"] h2.wsite-content-title *,
 .wsite-body-section[style*="#193d2f"] h2.wsite-content-title,
-.wsite-body-section[style*="#193d2f"] h2.wsite-content-title * {
+.wsite-body-section[style*="#193d2f"] h2.wsite-content-title *,
+#wsite-content .wsite-background-12 h2.wsite-content-title,
+#wsite-content .wsite-background-12 h2.wsite-content-title *,
+#wsite-content .udawalawe-wildlife h2.wsite-content-title,
+#wsite-content .udawalawe-wildlife h2.wsite-content-title *,
+#wsite-content .bundala-wildlife h2.wsite-content-title,
+#wsite-content .bundala-wildlife h2.wsite-content-title *,
+#wsite-content .wilpattu-wildlife h2.wsite-content-title,
+#wsite-content .wilpattu-wildlife h2.wsite-content-title *,
+#wsite-content .minneriya-wildlife h2.wsite-content-title,
+#wsite-content .minneriya-wildlife h2.wsite-content-title *,
+#wsite-content .kumana-wildlife h2.wsite-content-title,
+#wsite-content .kumana-wildlife h2.wsite-content-title * {
   color: #faf5ec !important;
 }
 
@@ -969,9 +1262,14 @@ font[color="#f5a623"] {
 }
 
 @media screen and (max-width: 767px) {
+  .container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
   .wsite-body-section .container {
-    padding-top: 52px;
-    padding-bottom: 52px;
+    padding-top: 44px;
+    padding-bottom: 44px;
   }
 
   .wsite-header-section {
@@ -979,7 +1277,12 @@ font[color="#f5a623"] {
   }
 
   body:not(.janaka-contact) .banner-wrap .banner > .wsite-section-elements {
-    padding: 26px 22px;
+    padding: 0 !important;
+  }
+
+  .wsite-multicol-table-wrap {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
   }
 
   .wsite-multicol-table,
@@ -988,6 +1291,7 @@ font[color="#f5a623"] {
   .wsite-multicol-col {
     display: block;
     width: 100% !important;
+    min-width: 0 !important;
   }
 
   .wsite-multicol-col {
@@ -1016,14 +1320,13 @@ font[color="#f5a623"] {
   text-align: center;
   cursor: pointer;
   box-shadow: 0 6px 18px rgba(245, 166, 35, 0.28) !important;
-  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
 }
 
 .wsite-button:hover {
   background: #18382b;
   color: #faf5ec !important;
   border-color: #18382b;
-  transform: translateY(-1px);
 }
 
 /* Buttons inside dark jungle sections invert on hover to bright gold/white */

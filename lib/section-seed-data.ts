@@ -316,7 +316,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Janaka Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
     "alt": "Janaka Safari"
   },
   {
@@ -486,7 +486,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "TripAdvisor",
     "sectionContext": "What Our Guests Say · Travelers’ Choice 2024",
-    "src": "https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/tripadvisor.svg",
+    "src": "/assets/aistudio/images__6_-removebg-preview_ee4b72b4.png",
     "alt": "TripAdvisor"
   },
   {
@@ -566,7 +566,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Janaka Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
     "alt": "Janaka Safari Logo"
   },
   {
@@ -576,7 +576,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Janaka Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
     "alt": "Janaka Safari"
   },
   {
@@ -616,7 +616,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Janaka Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
     "alt": "Janaka Safari Logo"
   },
   {
@@ -626,7 +626,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Janaka Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
     "alt": "Janaka Safari"
   },
   {
@@ -706,7 +706,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Janaka Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
     "alt": "Janaka Safari Logo"
   },
   {
@@ -716,7 +716,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Janaka Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
     "alt": "Janaka Safari"
   },
   {
@@ -879,7 +879,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Janaka Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
     "alt": "Janaka Safari Logo"
   },
   {
@@ -889,7 +889,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Janaka Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
     "alt": "Janaka Safari"
   },
   {
@@ -1032,7 +1032,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Janaka Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
     "alt": "Janaka Safari Logo"
   },
   {
@@ -1042,7 +1042,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Janaka Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
     "alt": "Janaka Safari"
   },
   {
@@ -1195,7 +1195,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Janaka Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
     "alt": "Janaka Safari Logo"
   },
   {
@@ -1205,7 +1205,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Janaka Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
     "alt": "Janaka Safari"
   },
   {
@@ -1348,7 +1348,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Janaka Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
     "alt": "Janaka Safari Logo"
   },
   {
@@ -1358,7 +1358,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Janaka Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
     "alt": "Janaka Safari"
   },
   {
@@ -1491,7 +1491,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Janaka Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
     "alt": "Janaka Safari Logo"
   },
   {
@@ -1501,7 +1501,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Janaka Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
     "alt": "Janaka Safari"
   },
   {
@@ -1634,7 +1634,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Janaka Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
     "alt": "Janaka Safari Logo"
   },
   {
@@ -1644,7 +1644,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Janaka Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
     "alt": "Janaka Safari"
   },
   {
@@ -1885,7 +1885,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Janaka Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
     "alt": "Janaka Safari Logo"
   },
   {
@@ -1895,7 +1895,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Janaka Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
     "alt": "Janaka Safari"
   },
   {
@@ -1925,7 +1925,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Janaka Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
     "alt": "Janaka Safari Logo"
   },
   {
@@ -1935,7 +1935,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Janaka Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
     "alt": "Janaka Safari"
   },
   {
@@ -1945,7 +1945,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Janaka Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='340' height='76' viewBox='0 0 340 76'><rect x='2' y='8' width='60' height='60' rx='14' fill='%2318382B' stroke='%23E59819' stroke-width='2.5'/><circle cx='32' cy='38' r='19' fill='%23E59819' fill-opacity='0.18'/><text x='32' y='47' text-anchor='middle' font-family='Georgia, serif' font-size='28' font-weight='700' fill='%23F5A623'>JS</text><text x='76' y='36' font-family='Georgia, serif' font-size='25' font-weight='700' fill='%2318382B'>Janaka Safari</text><text x='77' y='56' font-family='system-ui, sans-serif' font-size='11' font-weight='700' fill='%23B87314' letter-spacing='2.4'>SRI LANKA 4X4 JEEP TOURS</text></svg>",
+    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
     "alt": "Janaka Safari Logo"
   }
 ];

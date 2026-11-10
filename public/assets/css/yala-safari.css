@@ -228,9 +228,10 @@
 
 .janaka-payment-logos {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .janaka-payment-card {
@@ -244,6 +245,14 @@
   border-radius: 8px;
 }
 
+@media screen and (max-width: 979px) {
+  .wsite-background-11 .wsite-multicol-tr,
+  .wsite-background-12 .wsite-multicol-tr,
+  .wsite-background-15 .wsite-multicol-tr {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media screen and (max-width: 767px) {
   .wsite-background-11 .wsite-multicol-tr,
   .wsite-background-17 .wsite-multicol-tr,
@@ -251,5 +260,13 @@
   .wsite-background-12 .wsite-multicol-tr:has(> .wsite-multicol-col:nth-child(2):last-child),
   .wsite-background-15 .wsite-multicol-tr {
     grid-template-columns: 1fr;
+  }
+
+  .wsite-background-11 .wsite-multicol-col,
+  .wsite-background-17 .wsite-multicol-col,
+  .wsite-background-12 .wsite-multicol-col,
+  .wsite-background-15 .wsite-multicol-col,
+  .port-safari-card {
+    padding: 22px 18px !important;
   }
 }

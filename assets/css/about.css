@@ -16,21 +16,46 @@ body.header-page #wsite-content .about-intro .paragraph {
   line-height: 1.8 !important;
 }
 
+.about-intro .wsite-multicol-table-wrap {
+  margin: 0 !important;
+}
+
+.about-intro .wsite-multicol-table,
+.about-intro .wsite-multicol-tbody {
+  display: block;
+  width: 100%;
+}
+
+.about-intro .wsite-multicol-tr {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 42px;
+  align-items: center;
+}
+
+.about-intro .wsite-multicol-col {
+  width: auto !important;
+  padding: 0 !important;
+}
+
 .about-intro .wsite-image img {
   display: block;
-  border-radius: 12px;
+  width: 100% !important;
+  border-radius: 14px;
   border: 2px solid #dfd3bd;
   box-shadow: 0 12px 28px rgba(24, 56, 43, 0.12);
 }
 
-/* Our Journey — Tropical Sage & Safari Gold Chronology Grid */
+/* Our Journey — Light Tropical Sage Section with Black Heading & Chronology Cards */
 body.header-page #wsite-content .about-journey {
-  background: linear-gradient(180deg, #18382b 0%, #0d281e 100%) !important;
+  background-color: #e8f0e2 !important;
+  background-image: none !important;
 }
 
-body.header-page #wsite-content .about-journey h2,
-body.header-page #wsite-content .about-journey h2 * {
-  color: #faf5ec !important;
+body.header-page #wsite-content .about-journey h2:not(.journey-year),
+body.header-page #wsite-content .about-journey h2:not(.journey-year) * {
+  color: #000000 !important;
+  margin-bottom: 32px !important;
 }
 
 .about-journey .wsite-multicol-table-wrap {
@@ -58,11 +83,11 @@ body.header-page #wsite-content .about-journey h2 * {
   min-width: 0;
   padding: 36px 30px !important;
   box-sizing: border-box;
-  background: #faf5ec;
-  border: 1px solid rgba(245, 166, 35, 0.35);
+  background: #ffffff;
+  border: 1px solid rgba(24, 56, 43, 0.12);
   border-top: 5px solid #f5a623;
-  border-radius: 14px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(24, 56, 43, 0.1);
   text-align: left;
 }
 
@@ -113,13 +138,21 @@ body.header-page #wsite-content .about-explore .paragraph {
   line-height: 1.75 !important;
 }
 
-@media screen and (max-width: 767px) {
+@media screen and (max-width: 920px) {
   .about-journey .wsite-multicol-tr {
     grid-template-columns: 1fr;
   }
+}
+
+@media screen and (max-width: 767px) {
+  .about-intro .wsite-multicol-tr,
+  .about-journey .wsite-multicol-tr {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
 
   .about-journey .wsite-multicol-col {
-    padding: 28px 22px !important;
+    padding: 24px 18px !important;
   }
 }
 

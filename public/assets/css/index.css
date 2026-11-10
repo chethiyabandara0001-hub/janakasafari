@@ -24,7 +24,7 @@ body.header-page #wsite-content .wsite-background-1 {
   border-radius: 18px;
   overflow: hidden;
   box-shadow: 0 12px 30px rgba(24, 56, 43, 0.08);
-  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+  transition: border-color 0.22s ease, box-shadow 0.22s ease;
 }
 
 .wsite-background-1 .home-safari-card:nth-child(even) {
@@ -32,7 +32,6 @@ body.header-page #wsite-content .wsite-background-1 {
 }
 
 .wsite-background-1 .home-safari-card:hover {
-  transform: translateY(-4px);
   border-color: #f5a623;
   box-shadow: 0 18px 38px rgba(24, 56, 43, 0.14);
 }
@@ -56,11 +55,6 @@ body.header-page #wsite-content .wsite-background-1 {
   max-width: 100% !important;
   height: 220px !important;
   object-fit: cover;
-  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.wsite-background-1 .home-safari-card:hover .wsite-image img {
-  transform: scale(1.04);
 }
 
 body.header-page #wsite-content .wsite-background-1 .home-safari-card > .paragraph {
@@ -451,7 +445,26 @@ body.header-page #wsite-content .wsite-background-1 .home-safari-card > .paragra
 }
 
 /* Home: Meet Janaka */
+.home-meet-janaka .wsite-multicol-table-wrap {
+  margin: 0 !important;
+}
+
+.home-meet-janaka .wsite-multicol-table,
+.home-meet-janaka .wsite-multicol-tbody {
+  display: block;
+  width: 100%;
+}
+
+.home-meet-janaka .wsite-multicol-tr {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 44px;
+  align-items: center;
+}
+
 .home-meet-janaka .wsite-image img {
+  display: block;
+  width: 100% !important;
   border-radius: 18px;
   border: 3px solid #f5a623;
   box-shadow: 0 14px 32px rgba(24, 56, 43, 0.14);
@@ -469,7 +482,16 @@ body.header-page #wsite-content .wsite-background-1 .home-safari-card > .paragra
 }
 
 .home-meet-janaka .wsite-multicol-col {
+  width: auto !important;
+  padding: 0 !important;
   vertical-align: middle !important;
+}
+
+@media screen and (max-width: 767px) {
+  .home-meet-janaka .wsite-multicol-tr {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
 }
 
 /* Home: Hambantota Port safari cards — Tropical Sage Background (#e8f0e2) */
@@ -556,6 +578,30 @@ body.header-page #wsite-content .wsite-background-1 .home-safari-card > .paragra
   }
 }
 
+@media screen and (max-width: 480px) {
+  .home-port-card {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .home-port-card .wsite-image {
+    height: 170px;
+  }
+
+  .home-port-copy {
+    padding: 0;
+    width: 100%;
+  }
+
+  .home-port-copy > div,
+  .home-port-copy .wsite-button {
+    width: 100%;
+    display: block;
+    text-align: center;
+  }
+}
+
 #hambantota-port-safari {
   scroll-margin-top: 120px;
 }
@@ -604,6 +650,10 @@ body.header-page #wsite-content .wsite-background-1 .home-safari-card > .paragra
 @media screen and (max-width: 767px) {
   .home-guest-reviews .guest-reviews-columns > .wsite-multicol-table-wrap > .wsite-multicol-table > .wsite-multicol-tbody > .wsite-multicol-tr {
     grid-template-columns: 1fr;
+  }
+
+  .home-guest-reviews .guest-reviews-columns > .wsite-multicol-table-wrap > .wsite-multicol-table > .wsite-multicol-tbody > .wsite-multicol-tr > .wsite-multicol-col {
+    padding: 22px 18px !important;
   }
 }
 
@@ -732,9 +782,19 @@ body.header-page #wsite-content .wsite-background-84 .wsite-multicol-col > .para
   display: none;
 }
 
+@media screen and (max-width: 979px) {
+  .wsite-background-84 .wsite-multicol-tr {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 767px) {
   .wsite-background-84 .wsite-multicol-tr {
     grid-template-columns: 1fr;
+  }
+
+  .wsite-background-84 .wsite-multicol-col {
+    padding: 22px 18px !important;
   }
 }
 
@@ -755,9 +815,10 @@ body.header-page #wsite-content .wsite-background-84 .wsite-multicol-col > .para
 
 .janaka-payment-logos {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .janaka-payment-card {
@@ -770,4 +831,30 @@ body.header-page #wsite-content .wsite-background-84 .wsite-multicol-col > .para
   border: 1px solid #dfd6c5;
   border-radius: 8px;
   box-shadow: 0 4px 10px rgba(24, 56, 43, 0.06);
+}
+
+@media screen and (max-width: 960px) {
+  div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1),
+  .hero-cross-bridge-wrap {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 16px !important;
+    overflow: visible !important;
+    background-color: #012f23 !important;
+    background: #012f23 !important;
+  }
+
+  div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) > div:nth-of-type(1),
+  .hero-cross-bridge-card {
+    position: relative !important;
+    bottom: 25% !important;
+    margin-top: -25% !important;
+    margin-bottom: 0 !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    align-items: stretch !important;
+    gap: 4px !important;
+    padding: 14px 8px !important;
+  }
 }

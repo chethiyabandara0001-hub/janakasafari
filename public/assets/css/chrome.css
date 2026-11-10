@@ -59,7 +59,7 @@
   }
 }
 
-/* Header — Transparent Floating Header with High-Contrast Visible Navigation */
+/* Header — Transparent Floating Header on Hero Pages, Solid Jungle Emerald on Light-Top Pages */
 .dusk-header {
   position: absolute;
   top: 0;
@@ -67,46 +67,93 @@
   right: 0;
   z-index: 1000;
   width: 100%;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.68) 0%, rgba(0, 0, 0, 0.28) 60%, transparent 100%) !important;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.32) 65%, transparent 100%) !important;
   backdrop-filter: none !important;
   border-bottom: none !important;
   box-shadow: none !important;
 }
 
+body.no-header-page .dusk-header,
+body.janaka-contact .dusk-header {
+  position: sticky !important;
+  top: 0 !important;
+  background: linear-gradient(180deg, #012f23 0%, #06382a 100%) !important;
+  border-bottom: 1px solid rgba(245, 166, 35, 0.35) !important;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.22) !important;
+}
+
 .dusk-header .nav-wrap > .container {
-  display: grid;
-  grid-template-columns: minmax(180px, auto) 1fr minmax(140px, auto);
+  display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 12px;
   max-width: 1440px;
-  padding: 0 clamp(20px, 4vw, 48px);
-  min-height: 84px;
+  padding: 0 16px;
+  min-height: 68px;
 }
 
 .dusk-header .logo {
-  grid-column: 1;
-  justify-self: start;
+  order: 1;
   display: flex;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .dusk-header .desktop-nav,
 .dusk-header .desktop-nav-center {
-  grid-column: 2;
-  justify-self: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto;
+  display: none;
 }
 
 .dusk-header .header-action-contact {
-  grid-column: 3;
-  justify-self: end;
+  order: 2;
   display: flex;
   align-items: center;
   margin-left: auto;
+}
+
+.dusk-header .hamburger {
+  order: 3;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+@media screen and (min-width: 921px) {
+  .dusk-header .nav-wrap > .container {
+    display: grid;
+    grid-template-columns: minmax(180px, auto) 1fr minmax(140px, auto);
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 0 clamp(20px, 4vw, 48px);
+    min-height: 84px;
+  }
+
+  .dusk-header .logo {
+    grid-column: 1;
+    justify-self: start;
+    order: initial;
+  }
+
+  .dusk-header .desktop-nav,
+  .dusk-header .desktop-nav-center {
+    grid-column: 2;
+    justify-self: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+  }
+
+  .dusk-header .header-action-contact {
+    grid-column: 3;
+    justify-self: end;
+    order: initial;
+    margin-left: auto;
+  }
+
+  .dusk-header .hamburger {
+    display: none !important;
+  }
 }
 
 .dusk-header .logo a {
@@ -120,11 +167,18 @@
 .dusk-header .logo img,
 .dusk-header .logo .janaka-brand-logo {
   display: block;
-  max-height: 54px;
+  max-height: 44px;
   height: auto;
   width: auto;
   object-fit: contain;
   filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.85));
+}
+
+@media screen and (min-width: 768px) {
+  .dusk-header .logo img,
+  .dusk-header .logo .janaka-brand-logo {
+    max-height: 54px;
+  }
 }
 
 /* Desktop navigation — Crisp White & Safari Gold over Transparent Header */
@@ -182,7 +236,7 @@
   border: 2px solid #f5a623 !important;
   box-shadow: 0 4px 14px rgba(245, 166, 35, 0.45) !important;
   text-shadow: none !important;
-  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition: background-color 0.22s ease, color 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease !important;
   cursor: pointer !important;
   line-height: 1 !important;
 }
@@ -201,7 +255,6 @@
   color: #000000 !important;
   border-color: #ffffff !important;
   box-shadow: 0 6px 20px rgba(255, 255, 255, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3) !important;
-  transform: translateY(-2px) !important;
   border-radius: 10% !important;
 }
 

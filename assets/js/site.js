@@ -301,32 +301,7 @@
   let editModeActive = params.get("editImages") === "1";
   let textEditModeActive = params.get("editText") === "1";
 
-  // Create Floating Admin Dock
-  const dock = document.createElement("div");
-  dock.className = "admin-floating-dock";
-  dock.setAttribute("aria-label", "Firebase Site Admin Controls");
-
-  const adminLink = document.createElement("a");
-  adminLink.href = `/admin`;
-  adminLink.className = "admin-dock-btn is-primary";
-  adminLink.textContent = "Firebase CMS Studio";
-
-  const toggleEditBtn = document.createElement("button");
-  toggleEditBtn.type = "button";
-  toggleEditBtn.className = "admin-dock-btn";
-  toggleEditBtn.setAttribute("aria-pressed", String(editModeActive));
-  toggleEditBtn.textContent = editModeActive ? "Exit Image Editor" : "Edit Images";
-
-  const toggleTextBtn = document.createElement("button");
-  toggleTextBtn.type = "button";
-  toggleTextBtn.className = "admin-dock-btn";
-  toggleTextBtn.setAttribute("aria-pressed", String(textEditModeActive));
-  toggleTextBtn.textContent = textEditModeActive ? "Exit Text Editor" : "Edit Text";
-
-  dock.appendChild(adminLink);
-  dock.appendChild(toggleEditBtn);
-  dock.appendChild(toggleTextBtn);
-  document.body.appendChild(dock);
+  // Floating Admin Dock removed per user request (accessible via /admin)
 
   // Create Inline Image Editor Modal
   const editorDialog = document.createElement("dialog");
@@ -368,7 +343,7 @@
       </div>
       <div>
         <label class="admin-field-label" for="admin-url-input">Or Direct Image URL</label>
-        <input type="text" id="admin-url-input" class="admin-input" placeholder="https://... or assets/media/..." />
+        <input type="text" id="admin-url-input" class="admin-input" placeholder="https://images.unsplash.com/... (direct web image link)" />
       </div>
       <div id="admin-alt-wrap">
         <label class="admin-field-label" for="admin-alt-input">Alt Text</label>
@@ -474,7 +449,8 @@
     const candidates = Array.from(
       document.querySelectorAll('div[style*="background-image"], img')
     ).filter((el) => {
-      if (el.closest("dialog") || el.closest(".firebase-section-showcase")) return false;
+      if (el.closest("dialog") || el.closest(".firebase-section-showcase") || el.closest(".hero-cross-bridge-wrap")) return false;
+      if (el.classList.contains("cross-top-img")) return false;
       if (el.tagName.toLowerCase() === "div") {
         const styleAttr = el.getAttribute("style") || "";
         if (!/background-image\s*:\s*url\(/i.test(styleAttr)) return false;
@@ -770,9 +746,6 @@
       const cms = await res.json();
 
       // 1. Apply image slot overrides for this page
-      document.querySelectorAll(".wsite-body-section").forEach((sec) => {
-        sec.style.backgroundImage = "none";
-      });
       if (cms.imageOverrides) {
         Object.values(cms.imageOverrides).forEach((ov) => {
           if (!ov || ov.page !== currentPageFile || !ov.src) return;
@@ -781,8 +754,27 @@
           if (entry.type === "hero-bg") {
             if (/payment-|visa|mastercard/i.test(ov.src)) return;
             if (entry.element.classList.contains("wsite-body-section")) return;
-            entry.element.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)), url("${ov.src}")`;
+            if (document.body.classList.contains("janaka-contact")) return;
+            entry.element.style.backgroundImage = `url("${ov.src}")`;
+            entry.element.style.backgroundSize = "cover";
+            entry.element.style.backgroundPosition = "center center";
+            if (document.body.classList.contains("wsite-page-index") && window.innerWidth > 767) {
+              entry.element.style.minHeight = "112vh";
+              entry.element.style.height = "112vh";
+            }
           } else {
+            if (
+              entry.element.classList.contains("janaka-brand-logo") ||
+              entry.element.classList.contains("tripadvisor-user-award-img") ||
+              entry.element.id === "CDSWIDCOELOGO" ||
+              entry.element.closest(".hero-cross-bridge-wrap") ||
+              entry.element.closest(".home-review-award") ||
+              entry.element.closest(".logo") ||
+              entry.element.closest(".footer-wrap") ||
+              /^data:image\/svg\+xml/i.test(ov.src)
+            ) {
+              return;
+            }
             entry.element.src = ov.src;
             if (ov.alt) entry.element.alt = ov.alt;
             const parentAnchor = entry.element.closest("a[data-lightbox]");
@@ -917,28 +909,1458 @@
 
   function applyEditModeState() {
     document.body.classList.toggle("admin-edit-mode", editModeActive);
-    toggleEditBtn.setAttribute("aria-pressed", String(editModeActive));
-    toggleEditBtn.textContent = editModeActive ? "Exit Image Editor" : "Edit Images";
-
     document.body.classList.toggle("admin-text-edit-mode", textEditModeActive);
-    toggleTextBtn.setAttribute("aria-pressed", String(textEditModeActive));
-    toggleTextBtn.textContent = textEditModeActive ? "Exit Text Editor" : "Edit Text";
   }
 
-  toggleEditBtn.addEventListener("click", () => {
-    editModeActive = !editModeActive;
-    if (editModeActive) textEditModeActive = false;
-    applyEditModeState();
-  });
+  function initUltraSmoothScroll() {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if ("ontouchstart" in window || navigator.maxTouchPoints > 0) return;
 
-  toggleTextBtn.addEventListener("click", () => {
-    textEditModeActive = !textEditModeActive;
-    if (textEditModeActive) editModeActive = false;
-    applyEditModeState();
-  });
+    let currentY = window.scrollY;
+    let targetY = window.scrollY;
+    let rafId = null;
+    let isAnimating = false;
+    let lastTime = performance.now();
+    const lerpFactor = 0.085; // Silky inertia damping
+
+    function getMaxScroll() {
+      return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    }
+
+    function updateScroll(now) {
+      const dt = Math.min((now - lastTime) / 16.667, 4);
+      lastTime = now;
+
+      const diff = targetY - currentY;
+      if (Math.abs(diff) > 0.35) {
+        currentY += diff * (1 - Math.pow(1 - lerpFactor, dt));
+        window.scrollTo(0, currentY);
+        rafId = requestAnimationFrame(updateScroll);
+      } else {
+        currentY = targetY;
+        window.scrollTo(0, targetY);
+        isAnimating = false;
+        rafId = null;
+        document.documentElement.classList.remove("ultra-smooth-active");
+      }
+    }
+
+    function startAnimation() {
+      if (!isAnimating) {
+        isAnimating = true;
+        lastTime = performance.now();
+        document.documentElement.classList.add("ultra-smooth-active");
+        rafId = requestAnimationFrame(updateScroll);
+      }
+    }
+
+    window.addEventListener(
+      "wheel",
+      (e) => {
+        if (e.ctrlKey || e.metaKey || e.defaultPrevented) return;
+        if (document.body.style.overflow === "hidden") return;
+        const openDialog = document.querySelector("dialog[open]");
+        if (openDialog) return;
+
+        // Allow native scrolling inside nested scrollable containers
+        let node = e.target;
+        while (node && node !== document.body && node !== document.documentElement) {
+          if (node instanceof HTMLElement) {
+            const style = window.getComputedStyle(node);
+            const overflowY = style.overflowY;
+            if ((overflowY === "auto" || overflowY === "scroll") && node.scrollHeight > node.clientHeight) {
+              return;
+            }
+          }
+          node = node.parentNode;
+        }
+
+        e.preventDefault();
+
+        let delta = e.deltaY;
+        if (e.deltaMode === 1) delta *= 36;
+        else if (e.deltaMode === 2) delta *= window.innerHeight * 0.85;
+
+        if (!isAnimating) {
+          currentY = window.scrollY;
+          targetY = window.scrollY;
+        }
+
+        targetY = Math.max(0, Math.min(getMaxScroll(), targetY + delta));
+        startAnimation();
+      },
+      { passive: false }
+    );
+
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (!isAnimating) {
+          currentY = window.scrollY;
+          targetY = window.scrollY;
+        }
+      },
+      { passive: true }
+    );
+
+    window.addEventListener("keydown", (e) => {
+      const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : "";
+      if (activeTag === "input" || activeTag === "textarea" || activeTag === "select") return;
+      if (document.querySelector("dialog[open]")) return;
+
+      let step = 0;
+      if (e.key === "ArrowDown") step = 110;
+      else if (e.key === "ArrowUp") step = -110;
+      else if (e.key === "PageDown" || (e.key === " " && !e.shiftKey)) step = window.innerHeight * 0.82;
+      else if (e.key === "PageUp" || (e.key === " " && e.shiftKey)) step = -window.innerHeight * 0.82;
+      else if (e.key === "Home") {
+        e.preventDefault();
+        if (!isAnimating) currentY = window.scrollY;
+        targetY = 0;
+        startAnimation();
+        return;
+      } else if (e.key === "End") {
+        e.preventDefault();
+        if (!isAnimating) currentY = window.scrollY;
+        targetY = getMaxScroll();
+        startAnimation();
+        return;
+      }
+
+      if (step !== 0) {
+        e.preventDefault();
+        if (!isAnimating) {
+          currentY = window.scrollY;
+          targetY = window.scrollY;
+        }
+        targetY = Math.max(0, Math.min(getMaxScroll(), targetY + step));
+        startAnimation();
+      }
+    });
+
+    // Smooth in-page hash anchor navigation
+    document.addEventListener("click", (e) => {
+      const anchor = e.target instanceof Element ? e.target.closest('a[href^="#"]') : null;
+      if (!anchor) return;
+      const hash = anchor.getAttribute("href");
+      if (!hash || hash === "#") return;
+      const targetEl = document.querySelector(hash);
+      if (targetEl) {
+        e.preventDefault();
+        if (!isAnimating) currentY = window.scrollY;
+        const rect = targetEl.getBoundingClientRect();
+        targetY = Math.max(0, Math.min(getMaxScroll(), window.scrollY + rect.top - 24));
+        startAnimation();
+        history.pushState(null, "", hash);
+      }
+    });
+
+    window.addEventListener("resize", () => {
+      targetY = Math.min(targetY, getMaxScroll());
+      if (rafId && !isAnimating) cancelAnimationFrame(rafId);
+    });
+  }
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = src;
+      s.async = false;
+      s.onload = () => resolve();
+      s.onerror = (err) => reject(err);
+      document.head.appendChild(s);
+    });
+  }
+
+  async function initDistinctGsapAnimations() {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    try {
+      if (!window.gsap) {
+        await loadScript("/assets/js/gsap.min.js?v=gsap5");
+      }
+      if (!window.ScrollTrigger) {
+        await loadScript("/assets/js/ScrollTrigger.min.js?v=gsap5");
+      }
+    } catch (err) {
+      console.warn("Local GSAP load fallback:", err);
+      try {
+        if (!window.gsap) {
+          await loadScript("https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js");
+        }
+        if (!window.ScrollTrigger) {
+          await loadScript("https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js");
+        }
+      } catch (e2) {
+        console.warn("GSAP load failed:", e2);
+        return;
+      }
+    }
+
+    const gsap = window.gsap;
+    const ScrollTrigger = window.ScrollTrigger;
+    if (!gsap || !ScrollTrigger) return;
+
+    gsap.registerPlugin(ScrollTrigger);
+    ScrollTrigger.config({ ignoreMobileResize: true });
+
+    // Sync ScrollTrigger with scrolling
+    window.addEventListener("scroll", () => ScrollTrigger.update(), { passive: true });
+
+    // Animated counters helper (works cleanly on both mobile and desktop)
+    function initCrossBridgeCounters(toggleMode) {
+      const crossCard = document.querySelector(".hero-cross-bridge-card");
+      if (!crossCard) return;
+
+      const scoreEl = crossCard.querySelector(".cross-score");
+      if (scoreEl) {
+        const scoreObj = { val: 0 };
+        gsap.fromTo(
+          scoreObj,
+          { val: 0 },
+          {
+            val: 4.9,
+            duration: 1.5,
+            ease: "power2.out",
+            scrollTrigger: {
+              trigger: crossCard,
+              start: "top 95%",
+              toggleActions: toggleMode,
+            },
+            onUpdate: () => {
+              scoreEl.textContent = scoreObj.val.toFixed(1);
+            },
+          }
+        );
+      }
+
+      const metricEl = crossCard.querySelector(".cross-metric");
+      if (metricEl) {
+        const countObj = { val: 0 };
+        gsap.fromTo(
+          countObj,
+          { val: 0 },
+          {
+            val: 12500,
+            duration: 1.7,
+            ease: "power2.out",
+            scrollTrigger: {
+              trigger: crossCard,
+              start: "top 95%",
+              toggleActions: toggleMode,
+            },
+            onUpdate: () => {
+              metricEl.textContent = `${Math.round(countObj.val).toLocaleString()}+`;
+            },
+          }
+        );
+      }
+    }
+
+    const mm = gsap.matchMedia();
+
+    // ============================================================================
+    // A. MOBILE-FIRST GSAP PROFILE (max-width: 767px)
+    //    - Zero horizontal x-offsets, skews, or 3D rotations that break mobile width
+    //    - Zero heroBg scale transform so hero text/buttons never zoom off-screen
+    //    - Per-element triggers ("play none none none") + clearProps: "transform"
+    //      so stacked cards reveal smoothly as the user scrolls and stay rock-solid
+    // ============================================================================
+    mm.add("(max-width: 767px)", () => {
+      const heroBg = document.querySelector(".banner-wrap .wsite-header-section");
+      if (heroBg) {
+        gsap.set(heroBg, { clearProps: "transform,scale" });
+      }
+
+      // 1. Mobile Header subtle fade-in (no x-shift or infinite loop)
+      const mobileHeaderItems = gsap.utils.toArray(
+        ".dusk-header .logo, .dusk-header .header-action-contact, .dusk-header .hamburger"
+      );
+      if (mobileHeaderItems.length > 0) {
+        gsap.fromTo(
+          mobileHeaderItems,
+          { y: -12, autoAlpha: 0 },
+          {
+            y: 0,
+            autoAlpha: 1,
+            duration: 0.45,
+            stagger: 0.06,
+            ease: "power2.out",
+            clearProps: "transform",
+          }
+        );
+      }
+
+      // 2. Mobile Hero content clean vertical reveal (excluding Contact page form)
+      if (!document.body.classList.contains("janaka-contact")) {
+        const heroEls = gsap.utils.toArray(
+          ".banner .hero-editorial-kicker, .banner h2.wsite-content-title, .banner .paragraph, .banner .wsite-button"
+        );
+        if (heroEls.length > 0) {
+          gsap.fromTo(
+            heroEls,
+            { y: 20, autoAlpha: 0 },
+            {
+              y: 0,
+              autoAlpha: 1,
+              duration: 0.55,
+              stagger: 0.08,
+              ease: "power2.out",
+              clearProps: "transform",
+            }
+          );
+        }
+      } else {
+        // Contact page header & cards smooth mobile entrance
+        const contactTop = gsap.utils.toArray(
+          "body.janaka-contact .banner h2.wsite-content-title, body.janaka-contact .banner > .wsite-section-elements > .paragraph"
+        );
+        if (contactTop.length > 0) {
+          gsap.fromTo(
+            contactTop,
+            { y: 16, autoAlpha: 0 },
+            { y: 0, autoAlpha: 1, duration: 0.45, stagger: 0.06, ease: "power2.out", clearProps: "transform" }
+          );
+        }
+        const contactCols = gsap.utils.toArray("body.janaka-contact .contact-cards > .wsite-multicol-table-wrap > .wsite-multicol-table > .wsite-multicol-tbody > .wsite-multicol-tr > .wsite-multicol-col");
+        contactCols.forEach((col) => {
+          gsap.fromTo(
+            col,
+            { y: 22, autoAlpha: 0 },
+            {
+              y: 0,
+              autoAlpha: 1,
+              duration: 0.5,
+              ease: "power2.out",
+              clearProps: "transform",
+              scrollTrigger: {
+                trigger: col,
+                start: "top 92%",
+                toggleActions: "play none none none",
+              },
+            }
+          );
+        });
+      }
+
+      // 3. Mobile Cross-Section Bridge Card & Sub-Sections
+      const crossCard = document.querySelector(".hero-cross-bridge-card");
+      if (crossCard) {
+        gsap.fromTo(
+          crossCard,
+          { y: 24, autoAlpha: 0 },
+          {
+            y: 0,
+            autoAlpha: 1,
+            duration: 0.55,
+            ease: "power2.out",
+            clearProps: "transform",
+            scrollTrigger: {
+              trigger: crossCard,
+              start: "top 95%",
+              toggleActions: "play none none none",
+            },
+          }
+        );
+
+        const crossSubs = gsap.utils.toArray(".hero-cross-sub-section");
+        crossSubs.forEach((sub, idx) => {
+          gsap.fromTo(
+            sub,
+            { y: 16, autoAlpha: 0 },
+            {
+              y: 0,
+              autoAlpha: 1,
+              duration: 0.45,
+              delay: idx * 0.06,
+              ease: "power2.out",
+              clearProps: "transform",
+              scrollTrigger: {
+                trigger: sub,
+                start: "top 95%",
+                toggleActions: "play none none none",
+              },
+            }
+          );
+        });
+
+        initCrossBridgeCounters("play none none none");
+      }
+
+      // 4. Mobile Section Headings across all pages
+      const mobileHeadings = gsap.utils.toArray(
+        "#wsite-content h2.wsite-content-title, #wsite-content .home-wildlife-heading"
+      );
+      mobileHeadings.forEach((h) => {
+        gsap.fromTo(
+          h,
+          { y: 18, autoAlpha: 0 },
+          {
+            y: 0,
+            autoAlpha: 1,
+            duration: 0.5,
+            ease: "power2.out",
+            clearProps: "transform",
+            scrollTrigger: {
+              trigger: h,
+              start: "top 92%",
+              toggleActions: "play none none none",
+            },
+          }
+        );
+      });
+
+      // 5. Mobile Individual Cards & Feature Blocks (each triggers when IT enters view)
+      const mobileCardSelectors = [
+        ".janaka-benefits .benefit-column",
+        ".wsite-background-75 .container",
+        ".home-why-choose .wsite-image",
+        ".home-why-choose .why-row .paragraph",
+        ".home-safari-card",
+        ".home-yala-feature",
+        ".home-wildlife-card",
+        ".home-meet-janaka .wsite-multicol-col",
+        ".home-guest-reviews .wsite-multicol-col",
+        ".home-port-card",
+        ".wsite-background-84 .wsite-multicol-col",
+        ".parks-overview-card",
+        ".about-intro .wsite-multicol-col",
+        ".about-journey .wsite-multicol-col",
+        ".about-explore .wsite-image",
+        ".wsite-background-11 .wsite-multicol-col",
+        ".wsite-background-17 .wsite-multicol-col",
+        ".wsite-background-12 .wsite-multicol-col",
+        ".wsite-background-15 .wsite-multicol-col",
+        ".wsite-background-20 .wsite-multicol-col",
+        ".wsite-background-29 .wsite-multicol-col",
+        ".wsite-background-37 .wsite-multicol-col",
+        ".wsite-background-44 .wsite-multicol-col",
+        ".wsite-background-51 .wsite-multicol-col",
+        ".udawalawe-wildlife .wsite-multicol-col",
+        ".bundala-wildlife .wsite-multicol-col",
+        ".wilpattu-wildlife .wsite-multicol-col",
+        ".minneriya-wildlife .wsite-multicol-col",
+        ".kumana-wildlife .wsite-multicol-col",
+        ".udawalawe-info .wsite-multicol-col",
+        ".bundala-info .wsite-multicol-col",
+        ".wilpattu-info .wsite-multicol-col",
+        ".minneriya-info .wsite-multicol-col",
+        ".kumana-info .wsite-multicol-col",
+        ".port-safari-card",
+        ".udawalawe-port-card",
+        ".bundala-port-card",
+        ".reviews-widget",
+        ".janaka-gyg-card",
+        ".imageGallery .galleryImageHolder",
+        ".footer-wrap .wsite-multicol-col",
+      ];
+
+      const mobileCards = gsap.utils.toArray(mobileCardSelectors.join(", "));
+      mobileCards.forEach((card) => {
+        gsap.fromTo(
+          card,
+          { y: 22, scale: 0.98, autoAlpha: 0 },
+          {
+            y: 0,
+            scale: 1,
+            autoAlpha: 1,
+            duration: 0.5,
+            ease: "power2.out",
+            clearProps: "transform",
+            scrollTrigger: {
+              trigger: card,
+              start: "top 93%",
+              toggleActions: "play none none none",
+            },
+          }
+        );
+      });
+    });
+
+    // ============================================================================
+    // B. DESKTOP & TABLET GSAP PROFILE (min-width: 768px)
+    //    - Distinct multi-directional choreographies, 3D hover physics (fine pointer),
+    //      hero Ken Burns parallax, and ambient floating badges
+    // ============================================================================
+    mm.add("(min-width: 768px)", () => {
+      const hasFinePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+      function bindGsap3DHover(elements, maxTilt = 7, liftY = -8, hoverScale = 1.03) {
+        if (!hasFinePointer) return;
+        gsap.utils.toArray(elements).forEach((el) => {
+          if (!(el instanceof HTMLElement)) return;
+          el.style.transformStyle = "preserve-3d";
+          el.addEventListener("mousemove", (e) => {
+            const rect = el.getBoundingClientRect();
+            const relX = (e.clientX - rect.left) / rect.width - 0.5;
+            const relY = (e.clientY - rect.top) / rect.height - 0.5;
+            gsap.to(el, {
+              rotateY: relX * maxTilt * 2,
+              rotateX: -relY * maxTilt * 2,
+              y: liftY,
+              scale: hoverScale,
+              transformPerspective: 900,
+              duration: 0.35,
+              ease: "power2.out",
+              overwrite: "auto",
+            });
+          });
+          el.addEventListener("mouseleave", () => {
+            gsap.to(el, {
+              rotateY: 0,
+              rotateX: 0,
+              y: 0,
+              scale: 1,
+              transformPerspective: 900,
+              duration: 0.65,
+              ease: "elastic.out(1, 0.5)",
+              overwrite: "auto",
+            });
+          });
+        });
+      }
+
+      function bindGsapButtonHover(selector) {
+        if (!hasFinePointer) return;
+        gsap.utils.toArray(selector).forEach((btn) => {
+          if (!(btn instanceof HTMLElement)) return;
+          btn.addEventListener("mouseenter", () => {
+            gsap.to(btn, {
+              scale: 1.06,
+              y: -3,
+              duration: 0.35,
+              ease: "back.out(2.2)",
+              overwrite: "auto",
+            });
+          });
+          btn.addEventListener("mouseleave", () => {
+            gsap.to(btn, {
+              scale: 1,
+              y: 0,
+              duration: 0.55,
+              ease: "elastic.out(1, 0.5)",
+              overwrite: "auto",
+            });
+          });
+        });
+      }
+
+      bindGsapButtonHover(".wsite-button, .nav-contact-btn");
+
+      // 1. HEADER & NAVIGATION
+      const headerLogo = document.querySelector(".dusk-header .logo");
+      const navItems = gsap.utils.toArray(".dusk-header .desktop-nav-center .wsite-menu-item-wrap");
+      const contactBtn = document.querySelector(".dusk-header .header-action-contact .nav-contact-btn");
+
+      const headerTl = gsap.timeline({ defaults: { ease: "power3.out" } });
+      if (headerLogo) {
+        headerTl.fromTo(
+          headerLogo,
+          { x: -60, autoAlpha: 0, rotate: -6, scale: 0.85 },
+          { x: 0, autoAlpha: 1, rotate: 0, scale: 1, duration: 0.95, ease: "back.out(1.7)" }
+        );
+        gsap.to(headerLogo, {
+          y: -3,
+          duration: 2.6,
+          repeat: -1,
+          yoyo: true,
+          ease: "sine.inOut",
+          delay: 1.2,
+        });
+      }
+      if (navItems.length > 0) {
+        headerTl.fromTo(
+          navItems,
+          { y: -32, autoAlpha: 0, rotateX: -45, transformPerspective: 800 },
+          { y: 0, autoAlpha: 1, rotateX: 0, transformPerspective: 800, duration: 0.75, stagger: 0.08, ease: "back.out(1.8)" },
+          "-=0.65"
+        );
+      }
+      if (contactBtn) {
+        headerTl.fromTo(
+          contactBtn,
+          { x: 50, autoAlpha: 0, scale: 0.75 },
+          { x: 0, autoAlpha: 1, scale: 1, duration: 0.85, ease: "elastic.out(1, 0.55)" },
+          "-=0.55"
+        );
+      }
+
+      // 2. HERO BANNER (Photo Hero Pages Only)
+      if (!document.body.classList.contains("janaka-contact")) {
+        const heroKicker = document.querySelector(".banner .hero-editorial-kicker");
+        const heroTitle = document.querySelector(".banner h2.wsite-content-title");
+        const heroHighlight = document.querySelector(".banner .sri-lanka-tracks");
+        const heroParagraphs = gsap.utils.toArray(".banner .paragraph");
+        const heroBtn = document.querySelector(".banner .wsite-button");
+        const heroBg = document.querySelector(".banner-wrap .wsite-header-section");
+        const isHome = document.body.classList.contains("wsite-page-index");
+
+        if (heroBg) {
+          const baseScale = isHome ? 1.22 : 1.12;
+          gsap.fromTo(
+            heroBg,
+            { scale: baseScale + 0.12 },
+            { scale: baseScale, duration: 2.0, ease: "power3.out" }
+          );
+          gsap.to(heroBg, {
+            backgroundPositionY: "65%",
+            scale: baseScale + 0.06,
+            ease: "none",
+            scrollTrigger: {
+              trigger: ".banner-wrap",
+              start: "top top",
+              end: "bottom top",
+              scrub: 0.6,
+            },
+          });
+        }
+
+        const heroTl = gsap.timeline({ delay: 0.1 });
+        if (heroKicker) {
+          heroTl.fromTo(
+            heroKicker,
+            { x: -60, autoAlpha: 0, skewX: -12, scale: 0.92 },
+            { x: 0, autoAlpha: 1, skewX: 0, scale: 1, duration: 0.85, ease: "expo.out" }
+          );
+        }
+        if (heroTitle) {
+          heroTl.fromTo(
+            heroTitle,
+            { y: 55, autoAlpha: 0, scale: 0.92, rotateX: 20, transformPerspective: 1000 },
+            { y: 0, autoAlpha: 1, scale: 1, rotateX: 0, transformPerspective: 1000, duration: 1.0, ease: "power4.out" },
+            "-=0.5"
+          );
+        }
+        if (heroHighlight) {
+          heroTl.fromTo(
+            heroHighlight,
+            { display: "inline-block", scale: 0.78, rotate: -3 },
+            { scale: 1, rotate: 0, duration: 0.9, ease: "elastic.out(1, 0.55)" },
+            "-=0.6"
+          );
+          gsap.to(heroHighlight, {
+            y: -3,
+            scale: 1.02,
+            duration: 2.4,
+            repeat: -1,
+            yoyo: true,
+            ease: "sine.inOut",
+            delay: 1.5,
+          });
+        }
+        if (heroParagraphs.length > 0) {
+          heroTl.fromTo(
+            heroParagraphs,
+            { y: 32, autoAlpha: 0 },
+            { y: 0, autoAlpha: 1, duration: 0.75, stagger: 0.12, ease: "power3.out" },
+            "-=0.55"
+          );
+        }
+        if (heroBtn) {
+          heroTl.fromTo(
+            heroBtn,
+            { y: 36, autoAlpha: 0, scale: 0.8 },
+            { y: 0, autoAlpha: 1, scale: 1, duration: 0.9, ease: "elastic.out(1, 0.55)" },
+            "-=0.45"
+          );
+        }
+      }
+
+      // 3. CROSS-SECTION BRIDGE
+      const crossCard = document.querySelector(".hero-cross-bridge-card");
+      if (crossCard) {
+        const subLeft = crossCard.querySelector(".cross-sub-left");
+        const subCenter = crossCard.querySelector(".cross-sub-center");
+        const subRight = crossCard.querySelector(".cross-sub-right");
+        const imgGoogle = crossCard.querySelector(".cross-top-google");
+        const imgTrip = crossCard.querySelector(".cross-top-tripadvisor");
+        const imgTraveler = crossCard.querySelector(".cross-top-traveler");
+        const starsEl = crossCard.querySelector(".cross-stars");
+
+        const crossTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: crossCard,
+            start: "top 95%",
+            toggleActions: "play none none reverse",
+          },
+        });
+
+        crossTl.fromTo(
+          crossCard,
+          { y: 60, autoAlpha: 0, scale: 0.94, rotateX: 10, transformPerspective: 1100 },
+          { y: 0, autoAlpha: 1, scale: 1, rotateX: 0, transformPerspective: 1100, duration: 0.85, ease: "power3.out" }
+        );
+
+        if (subLeft) {
+          crossTl.fromTo(
+            subLeft,
+            { x: -60, autoAlpha: 0, rotateY: 25, transformPerspective: 900 },
+            { x: 0, autoAlpha: 1, rotateY: 0, transformPerspective: 900, duration: 0.75, ease: "back.out(1.6)" },
+            "-=0.5"
+          );
+        }
+        if (subCenter) {
+          crossTl.fromTo(
+            subCenter,
+            { y: 45, autoAlpha: 0, scale: 0.82 },
+            { y: 0, autoAlpha: 1, scale: 1, duration: 0.85, ease: "elastic.out(1, 0.55)" },
+            "-=0.6"
+          );
+        }
+        if (subRight) {
+          crossTl.fromTo(
+            subRight,
+            { x: 60, autoAlpha: 0, rotateY: -25, transformPerspective: 900 },
+            { x: 0, autoAlpha: 1, rotateY: 0, transformPerspective: 900, duration: 0.75, ease: "back.out(1.6)" },
+            "-=0.6"
+          );
+        }
+
+        if (imgGoogle) {
+          crossTl.fromTo(
+            imgGoogle,
+            { scale: 0, rotate: -140, autoAlpha: 0 },
+            { scale: 1, rotate: 0, autoAlpha: 1, duration: 0.8, ease: "back.out(2)" },
+            "-=0.55"
+          );
+          gsap.to(imgGoogle, { y: -5, rotate: 3, duration: 2.2, repeat: -1, yoyo: true, ease: "sine.inOut", delay: 1.2 });
+        }
+        if (imgTrip) {
+          crossTl.fromTo(
+            imgTrip,
+            { scale: 0.4, y: -25, autoAlpha: 0 },
+            { scale: 1, y: 0, autoAlpha: 1, duration: 0.85, ease: "elastic.out(1, 0.5)" },
+            "-=0.65"
+          );
+          gsap.to(imgTrip, { y: -6, scale: 1.03, duration: 2.5, repeat: -1, yoyo: true, ease: "sine.inOut", delay: 1.5 });
+        }
+        if (imgTraveler) {
+          crossTl.fromTo(
+            imgTraveler,
+            { x: -25, scale: 0.5, rotate: 15, autoAlpha: 0 },
+            { x: 0, scale: 1, rotate: 0, autoAlpha: 1, duration: 0.8, ease: "back.out(2)" },
+            "-=0.65"
+          );
+          gsap.to(imgTraveler, { y: -5, x: 3, duration: 2.0, repeat: -1, yoyo: true, ease: "sine.inOut", delay: 1.8 });
+        }
+        if (starsEl) {
+          crossTl.fromTo(
+            starsEl,
+            { scale: 0.6, autoAlpha: 0 },
+            { scale: 1, autoAlpha: 1, duration: 0.65, ease: "back.out(2)" },
+            "-=0.45"
+          );
+        }
+
+        bindGsap3DHover([subLeft, subCenter, subRight], 5, -5, 1.02);
+        initCrossBridgeCounters("restart none restart none");
+      }
+
+      // 4. SECTION: WHY EXPLORE WITH JANAKA (.janaka-benefits)
+      const benefitsSection = document.querySelector(".janaka-benefits");
+      if (benefitsSection) {
+        const heading = benefitsSection.querySelector("h2.wsite-content-title");
+        const benefitCols = gsap.utils.toArray(benefitsSection.querySelectorAll(".benefit-column"));
+
+        if (heading) {
+          gsap.fromTo(
+            heading,
+            { y: -40, autoAlpha: 0, scale: 0.88, rotateX: 25, transformPerspective: 900 },
+            {
+              y: 0,
+              autoAlpha: 1,
+              scale: 1,
+              rotateX: 0,
+              transformPerspective: 900,
+              duration: 0.85,
+              ease: "back.out(1.7)",
+              scrollTrigger: {
+                trigger: benefitsSection,
+                start: "top 86%",
+                toggleActions: "play none none reverse",
+              },
+            }
+          );
+        }
+
+        const distinctBenefitFromVars = [
+          { x: -75, y: 45, rotate: -6, autoAlpha: 0, scale: 0.86 },
+          { y: 75, rotateX: 40, transformPerspective: 900, autoAlpha: 0, scale: 0.84 },
+          { y: -70, rotateX: -40, transformPerspective: 900, autoAlpha: 0, scale: 0.84 },
+          { x: 75, y: 45, rotate: 6, autoAlpha: 0, scale: 0.86 },
+        ];
+
+        benefitCols.forEach((col, i) => {
+          const fromVars = distinctBenefitFromVars[i % distinctBenefitFromVars.length];
+          const icon = col.querySelector(".benefit-icon");
+          const title = col.querySelector(".benefit-title");
+          const texts = col.querySelectorAll(".paragraph:not(.benefit-title)");
+
+          const tl = gsap.timeline({
+            scrollTrigger: {
+              trigger: col,
+              start: "top 88%",
+              toggleActions: "play none none reverse",
+            },
+          });
+
+          tl.fromTo(
+            col,
+            fromVars,
+            {
+              x: 0,
+              y: 0,
+              rotate: 0,
+              rotateX: 0,
+              transformPerspective: 900,
+              autoAlpha: 1,
+              scale: 1,
+              duration: 0.85,
+              delay: (i % 4) * 0.08,
+              ease: "back.out(1.5)",
+            }
+          );
+
+          if (icon) {
+            tl.fromTo(
+              icon,
+              { scale: 0, rotate: -180 },
+              { scale: 1, rotate: 0, duration: 0.8, ease: "elastic.out(1, 0.5)" },
+              "-=0.5"
+            );
+            gsap.to(icon, {
+              y: -5,
+              rotate: i % 2 === 0 ? 4 : -4,
+              duration: 2.1 + i * 0.25,
+              repeat: -1,
+              yoyo: true,
+              ease: "sine.inOut",
+              delay: 1 + i * 0.2,
+            });
+          }
+          if (title) {
+            tl.fromTo(
+              title,
+              { y: 20, autoAlpha: 0, scale: 0.92 },
+              { y: 0, autoAlpha: 1, scale: 1, duration: 0.5, ease: "back.out(1.6)" },
+              "-=0.45"
+            );
+          }
+          if (texts.length > 0) {
+            tl.fromTo(
+              texts,
+              { y: 16, autoAlpha: 0 },
+              { y: 0, autoAlpha: 1, duration: 0.45, stagger: 0.06, ease: "power2.out" },
+              "-=0.35"
+            );
+          }
+        });
+
+        bindGsap3DHover(benefitCols, 7, -8, 1.03);
+      }
+
+      // 5. SECTION: SAVE UP TO 30% DIRECT BOOKING (.wsite-background-75)
+      const directSection = document.querySelector(".wsite-background-75");
+      if (directSection) {
+        const title = directSection.querySelector("h2.wsite-content-title");
+        const paragraphs = gsap.utils.toArray(directSection.querySelectorAll(".paragraph"));
+        const ctaBtn = directSection.querySelector(".wsite-button");
+        const payCards = gsap.utils.toArray(directSection.querySelectorAll(".janaka-payment-card"));
+
+        const directTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: directSection,
+            start: "top 85%",
+            toggleActions: "play none none reverse",
+          },
+        });
+
+        if (title) {
+          directTl.fromTo(
+            title,
+            { scale: 0.78, autoAlpha: 0, y: 40, rotateX: 22, transformPerspective: 900 },
+            { scale: 1, autoAlpha: 1, y: 0, rotateX: 0, transformPerspective: 900, duration: 0.85, ease: "back.out(1.8)" }
+          );
+        }
+        if (paragraphs.length > 0) {
+          directTl.fromTo(
+            paragraphs,
+            { x: (idx) => (idx % 2 === 0 ? -60 : 60), autoAlpha: 0 },
+            { x: 0, autoAlpha: 1, duration: 0.7, stagger: 0.12, ease: "power3.out" },
+            "-=0.45"
+          );
+        }
+        if (ctaBtn) {
+          directTl.fromTo(
+            ctaBtn,
+            { scale: 0.65, autoAlpha: 0, y: 24 },
+            { scale: 1, autoAlpha: 1, y: 0, duration: 0.85, ease: "elastic.out(1, 0.5)" },
+            "-=0.35"
+          );
+        }
+        if (payCards.length > 0) {
+          directTl.fromTo(
+            payCards,
+            { y: 36, rotate: (idx) => (idx === 0 ? -16 : 16), autoAlpha: 0, scale: 0.7 },
+            { y: 0, rotate: 0, autoAlpha: 1, scale: 1, duration: 0.7, stagger: 0.14, ease: "elastic.out(1, 0.55)" },
+            "-=0.4"
+          );
+        }
+      }
+
+      // 6. SECTION: WHY CHOOSE US (.home-why-choose)
+      const whyChooseSection = document.querySelector(".home-why-choose");
+      if (whyChooseSection) {
+        const featureImg = whyChooseSection.querySelector(".wsite-image img");
+        const heading = whyChooseSection.querySelector("h2.wsite-content-title");
+        const steps = gsap.utils.toArray(whyChooseSection.querySelectorAll(".why-row .paragraph"));
+        const btn = whyChooseSection.querySelector(".wsite-button");
+
+        if (featureImg) {
+          gsap.fromTo(
+            featureImg,
+            { x: -80, scale: 0.86, rotate: -4, autoAlpha: 0 },
+            {
+              x: 0,
+              scale: 1,
+              rotate: 0,
+              autoAlpha: 1,
+              duration: 1.0,
+              ease: "back.out(1.5)",
+              scrollTrigger: {
+                trigger: whyChooseSection,
+                start: "top 82%",
+                toggleActions: "play none none reverse",
+              },
+            }
+          );
+        }
+
+        const rightTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: whyChooseSection,
+            start: "top 82%",
+            toggleActions: "play none none reverse",
+          },
+        });
+
+        if (heading) {
+          rightTl.fromTo(
+            heading,
+            { x: 65, autoAlpha: 0 },
+            { x: 0, autoAlpha: 1, duration: 0.8, ease: "power3.out" }
+          );
+        }
+        if (steps.length > 0) {
+          const stepAnimations = [
+            { x: 70, y: 0, rotateY: -18, transformPerspective: 900 },
+            { x: 0, y: 42, scale: 0.88, rotateX: 22, transformPerspective: 900 },
+            { x: -55, y: 18, scale: 0.92 },
+            { x: 65, y: -32, rotateX: -22, transformPerspective: 900 },
+          ];
+          steps.forEach((step, idx) => {
+            const v = stepAnimations[idx % stepAnimations.length];
+            rightTl.fromTo(
+              step,
+              { ...v, autoAlpha: 0 },
+              {
+                x: 0,
+                y: 0,
+                scale: 1,
+                rotateX: 0,
+                rotateY: 0,
+                transformPerspective: 900,
+                autoAlpha: 1,
+                duration: 0.65,
+                ease: "back.out(1.5)",
+              },
+              "-=0.4"
+            );
+          });
+          bindGsap3DHover(steps, 4, -4, 1.02);
+        }
+        if (btn) {
+          rightTl.fromTo(
+            btn,
+            { y: 30, autoAlpha: 0, scale: 0.8 },
+            { y: 0, autoAlpha: 1, scale: 1, duration: 0.75, ease: "elastic.out(1, 0.55)" },
+            "-=0.3"
+          );
+        }
+      }
+
+      // 7. SECTION: 6 SAFARI EXPERIENCES GRID (.home-safari-grid)
+      const safariCards = gsap.utils.toArray(".home-safari-card");
+      if (safariCards.length > 0) {
+        const safariHeaders = gsap.utils.toArray(".wsite-background-1 h2.wsite-content-title");
+        if (safariHeaders.length > 0) {
+          gsap.fromTo(
+            safariHeaders,
+            { y: 40, autoAlpha: 0, scale: 0.92 },
+            {
+              y: 0,
+              autoAlpha: 1,
+              scale: 1,
+              duration: 0.8,
+              stagger: 0.12,
+              ease: "back.out(1.6)",
+              scrollTrigger: {
+                trigger: ".wsite-background-1",
+                start: "top 85%",
+                toggleActions: "play none none reverse",
+              },
+            }
+          );
+        }
+
+        const distinctCardVectors = [
+          { x: -75, y: 50, rotate: -5, scale: 0.88, transformPerspective: 1000 },
+          { x: 0, y: 80, scale: 0.84, rotateX: 30, transformPerspective: 1000 },
+          { x: 75, y: 50, rotate: 5, scale: 0.88, transformPerspective: 1000 },
+          { x: -70, y: -40, rotateY: 30, scale: 0.88, transformPerspective: 1000 },
+          { x: 0, y: -70, scale: 0.8, rotate: 4, transformPerspective: 1000 },
+          { x: 70, y: -40, rotateY: -30, scale: 0.88, transformPerspective: 1000 },
+        ];
+
+        safariCards.forEach((card, i) => {
+          const vec = distinctCardVectors[i % distinctCardVectors.length];
+          const img = card.querySelector(".wsite-image img");
+          const title = card.querySelector(".home-safari-title");
+          const desc = card.querySelector(".home-safari-description");
+          const btn = card.querySelector(".wsite-button");
+
+          const cardTl = gsap.timeline({
+            scrollTrigger: {
+              trigger: card,
+              start: "top 88%",
+              toggleActions: "play none none reverse",
+            },
+          });
+
+          cardTl.fromTo(
+            card,
+            { ...vec, autoAlpha: 0 },
+            {
+              x: 0,
+              y: 0,
+              rotate: 0,
+              rotateX: 0,
+              rotateY: 0,
+              scale: 1,
+              transformPerspective: 1000,
+              autoAlpha: 1,
+              duration: 0.85,
+              ease: "back.out(1.4)",
+            }
+          );
+
+          if (img) {
+            cardTl.fromTo(
+              img,
+              { scale: 1.25 },
+              { scale: 1, duration: 0.9, ease: "power2.out" },
+              "-=0.7"
+            );
+          }
+          if (title) {
+            cardTl.fromTo(
+              title,
+              { x: -22, autoAlpha: 0 },
+              { x: 0, autoAlpha: 1, duration: 0.5, ease: "back.out(1.7)" },
+              "-=0.55"
+            );
+          }
+          if (desc) {
+            cardTl.fromTo(
+              desc,
+              { y: 18, autoAlpha: 0 },
+              { y: 0, autoAlpha: 1, duration: 0.5, ease: "power2.out" },
+              "-=0.4"
+            );
+          }
+          if (btn) {
+            cardTl.fromTo(
+              btn,
+              { scale: 0.8, autoAlpha: 0 },
+              { scale: 1, autoAlpha: 1, duration: 0.6, ease: "elastic.out(1, 0.55)" },
+              "-=0.35"
+            );
+          }
+        });
+
+        bindGsap3DHover(safariCards, 5, -7, 1.02);
+      }
+
+      // 8. SECTION: YALA SPOTLIGHT & WILDLIFE ENCOUNTERS (.home-wildlife-section)
+      const yalaFeature = document.querySelector(".home-yala-feature");
+      if (yalaFeature) {
+        const yalaImg = yalaFeature.querySelector(".wsite-image img");
+        const yalaCopyItems = gsap.utils.toArray(
+          yalaFeature.querySelectorAll(".home-yala-copy .paragraph, .home-yala-copy .wsite-button")
+        );
+
+        const yalaTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: yalaFeature,
+            start: "top 85%",
+            toggleActions: "play none none reverse",
+          },
+        });
+
+        yalaTl.fromTo(
+          yalaFeature,
+          { scale: 0.9, autoAlpha: 0, y: 55, rotateX: 14, transformPerspective: 1000 },
+          { scale: 1, autoAlpha: 1, y: 0, rotateX: 0, transformPerspective: 1000, duration: 0.9, ease: "expo.out" }
+        );
+        if (yalaImg) {
+          yalaTl.fromTo(
+            yalaImg,
+            { x: -60, scale: 1.15, rotate: -3, autoAlpha: 0 },
+            { x: 0, scale: 1, rotate: 0, autoAlpha: 1, duration: 0.85, ease: "back.out(1.5)" },
+            "-=0.55"
+          );
+        }
+        if (yalaCopyItems.length > 0) {
+          yalaTl.fromTo(
+            yalaCopyItems,
+            { x: 50, autoAlpha: 0 },
+            { x: 0, autoAlpha: 1, duration: 0.65, stagger: 0.1, ease: "back.out(1.5)" },
+            "-=0.6"
+          );
+        }
+      }
+
+      const wildlifeCards = gsap.utils.toArray(".home-wildlife-card");
+      if (wildlifeCards.length > 0) {
+        const wildlifeVectors = [
+          { x: -70, rotate: -4, scale: 0.88, transformPerspective: 900 },
+          { y: 70, scale: 0.86, rotateX: 30, transformPerspective: 900 },
+          { y: -70, scale: 0.86, rotateX: -30, transformPerspective: 900 },
+          { x: 70, rotate: 4, scale: 0.88, transformPerspective: 900 },
+        ];
+        wildlifeCards.forEach((wCard, idx) => {
+          const wVec = wildlifeVectors[idx % wildlifeVectors.length];
+          const wImg = wCard.querySelector("img");
+          const wTexts = wCard.querySelectorAll(".paragraph");
+
+          const tl = gsap.timeline({
+            scrollTrigger: {
+              trigger: wCard,
+              start: "top 88%",
+              toggleActions: "play none none reverse",
+            },
+          });
+          tl.fromTo(
+            wCard,
+            { ...wVec, autoAlpha: 0 },
+            {
+              x: 0,
+              y: 0,
+              rotate: 0,
+              rotateX: 0,
+              scale: 1,
+              transformPerspective: 900,
+              autoAlpha: 1,
+              duration: 0.8,
+              delay: (idx % 2) * 0.08,
+              ease: "back.out(1.5)",
+            }
+          );
+          if (wImg) {
+            tl.fromTo(wImg, { scale: 1.2 }, { scale: 1, duration: 0.85, ease: "power2.out" }, "-=0.6");
+          }
+          if (wTexts.length > 0) {
+            tl.fromTo(
+              wTexts,
+              { x: 24, autoAlpha: 0 },
+              { x: 0, autoAlpha: 1, duration: 0.45, stagger: 0.08, ease: "power2.out" },
+              "-=0.45"
+            );
+          }
+        });
+        bindGsap3DHover(wildlifeCards, 5, -6, 1.02);
+      }
+
+      // 9. SECTION: MEET JANAKA & THE TEAM (.home-meet-janaka)
+      const meetSection = document.querySelector(".home-meet-janaka");
+      if (meetSection) {
+        const meetImg = meetSection.querySelector(".wsite-image img");
+        const meetHeading = meetSection.querySelector("h2.wsite-content-title");
+        const meetParas = gsap.utils.toArray(meetSection.querySelectorAll(".paragraph"));
+        const meetBtn = meetSection.querySelector(".wsite-button");
+
+        const meetTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: meetSection,
+            start: "top 84%",
+            toggleActions: "play none none reverse",
+          },
+        });
+
+        if (meetImg) {
+          meetTl.fromTo(
+            meetImg,
+            { x: -70, rotate: -5, scale: 0.88, autoAlpha: 0 },
+            { x: 0, rotate: 0, scale: 1, autoAlpha: 1, duration: 0.9, ease: "back.out(1.5)" }
+          );
+        }
+        if (meetHeading) {
+          meetTl.fromTo(
+            meetHeading,
+            { y: -35, autoAlpha: 0, scale: 0.92 },
+            { y: 0, autoAlpha: 1, scale: 1, duration: 0.7, ease: "back.out(1.7)" },
+            "-=0.6"
+          );
+        }
+        if (meetParas.length > 0) {
+          meetTl.fromTo(
+            meetParas,
+            { x: 55, autoAlpha: 0 },
+            { x: 0, autoAlpha: 1, duration: 0.65, stagger: 0.12, ease: "power3.out" },
+            "-=0.45"
+          );
+        }
+        if (meetBtn) {
+          meetTl.fromTo(
+            meetBtn,
+            { scale: 0.75, autoAlpha: 0 },
+            { scale: 1, autoAlpha: 1, duration: 0.75, ease: "elastic.out(1, 0.55)" },
+            "-=0.35"
+          );
+        }
+      }
+
+      // 10. SECTION: GUEST REVIEWS (.home-guest-reviews)
+      const reviewsSection = document.querySelector(".home-guest-reviews");
+      if (reviewsSection) {
+        const revHeading = reviewsSection.querySelector("h2.wsite-content-title");
+        const revAward = reviewsSection.querySelector(".home-review-award");
+        const revSummary = reviewsSection.querySelector(".home-review-summary");
+        const revListItems = gsap.utils.toArray(reviewsSection.querySelectorAll(".home-review-summary ul li"));
+        const googleBtn = reviewsSection.querySelector(".guest-google-button .wsite-button");
+
+        const revTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: reviewsSection,
+            start: "top 84%",
+            toggleActions: "play none none reverse",
+          },
+        });
+
+        if (revHeading) {
+          revTl.fromTo(
+            revHeading,
+            { y: 36, autoAlpha: 0, scale: 0.92 },
+            { y: 0, autoAlpha: 1, scale: 1, duration: 0.75, ease: "back.out(1.6)" }
+          );
+        }
+        if (revAward) {
+          revTl.fromTo(
+            revAward,
+            { x: -65, rotateY: -25, transformPerspective: 900, autoAlpha: 0, scale: 0.88 },
+            { x: 0, rotateY: 0, transformPerspective: 900, autoAlpha: 1, scale: 1, duration: 0.8, ease: "back.out(1.6)" },
+            "-=0.4"
+          );
+        }
+        if (revSummary) {
+          revTl.fromTo(
+            revSummary,
+            { x: 65, rotateY: 25, transformPerspective: 900, autoAlpha: 0, scale: 0.9 },
+            { x: 0, rotateY: 0, transformPerspective: 900, autoAlpha: 1, scale: 1, duration: 0.8, ease: "back.out(1.6)" },
+            "-=0.6"
+          );
+        }
+        if (revListItems.length > 0) {
+          revTl.fromTo(
+            revListItems,
+            { x: 30, autoAlpha: 0 },
+            { x: 0, autoAlpha: 1, duration: 0.45, stagger: 0.08, ease: "back.out(1.5)" },
+            "-=0.4"
+          );
+        }
+        if (googleBtn) {
+          revTl.fromTo(
+            googleBtn,
+            { y: 28, autoAlpha: 0, scale: 0.8 },
+            { y: 0, autoAlpha: 1, scale: 1, duration: 0.7, ease: "elastic.out(1, 0.55)" },
+            "-=0.3"
+          );
+        }
+        bindGsap3DHover([revAward, revSummary], 5, -5, 1.02);
+      }
+
+      // 11. SECTION: HAMBANTOTA PORT SAFARIS (.home-port-section)
+      const portSection = document.querySelector(".home-port-section");
+      if (portSection) {
+        const portHeading = portSection.querySelector("h2.wsite-content-title");
+        const portCards = gsap.utils.toArray(portSection.querySelectorAll(".home-port-card"));
+        if (portHeading) {
+          gsap.fromTo(
+            portHeading,
+            { y: 36, autoAlpha: 0 },
+            {
+              y: 0,
+              autoAlpha: 1,
+              duration: 0.75,
+              ease: "power3.out",
+              scrollTrigger: {
+                trigger: portSection,
+                start: "top 85%",
+                toggleActions: "play none none reverse",
+              },
+            }
+          );
+        }
+        const portVectors = [
+          { x: -65, y: 40, rotate: -4, scale: 0.88 },
+          { x: 0, y: 65, scale: 0.85, rotateX: 25, transformPerspective: 900 },
+          { x: 65, y: 40, rotate: 4, scale: 0.88 },
+        ];
+        portCards.forEach((pCard, i) => {
+          const v = portVectors[i % portVectors.length];
+          gsap.fromTo(
+            pCard,
+            { ...v, autoAlpha: 0 },
+            {
+              x: 0,
+              y: 0,
+              rotate: 0,
+              rotateX: 0,
+              scale: 1,
+              transformPerspective: 900,
+              autoAlpha: 1,
+              duration: 0.8,
+              delay: i * 0.1,
+              ease: "back.out(1.5)",
+              scrollTrigger: {
+                trigger: pCard,
+                start: "top 88%",
+                toggleActions: "play none none reverse",
+              },
+            }
+          );
+        });
+        bindGsap3DHover(portCards, 5, -5, 1.02);
+      }
+
+      // 12. SECTION: TRANSFERS & STAYS (.wsite-background-84)
+      const transfersSection = document.querySelector(".wsite-background-84");
+      if (transfersSection) {
+        const cols = gsap.utils.toArray(transfersSection.querySelectorAll(".wsite-multicol-col"));
+        const colMotions = [
+          { x: -65, rotateY: 22, transformPerspective: 900, autoAlpha: 0, scale: 0.88 },
+          { y: 65, scale: 0.85, rotateX: 22, transformPerspective: 900, autoAlpha: 0 },
+          { x: 65, rotateY: -22, transformPerspective: 900, autoAlpha: 0, scale: 0.88 },
+        ];
+        cols.forEach((col, i) => {
+          gsap.fromTo(
+            col,
+            colMotions[i % colMotions.length],
+            {
+              x: 0,
+              y: 0,
+              rotateX: 0,
+              rotateY: 0,
+              transformPerspective: 900,
+              scale: 1,
+              autoAlpha: 1,
+              duration: 0.85,
+              delay: i * 0.12,
+              ease: "back.out(1.5)",
+              scrollTrigger: {
+                trigger: col,
+                start: "top 88%",
+                toggleActions: "play none none reverse",
+              },
+            }
+          );
+        });
+        bindGsap3DHover(cols, 5, -6, 1.02);
+      }
+
+      // 13. INNER PAGES — Per-Card & Per-Element Desktop Triggers
+      if (!document.querySelector(".janaka-benefits")) {
+        const innerHeadings = gsap.utils.toArray(".wsite-body-section h2.wsite-content-title");
+        innerHeadings.forEach((h) => {
+          gsap.fromTo(
+            h,
+            { y: 35, autoAlpha: 0 },
+            {
+              y: 0,
+              autoAlpha: 1,
+              duration: 0.75,
+              ease: "back.out(1.5)",
+              scrollTrigger: {
+                trigger: h,
+                start: "top 88%",
+                toggleActions: "play none none reverse",
+              },
+            }
+          );
+        });
+
+        const innerCards = gsap.utils.toArray(
+          ".parks-overview-card, .wsite-body-section .wsite-multicol-col, .port-safari-card, .udawalawe-port-card, .bundala-port-card, .reviews-widget, .janaka-gyg, .imageGallery .galleryImageHolder, body.janaka-contact .contact-cards > .wsite-multicol-table-wrap > .wsite-multicol-table > .wsite-multicol-tbody > .wsite-multicol-tr > .wsite-multicol-col"
+        );
+        innerCards.forEach((card, i) => {
+          gsap.fromTo(
+            card,
+            { y: 40, scale: 0.94, autoAlpha: 0 },
+            {
+              y: 0,
+              scale: 1,
+              autoAlpha: 1,
+              duration: 0.75,
+              delay: (i % 3) * 0.08,
+              ease: "back.out(1.4)",
+              scrollTrigger: {
+                trigger: card,
+                start: "top 88%",
+                toggleActions: "play none none reverse",
+              },
+            }
+          );
+        });
+      }
+
+      // 14. FOOTER — Staggered 3-Column Entrance
+      const footerWrap = document.querySelector(".footer-wrap");
+      if (footerWrap) {
+        const footerCols = gsap.utils.toArray(footerWrap.querySelectorAll(".wsite-multicol-col"));
+        gsap.fromTo(
+          footerCols,
+          { y: 40, autoAlpha: 0, scale: 0.94 },
+          {
+            y: 0,
+            autoAlpha: 1,
+            scale: 1,
+            duration: 0.75,
+            stagger: 0.14,
+            ease: "back.out(1.5)",
+            scrollTrigger: {
+              trigger: footerWrap,
+              start: "top 92%",
+              toggleActions: "play none none reverse",
+            },
+          }
+        );
+      }
+    });
+
+    // Ensure ScrollTrigger recalculates after layout/images settle
+    setTimeout(() => ScrollTrigger.refresh(), 250);
+    setTimeout(() => ScrollTrigger.refresh(), 1000);
+    window.addEventListener("load", () => ScrollTrigger.refresh());
+  }
 
   bindEditableSlots();
   bindEditableTextSlots();
   applyEditModeState();
-  void hydrateFromFirebaseCms();
+  initUltraSmoothScroll();
+  void initDistinctGsapAnimations();
+  void hydrateFromFirebaseCms().then(() => {
+    if (window.ScrollTrigger) {
+      window.ScrollTrigger.refresh();
+    }
+  });
 })();

@@ -450,9 +450,10 @@ body.header-page #wsite-content
 
 .janaka-payment-logos {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .janaka-payment-card {
@@ -465,4 +466,12 @@ body.header-page #wsite-content
   border: 1px solid #dfd3bd;
   border-radius: 6px;
   box-shadow: 0 2px 6px rgba(24, 56, 43, 0.06);
+}
+
+@media screen and (max-width: 767px) {
+  .bundala-port .bundala-port-card,
+  .bundala-info .wsite-multicol-col,
+  .bundala-wildlife .wsite-multicol-col {
+    padding: 22px 18px !important;
+  }
 }

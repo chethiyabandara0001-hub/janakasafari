@@ -182,20 +182,24 @@ dialog.message-dialog {
 
 /* Home Tripadvisor summary card */
 .home-review-award img {
-  max-width: 180px;
+  max-width: 300px;
+  width: 100%;
   height: auto;
+  object-fit: contain;
   border-radius: 12px;
 }
 
 .home-review-summary {
   background: #ffffff;
   border: 1px solid #e2ddd3;
+  border-top: 4px solid #f5a623;
   border-radius: 18px;
-  padding: 24px;
-  box-shadow: 0 6px 20px rgba(24, 56, 43, 0.06);
+  padding: 28px;
+  box-shadow: 0 12px 30px rgba(24, 56, 43, 0.08);
   display: flex;
   flex-direction: column;
   gap: 10px;
+  width: 100%;
 }
 
 .home-review-summary img {
@@ -229,12 +233,36 @@ dialog.message-dialog {
 
 .wsite-name-field {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 12px;
+  align-items: start;
+  width: 100%;
+}
+
+@media screen and (min-width: 520px) {
+  .wsite-name-field {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 16px;
+    row-gap: 6px;
+  }
 }
 
 .wsite-name-field > .wsite-form-label {
   grid-column: 1 / -1;
+}
+
+.wsite-name-field > div[style*="clear"] {
+  display: none !important;
+}
+
+.wsite-name-field > .wsite-form-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  float: none !important;
 }
 
 .form-required {
@@ -245,21 +273,9 @@ dialog.message-dialog {
   display: none;
 }
 
-/* Admin Dock & On-Page Visual Image Editor */
+/* Admin Dock & On-Page Visual Image Editor (Removed from public view) */
 .admin-floating-dock {
-  position: fixed;
-  bottom: 18px;
-  left: 18px;
-  z-index: 9990;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(17, 23, 20, 0.95);
-  border: 1px solid #2a3a31;
-  padding: 6px 8px;
-  border-radius: 10px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
-  font-family: system-ui, -apple-system, sans-serif;
+  display: none !important;
 }
 
 .admin-dock-btn {
