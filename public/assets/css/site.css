@@ -31,7 +31,6 @@
 }
 
 html {
-  scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
   overscroll-behavior-y: none;
   overflow-x: clip;
@@ -65,7 +64,7 @@ img {
 a {
   color: var(--ink-primary);
   text-decoration: none;
-  transition: color 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+  transition: color 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
 }
 
 a:hover {
@@ -700,7 +699,7 @@ body:not(.janaka-contact) .banner .paragraph * {
   body.wsite-page-index .wsite-header-section .wsite-section-content {
     min-height: 500px !important;
     padding-bottom: 32px !important;
-    transform: none !important;
+    transform: none;
   }
 
   body.wsite-page-index .wsite-header-section .wsite-section-content {

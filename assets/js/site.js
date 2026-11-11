@@ -913,132 +913,7 @@
   }
 
   function initUltraSmoothScroll() {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    if ("ontouchstart" in window || navigator.maxTouchPoints > 0) return;
-
-    let currentY = window.scrollY;
-    let targetY = window.scrollY;
-    let rafId = null;
-    let isAnimating = false;
-    let lastTime = performance.now();
-    const lerpFactor = 0.085; // Silky inertia damping
-
-    function getMaxScroll() {
-      return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-    }
-
-    function updateScroll(now) {
-      const dt = Math.min((now - lastTime) / 16.667, 4);
-      lastTime = now;
-
-      const diff = targetY - currentY;
-      if (Math.abs(diff) > 0.35) {
-        currentY += diff * (1 - Math.pow(1 - lerpFactor, dt));
-        window.scrollTo(0, currentY);
-        rafId = requestAnimationFrame(updateScroll);
-      } else {
-        currentY = targetY;
-        window.scrollTo(0, targetY);
-        isAnimating = false;
-        rafId = null;
-        document.documentElement.classList.remove("ultra-smooth-active");
-      }
-    }
-
-    function startAnimation() {
-      if (!isAnimating) {
-        isAnimating = true;
-        lastTime = performance.now();
-        document.documentElement.classList.add("ultra-smooth-active");
-        rafId = requestAnimationFrame(updateScroll);
-      }
-    }
-
-    window.addEventListener(
-      "wheel",
-      (e) => {
-        if (e.ctrlKey || e.metaKey || e.defaultPrevented) return;
-        if (document.body.style.overflow === "hidden") return;
-        const openDialog = document.querySelector("dialog[open]");
-        if (openDialog) return;
-
-        // Allow native scrolling inside nested scrollable containers
-        let node = e.target;
-        while (node && node !== document.body && node !== document.documentElement) {
-          if (node instanceof HTMLElement) {
-            const style = window.getComputedStyle(node);
-            const overflowY = style.overflowY;
-            if ((overflowY === "auto" || overflowY === "scroll") && node.scrollHeight > node.clientHeight) {
-              return;
-            }
-          }
-          node = node.parentNode;
-        }
-
-        e.preventDefault();
-
-        let delta = e.deltaY;
-        if (e.deltaMode === 1) delta *= 36;
-        else if (e.deltaMode === 2) delta *= window.innerHeight * 0.85;
-
-        if (!isAnimating) {
-          currentY = window.scrollY;
-          targetY = window.scrollY;
-        }
-
-        targetY = Math.max(0, Math.min(getMaxScroll(), targetY + delta));
-        startAnimation();
-      },
-      { passive: false }
-    );
-
-    window.addEventListener(
-      "scroll",
-      () => {
-        if (!isAnimating) {
-          currentY = window.scrollY;
-          targetY = window.scrollY;
-        }
-      },
-      { passive: true }
-    );
-
-    window.addEventListener("keydown", (e) => {
-      const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : "";
-      if (activeTag === "input" || activeTag === "textarea" || activeTag === "select") return;
-      if (document.querySelector("dialog[open]")) return;
-
-      let step = 0;
-      if (e.key === "ArrowDown") step = 110;
-      else if (e.key === "ArrowUp") step = -110;
-      else if (e.key === "PageDown" || (e.key === " " && !e.shiftKey)) step = window.innerHeight * 0.82;
-      else if (e.key === "PageUp" || (e.key === " " && e.shiftKey)) step = -window.innerHeight * 0.82;
-      else if (e.key === "Home") {
-        e.preventDefault();
-        if (!isAnimating) currentY = window.scrollY;
-        targetY = 0;
-        startAnimation();
-        return;
-      } else if (e.key === "End") {
-        e.preventDefault();
-        if (!isAnimating) currentY = window.scrollY;
-        targetY = getMaxScroll();
-        startAnimation();
-        return;
-      }
-
-      if (step !== 0) {
-        e.preventDefault();
-        if (!isAnimating) {
-          currentY = window.scrollY;
-          targetY = window.scrollY;
-        }
-        targetY = Math.max(0, Math.min(getMaxScroll(), targetY + step));
-        startAnimation();
-      }
-    });
-
-    // Smooth in-page hash anchor navigation
+    // Smooth in-page hash anchor navigation without blocking native wheel/touch scroll
     document.addEventListener("click", (e) => {
       const anchor = e.target instanceof Element ? e.target.closest('a[href^="#"]') : null;
       if (!anchor) return;
@@ -1047,17 +922,11 @@
       const targetEl = document.querySelector(hash);
       if (targetEl) {
         e.preventDefault();
-        if (!isAnimating) currentY = window.scrollY;
         const rect = targetEl.getBoundingClientRect();
-        targetY = Math.max(0, Math.min(getMaxScroll(), window.scrollY + rect.top - 24));
-        startAnimation();
+        const targetTop = Math.max(0, window.scrollY + rect.top - 24);
+        window.scrollTo({ top: targetTop, behavior: "smooth" });
         history.pushState(null, "", hash);
       }
-    });
-
-    window.addEventListener("resize", () => {
-      targetY = Math.min(targetY, getMaxScroll());
-      if (rafId && !isAnimating) cancelAnimationFrame(rafId);
     });
   }
 
@@ -1073,14 +942,12 @@
   }
 
   async function initDistinctGsapAnimations() {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
     try {
       if (!window.gsap) {
-        await loadScript("/assets/js/gsap.min.js?v=gsap5");
+        await loadScript("/assets/js/gsap.min.js?v=gsap19");
       }
       if (!window.ScrollTrigger) {
-        await loadScript("/assets/js/ScrollTrigger.min.js?v=gsap5");
+        await loadScript("/assets/js/ScrollTrigger.min.js?v=gsap19");
       }
     } catch (err) {
       console.warn("Local GSAP load fallback:", err);
@@ -1104,8 +971,24 @@
     gsap.registerPlugin(ScrollTrigger);
     ScrollTrigger.config({ ignoreMobileResize: true });
 
-    // Sync ScrollTrigger with scrolling
-    window.addEventListener("scroll", () => ScrollTrigger.update(), { passive: true });
+    const viewportReplayRegistry = [];
+    function registerForViewportReplay(anim, triggerEl) {
+      if (anim && triggerEl) {
+        viewportReplayRegistry.push({ anim, triggerEl });
+      }
+      return anim;
+    }
+
+    function replayVisibleAnimations() {
+      const vh = window.innerHeight || document.documentElement.clientHeight;
+      viewportReplayRegistry.forEach(({ anim, triggerEl }) => {
+        if (!triggerEl || !document.body.contains(triggerEl)) return;
+        const rect = triggerEl.getBoundingClientRect();
+        if (rect.top < vh * 0.92 && rect.bottom > vh * 0.08) {
+          anim.restart(true);
+        }
+      });
+    }
 
     // Animated counters helper (works cleanly on both mobile and desktop)
     function initCrossBridgeCounters(toggleMode) {
@@ -1115,7 +998,7 @@
       const scoreEl = crossCard.querySelector(".cross-score");
       if (scoreEl) {
         const scoreObj = { val: 0 };
-        gsap.fromTo(
+        const t1 = gsap.fromTo(
           scoreObj,
           { val: 0 },
           {
@@ -1125,6 +1008,7 @@
             scrollTrigger: {
               trigger: crossCard,
               start: "top 95%",
+              end: "bottom 5%",
               toggleActions: toggleMode,
             },
             onUpdate: () => {
@@ -1132,12 +1016,13 @@
             },
           }
         );
+        registerForViewportReplay(t1, crossCard);
       }
 
       const metricEl = crossCard.querySelector(".cross-metric");
       if (metricEl) {
         const countObj = { val: 0 };
-        gsap.fromTo(
+        const t2 = gsap.fromTo(
           countObj,
           { val: 0 },
           {
@@ -1147,6 +1032,7 @@
             scrollTrigger: {
               trigger: crossCard,
               start: "top 95%",
+              end: "bottom 5%",
               toggleActions: toggleMode,
             },
             onUpdate: () => {
@@ -1154,16 +1040,17 @@
             },
           }
         );
+        registerForViewportReplay(t2, crossCard);
       }
     }
 
-    // Shared helper to animate #firebase-section-gallery & #firebase-section-grid items
+    // Shared helper to animate #firebase-section-gallery & #firebase-section-grid items (Selector 5)
     // whether rendered before or after GSAP initialization
     function animateFirebaseSectionGallery() {
       const showcase = document.getElementById("firebase-section-gallery");
       const grid = document.getElementById("firebase-section-grid");
-      if (!showcase || !grid || showcase.dataset.gsapAnimated === "true") return;
-      showcase.dataset.gsapAnimated = "true";
+      if (!showcase || !grid || grid.dataset.gsapAnimated === "true") return;
+      grid.dataset.gsapAnimated = "true";
 
       const isMobile = window.matchMedia("(max-width: 767px)").matches;
       const hasFinePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
@@ -1174,8 +1061,21 @@
       const cards = gsap.utils.toArray(grid.querySelectorAll(".firebase-section-card"));
 
       if (isMobile) {
+        const showcaseTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: showcase,
+            start: "top 92%",
+            end: "bottom 8%",
+            toggleActions: "restart none restart reverse",
+          },
+        });
+        showcaseTl.fromTo(
+          showcase,
+          { y: 24, autoAlpha: 0 },
+          { y: 0, autoAlpha: 1, duration: 0.5, ease: "power2.out" }
+        );
         if (header) {
-          gsap.fromTo(
+          showcaseTl.fromTo(
             [kicker, title, headerBtn].filter(Boolean),
             { y: 18, autoAlpha: 0 },
             {
@@ -1184,16 +1084,13 @@
               duration: 0.5,
               stagger: 0.08,
               ease: "power2.out",
-              clearProps: "transform",
-              scrollTrigger: {
-                trigger: showcase,
-                start: "top 92%",
-                toggleActions: "play none none none",
-              },
-            }
+            },
+            "-=0.3"
           );
         }
-        cards.forEach((card) => {
+        registerForViewportReplay(showcaseTl, showcase);
+
+        cards.forEach((card, i) => {
           const img = card.querySelector(".firebase-section-card-media img");
           const innerItems = gsap.utils.toArray(
             card.querySelectorAll(
@@ -1203,20 +1100,21 @@
           const tl = gsap.timeline({
             scrollTrigger: {
               trigger: card,
-              start: "top 93%",
-              toggleActions: "play none none none",
+              start: "top 92%",
+              end: "bottom 8%",
+              toggleActions: "restart none restart reverse",
             },
           });
           tl.fromTo(
             card,
-            { y: 24, scale: 0.98, autoAlpha: 0 },
-            { y: 0, scale: 1, autoAlpha: 1, duration: 0.5, ease: "power2.out", clearProps: "transform" }
+            { y: 28, scale: 0.96, autoAlpha: 0 },
+            { y: 0, scale: 1, autoAlpha: 1, duration: 0.55, ease: "back.out(1.4)" }
           );
           if (img) {
             tl.fromTo(
               img,
-              { scale: 1.12, autoAlpha: 0.7 },
-              { scale: 1, autoAlpha: 1, duration: 0.55, ease: "power2.out", clearProps: "transform" },
+              { scale: 1.15, autoAlpha: 0.7 },
+              { scale: 1, autoAlpha: 1, duration: 0.6, ease: "power2.out" },
               "-=0.4"
             );
           }
@@ -1224,24 +1122,32 @@
             tl.fromTo(
               innerItems,
               { y: 14, autoAlpha: 0 },
-              { y: 0, autoAlpha: 1, duration: 0.4, stagger: 0.06, ease: "power2.out", clearProps: "transform" },
+              { y: 0, autoAlpha: 1, duration: 0.42, stagger: 0.07, ease: "power2.out" },
               "-=0.35"
             );
           }
+          registerForViewportReplay(tl, card);
         });
       } else {
         const headerTl = gsap.timeline({
           scrollTrigger: {
             trigger: showcase,
-            start: "top 86%",
-            toggleActions: "play none none reverse",
+            start: "top 90%",
+            end: "bottom 10%",
+            toggleActions: "restart none restart reverse",
           },
         });
+        headerTl.fromTo(
+          showcase,
+          { y: 36, autoAlpha: 0, scale: 0.97 },
+          { y: 0, autoAlpha: 1, scale: 1, duration: 0.7, ease: "power3.out" }
+        );
         if (kicker) {
           headerTl.fromTo(
             kicker,
             { x: -45, autoAlpha: 0, skewX: -10 },
-            { x: 0, autoAlpha: 1, skewX: 0, duration: 0.65, ease: "expo.out" }
+            { x: 0, autoAlpha: 1, skewX: 0, duration: 0.65, ease: "expo.out" },
+            "-=0.45"
           );
         }
         if (title) {
@@ -1260,6 +1166,7 @@
             "-=0.5"
           );
         }
+        registerForViewportReplay(headerTl, showcase);
 
         const galleryVectors = [
           { x: -65, y: 45, rotate: -4, scale: 0.88, transformPerspective: 1000 },
@@ -1281,8 +1188,9 @@
           const cardTl = gsap.timeline({
             scrollTrigger: {
               trigger: card,
-              start: "top 88%",
-              toggleActions: "play none none reverse",
+              start: "top 90%",
+              end: "bottom 10%",
+              toggleActions: "restart none restart reverse",
             },
           });
 
@@ -1344,6 +1252,7 @@
               "-=0.35"
             );
           }
+          registerForViewportReplay(cardTl, card);
 
           if (hasFinePointer && card instanceof HTMLElement) {
             card.style.transformStyle = "preserve-3d";
@@ -1354,8 +1263,8 @@
               gsap.to(card, {
                 rotateY: relX * 10,
                 rotateX: -relY * 10,
-                y: -7,
-                scale: 1.02,
+                y: -8,
+                scale: 1.025,
                 transformPerspective: 900,
                 duration: 0.35,
                 ease: "power2.out",
@@ -1377,6 +1286,8 @@
           }
         });
       }
+
+      ScrollTrigger.refresh();
     }
 
     window.__animateFirebaseSectionGallery = animateFirebaseSectionGallery;
@@ -1385,10 +1296,6 @@
 
     // ============================================================================
     // A. MOBILE-FIRST GSAP PROFILE (max-width: 767px)
-    //    - Zero horizontal x-offsets, skews, or 3D rotations that break mobile width
-    //    - Zero heroBg scale transform so hero text/buttons never zoom off-screen
-    //    - Per-element triggers ("play none none none") + clearProps: "transform"
-    //      so stacked cards and their inner items reveal smoothly as user scrolls
     // ============================================================================
     mm.add("(max-width: 767px)", () => {
       const heroBg = document.querySelector(".banner-wrap .wsite-header-section");
@@ -1403,46 +1310,53 @@
       if (mobileHeaderItems.length > 0) {
         gsap.fromTo(
           mobileHeaderItems,
-          { y: -12, autoAlpha: 0 },
+          { y: -14, autoAlpha: 0 },
           {
             y: 0,
             autoAlpha: 1,
-            duration: 0.45,
-            stagger: 0.06,
+            duration: 0.5,
+            stagger: 0.07,
             ease: "power2.out",
-            clearProps: "transform",
           }
         );
       }
 
-      // 2. Mobile Hero content & items clean vertical reveal (Selector 1)
+      // 2. Mobile Hero content & items reveal
       if (!document.body.classList.contains("janaka-contact")) {
         const heroSectionContent = document.querySelector(".banner-wrap .wsite-header-section .wsite-section-content");
         const heroEls = gsap.utils.toArray(
           ".banner .hero-editorial-kicker, .banner h2.wsite-content-title, .banner .sri-lanka-tracks, .banner .paragraph, .banner .wsite-button"
         );
-        const mobileHeroTl = gsap.timeline({ defaults: { ease: "power2.out" } });
+        const mobileHeroTl = gsap.timeline({
+          defaults: { ease: "power2.out" },
+          scrollTrigger: {
+            trigger: ".banner-wrap",
+            start: "top 95%",
+            end: "bottom 5%",
+            toggleActions: "restart none restart none",
+          },
+        });
         if (heroSectionContent) {
           mobileHeroTl.fromTo(
             heroSectionContent,
-            { autoAlpha: 0.01, y: 14 },
-            { autoAlpha: 1, y: 0, duration: 0.45, clearProps: "transform" }
+            { autoAlpha: 0, y: 18 },
+            { autoAlpha: 1, y: 0, duration: 0.5 }
           );
         }
         if (heroEls.length > 0) {
           mobileHeroTl.fromTo(
             heroEls,
-            { y: 20, autoAlpha: 0 },
+            { y: 22, autoAlpha: 0 },
             {
               y: 0,
               autoAlpha: 1,
               duration: 0.55,
-              stagger: 0.08,
-              clearProps: "transform",
+              stagger: 0.09,
             },
             "-=0.3"
           );
         }
+        registerForViewportReplay(mobileHeroTl, document.querySelector(".banner-wrap"));
       } else {
         const contactTop = gsap.utils.toArray(
           "body.janaka-contact .banner h2.wsite-content-title, body.janaka-contact .banner > .wsite-section-elements > .paragraph"
@@ -1451,14 +1365,14 @@
           gsap.fromTo(
             contactTop,
             { y: 16, autoAlpha: 0 },
-            { y: 0, autoAlpha: 1, duration: 0.45, stagger: 0.06, ease: "power2.out", clearProps: "transform" }
+            { y: 0, autoAlpha: 1, duration: 0.45, stagger: 0.06, ease: "power2.out" }
           );
         }
         const contactCols = gsap.utils.toArray(
           "body.janaka-contact .contact-cards > .wsite-multicol-table-wrap > .wsite-multicol-table > .wsite-multicol-tbody > .wsite-multicol-tr > .wsite-multicol-col"
         );
         contactCols.forEach((col) => {
-          gsap.fromTo(
+          const t = gsap.fromTo(
             col,
             { y: 22, autoAlpha: 0 },
             {
@@ -1466,62 +1380,48 @@
               autoAlpha: 1,
               duration: 0.5,
               ease: "power2.out",
-              clearProps: "transform",
               scrollTrigger: {
                 trigger: col,
                 start: "top 92%",
-                toggleActions: "play none none none",
+                end: "bottom 8%",
+                toggleActions: "restart none restart reverse",
               },
             }
           );
+          registerForViewportReplay(t, col);
         });
       }
 
-      // 3. Mobile Cross-Section Bridge Card & Sub-Sections
+      // 3. Mobile Cross-Section Bridge Card & Sub-Sections (Selector 1)
       const crossCard = document.querySelector(".hero-cross-bridge-card");
       if (crossCard) {
-        gsap.fromTo(
+        const crossTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: crossCard,
+            start: "top 95%",
+            end: "bottom 5%",
+            toggleActions: "restart none restart reverse",
+          },
+        });
+        crossTl.fromTo(
           crossCard,
           { y: 24, autoAlpha: 0 },
-          {
-            y: 0,
-            autoAlpha: 1,
-            duration: 0.55,
-            ease: "power2.out",
-            clearProps: "transform",
-            scrollTrigger: {
-              trigger: crossCard,
-              start: "top 95%",
-              toggleActions: "play none none none",
-            },
-          }
+          { y: 0, autoAlpha: 1, duration: 0.55, ease: "power2.out" }
         );
-
         const crossSubs = gsap.utils.toArray(".hero-cross-sub-section");
-        crossSubs.forEach((sub, idx) => {
-          gsap.fromTo(
-            sub,
+        if (crossSubs.length > 0) {
+          crossTl.fromTo(
+            crossSubs,
             { y: 16, autoAlpha: 0 },
-            {
-              y: 0,
-              autoAlpha: 1,
-              duration: 0.45,
-              delay: idx * 0.06,
-              ease: "power2.out",
-              clearProps: "transform",
-              scrollTrigger: {
-                trigger: sub,
-                start: "top 95%",
-                toggleActions: "play none none none",
-              },
-            }
+            { y: 0, autoAlpha: 1, duration: 0.45, stagger: 0.07, ease: "power2.out" },
+            "-=0.3"
           );
-        });
-
-        initCrossBridgeCounters("play none none none");
+        }
+        registerForViewportReplay(crossTl, crossCard);
+        initCrossBridgeCounters("restart none restart none");
       }
 
-      // 4. Mobile Direct Booking Section & Items (Selector 2: .wsite-background-75 .container)
+      // 4. Mobile Direct Booking Section & Items (Selector 3: .wsite-background-75 .container)
       const mobileDirectContainer = document.querySelector(".wsite-background-75 .container");
       if (mobileDirectContainer) {
         const directItems = gsap.utils.toArray(
@@ -1533,46 +1433,49 @@
           scrollTrigger: {
             trigger: mobileDirectContainer,
             start: "top 92%",
-            toggleActions: "play none none none",
+            end: "bottom 8%",
+            toggleActions: "restart none restart reverse",
           },
         });
         directTl.fromTo(
           mobileDirectContainer,
-          { y: 24, scale: 0.98, autoAlpha: 0 },
-          { y: 0, scale: 1, autoAlpha: 1, duration: 0.5, ease: "power2.out", clearProps: "transform" }
+          { y: 28, scale: 0.96, autoAlpha: 0 },
+          { y: 0, scale: 1, autoAlpha: 1, duration: 0.55, ease: "back.out(1.4)" }
         );
         if (directItems.length > 0) {
           directTl.fromTo(
             directItems,
-            { y: 16, autoAlpha: 0 },
-            { y: 0, autoAlpha: 1, duration: 0.45, stagger: 0.07, ease: "power2.out", clearProps: "transform" },
-            "-=0.3"
+            { y: 18, autoAlpha: 0 },
+            { y: 0, autoAlpha: 1, duration: 0.48, stagger: 0.08, ease: "power2.out" },
+            "-=0.35"
           );
         }
+        registerForViewportReplay(directTl, mobileDirectContainer);
       }
 
-      // 5. Mobile Safari Experiences Section & Cards + Inner Items (Selector 3: .wsite-background-1 .container)
+      // 5. Mobile Safari Experiences Section & Cards + Inner Items (Selector 4: .wsite-background-1 .container)
       const mobileSafariSection = document.querySelector(".wsite-background-1 .container");
       if (mobileSafariSection) {
         const safariHeadings = gsap.utils.toArray(mobileSafariSection.querySelectorAll("h2.wsite-content-title"));
         if (safariHeadings.length > 0) {
-          gsap.fromTo(
+          const hTl = gsap.fromTo(
             safariHeadings,
-            { y: 18, autoAlpha: 0 },
+            { y: 22, autoAlpha: 0 },
             {
               y: 0,
               autoAlpha: 1,
-              duration: 0.5,
-              stagger: 0.08,
-              ease: "power2.out",
-              clearProps: "transform",
+              duration: 0.55,
+              stagger: 0.09,
+              ease: "back.out(1.4)",
               scrollTrigger: {
                 trigger: mobileSafariSection,
                 start: "top 92%",
-                toggleActions: "play none none none",
+                end: "bottom 8%",
+                toggleActions: "restart none restart reverse",
               },
             }
           );
+          registerForViewportReplay(hTl, mobileSafariSection);
         }
         const mSafariCards = gsap.utils.toArray(mobileSafariSection.querySelectorAll(".home-safari-card"));
         mSafariCards.forEach((card) => {
@@ -1584,34 +1487,36 @@
             scrollTrigger: {
               trigger: card,
               start: "top 92%",
-              toggleActions: "play none none none",
+              end: "bottom 8%",
+              toggleActions: "restart none restart reverse",
             },
           });
           tl.fromTo(
             card,
-            { y: 24, scale: 0.98, autoAlpha: 0 },
-            { y: 0, scale: 1, autoAlpha: 1, duration: 0.5, ease: "power2.out", clearProps: "transform" }
+            { y: 28, scale: 0.96, autoAlpha: 0 },
+            { y: 0, scale: 1, autoAlpha: 1, duration: 0.55, ease: "back.out(1.4)" }
           );
           if (img) {
             tl.fromTo(
               img,
-              { scale: 1.12 },
-              { scale: 1, duration: 0.55, ease: "power2.out", clearProps: "transform" },
+              { scale: 1.15 },
+              { scale: 1, duration: 0.6, ease: "power2.out" },
               "-=0.4"
             );
           }
           if (innerEls.length > 0) {
             tl.fromTo(
               innerEls,
-              { y: 14, autoAlpha: 0 },
-              { y: 0, autoAlpha: 1, duration: 0.42, stagger: 0.06, ease: "power2.out", clearProps: "transform" },
+              { y: 16, autoAlpha: 0 },
+              { y: 0, autoAlpha: 1, duration: 0.45, stagger: 0.07, ease: "power2.out" },
               "-=0.35"
             );
           }
+          registerForViewportReplay(tl, card);
         });
       }
 
-      // 6. Mobile Yala Spotlight & Wildlife Section + Inner Items (Selector 6: .home-wildlife-section .container)
+      // 6. Mobile Yala Spotlight & Wildlife Section + Inner Items (Selector 5: .home-wildlife-section .container)
       const mobileWildlifeContainer = document.querySelector(".home-wildlife-section .container");
       if (mobileWildlifeContainer) {
         const yalaFeature = mobileWildlifeContainer.querySelector(".home-yala-feature");
@@ -1624,30 +1529,32 @@
             scrollTrigger: {
               trigger: yalaFeature,
               start: "top 92%",
-              toggleActions: "play none none none",
+              end: "bottom 8%",
+              toggleActions: "restart none restart reverse",
             },
           });
           yalaTl.fromTo(
             yalaFeature,
-            { y: 24, scale: 0.98, autoAlpha: 0 },
-            { y: 0, scale: 1, autoAlpha: 1, duration: 0.5, ease: "power2.out", clearProps: "transform" }
+            { y: 28, scale: 0.96, autoAlpha: 0 },
+            { y: 0, scale: 1, autoAlpha: 1, duration: 0.55, ease: "back.out(1.4)" }
           );
           if (yalaImg) {
             yalaTl.fromTo(
               yalaImg,
-              { scale: 1.1 },
-              { scale: 1, duration: 0.55, ease: "power2.out", clearProps: "transform" },
+              { scale: 1.14 },
+              { scale: 1, duration: 0.6, ease: "power2.out" },
               "-=0.4"
             );
           }
           if (yalaItems.length > 0) {
             yalaTl.fromTo(
               yalaItems,
-              { y: 14, autoAlpha: 0 },
-              { y: 0, autoAlpha: 1, duration: 0.42, stagger: 0.06, ease: "power2.out", clearProps: "transform" },
+              { y: 16, autoAlpha: 0 },
+              { y: 0, autoAlpha: 1, duration: 0.45, stagger: 0.07, ease: "power2.out" },
               "-=0.35"
             );
           }
+          registerForViewportReplay(yalaTl, yalaFeature);
         }
 
         const mWildlifeCards = gsap.utils.toArray(mobileWildlifeContainer.querySelectorAll(".home-wildlife-card"));
@@ -1658,34 +1565,36 @@
             scrollTrigger: {
               trigger: wCard,
               start: "top 92%",
-              toggleActions: "play none none none",
+              end: "bottom 8%",
+              toggleActions: "restart none restart reverse",
             },
           });
           tl.fromTo(
             wCard,
-            { y: 22, scale: 0.98, autoAlpha: 0 },
-            { y: 0, scale: 1, autoAlpha: 1, duration: 0.5, ease: "power2.out", clearProps: "transform" }
+            { y: 26, scale: 0.96, autoAlpha: 0 },
+            { y: 0, scale: 1, autoAlpha: 1, duration: 0.55, ease: "back.out(1.4)" }
           );
           if (wImg) {
             tl.fromTo(
               wImg,
-              { scale: 1.12 },
-              { scale: 1, duration: 0.55, ease: "power2.out", clearProps: "transform" },
+              { scale: 1.15 },
+              { scale: 1, duration: 0.6, ease: "power2.out" },
               "-=0.4"
             );
           }
           if (wItems.length > 0) {
             tl.fromTo(
               wItems,
-              { y: 12, autoAlpha: 0 },
-              { y: 0, autoAlpha: 1, duration: 0.4, stagger: 0.05, ease: "power2.out", clearProps: "transform" },
+              { y: 14, autoAlpha: 0 },
+              { y: 0, autoAlpha: 1, duration: 0.42, stagger: 0.06, ease: "power2.out" },
               "-=0.35"
             );
           }
+          registerForViewportReplay(tl, wCard);
         });
       }
 
-      // 7. Mobile Hambantota Port Section & Cards + Inner Items (Selector 4: .home-port-section .container)
+      // 7. Mobile Hambantota Port Section & Cards + Inner Items (Selector 6: .home-port-section .home-port-grid)
       const mobilePortContainer = document.querySelector(".home-port-section .container");
       if (mobilePortContainer) {
         const portIntroEls = gsap.utils.toArray(
@@ -1694,23 +1603,24 @@
           )
         );
         if (portIntroEls.length > 0) {
-          gsap.fromTo(
+          const pIntroTl = gsap.fromTo(
             portIntroEls,
-            { y: 18, autoAlpha: 0 },
+            { y: 20, autoAlpha: 0 },
             {
               y: 0,
               autoAlpha: 1,
-              duration: 0.48,
-              stagger: 0.07,
-              ease: "power2.out",
-              clearProps: "transform",
+              duration: 0.5,
+              stagger: 0.08,
+              ease: "back.out(1.4)",
               scrollTrigger: {
                 trigger: mobilePortContainer,
                 start: "top 92%",
-                toggleActions: "play none none none",
+                end: "bottom 8%",
+                toggleActions: "restart none restart reverse",
               },
             }
           );
+          registerForViewportReplay(pIntroTl, mobilePortContainer);
         }
 
         const mPortCards = gsap.utils.toArray(mobilePortContainer.querySelectorAll(".home-port-card"));
@@ -1723,19 +1633,20 @@
             scrollTrigger: {
               trigger: pCard,
               start: "top 92%",
-              toggleActions: "play none none none",
+              end: "bottom 8%",
+              toggleActions: "restart none restart reverse",
             },
           });
           tl.fromTo(
             pCard,
-            { y: 24, scale: 0.98, autoAlpha: 0 },
-            { y: 0, scale: 1, autoAlpha: 1, duration: 0.5, ease: "power2.out", clearProps: "transform" }
+            { y: 26, scale: 0.96, autoAlpha: 0 },
+            { y: 0, scale: 1, autoAlpha: 1, duration: 0.55, ease: "back.out(1.4)" }
           );
           if (pImg) {
             tl.fromTo(
               pImg,
-              { scale: 1.12 },
-              { scale: 1, duration: 0.55, ease: "power2.out", clearProps: "transform" },
+              { scale: 1.15 },
+              { scale: 1, duration: 0.6, ease: "power2.out" },
               "-=0.4"
             );
           }
@@ -1743,10 +1654,11 @@
             tl.fromTo(
               pItems,
               { y: 14, autoAlpha: 0 },
-              { y: 0, autoAlpha: 1, duration: 0.42, stagger: 0.06, ease: "power2.out", clearProps: "transform" },
+              { y: 0, autoAlpha: 1, duration: 0.42, stagger: 0.07, ease: "power2.out" },
               "-=0.35"
             );
           }
+          registerForViewportReplay(tl, pCard);
         });
       }
 
@@ -1762,7 +1674,7 @@
         ) {
           return;
         }
-        gsap.fromTo(
+        const t = gsap.fromTo(
           h,
           { y: 18, autoAlpha: 0 },
           {
@@ -1770,14 +1682,15 @@
             autoAlpha: 1,
             duration: 0.5,
             ease: "power2.out",
-            clearProps: "transform",
             scrollTrigger: {
               trigger: h,
               start: "top 92%",
-              toggleActions: "play none none none",
+              end: "bottom 8%",
+              toggleActions: "restart none restart reverse",
             },
           }
         );
+        registerForViewportReplay(t, h);
       });
 
       // 9. Remaining Mobile Individual Cards & Feature Blocks
@@ -1822,23 +1735,24 @@
 
       const mobileCards = gsap.utils.toArray(mobileCardSelectors.join(", "));
       mobileCards.forEach((card) => {
-        gsap.fromTo(
+        const t = gsap.fromTo(
           card,
-          { y: 22, scale: 0.98, autoAlpha: 0 },
+          { y: 22, scale: 0.97, autoAlpha: 0 },
           {
             y: 0,
             scale: 1,
             autoAlpha: 1,
             duration: 0.5,
             ease: "power2.out",
-            clearProps: "transform",
             scrollTrigger: {
               trigger: card,
               start: "top 93%",
-              toggleActions: "play none none none",
+              end: "bottom 7%",
+              toggleActions: "restart none restart reverse",
             },
           }
         );
+        registerForViewportReplay(t, card);
       });
 
       animateFirebaseSectionGallery();
@@ -1846,8 +1760,6 @@
 
     // ============================================================================
     // B. DESKTOP & TABLET GSAP PROFILE (min-width: 768px)
-    //    - Distinct multi-directional choreographies, 3D hover physics (fine pointer),
-    //      hero Ken Burns parallax, and staggered inner-item animations
     // ============================================================================
     mm.add("(min-width: 768px)", () => {
       const hasFinePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
@@ -1926,14 +1838,6 @@
           { x: -60, autoAlpha: 0, rotate: -6, scale: 0.85 },
           { x: 0, autoAlpha: 1, rotate: 0, scale: 1, duration: 0.95, ease: "back.out(1.7)" }
         );
-        gsap.to(headerLogo, {
-          y: -3,
-          duration: 2.6,
-          repeat: -1,
-          yoyo: true,
-          ease: "sine.inOut",
-          delay: 1.2,
-        });
       }
       if (navItems.length > 0) {
         headerTl.fromTo(
@@ -1952,9 +1856,10 @@
         );
       }
 
-      // 2. HERO BANNER & ITEMS (Selector 1: .banner-wrap .wsite-header-section .wsite-section-content)
+      // 2. HERO BANNER & ITEMS
       if (!document.body.classList.contains("janaka-contact")) {
         const heroSectionContent = document.querySelector(".banner-wrap .wsite-header-section .wsite-section-content");
+        const heroContainer = document.querySelector(".banner-wrap .wsite-header-section .container");
         const heroKicker = document.querySelector(".banner .hero-editorial-kicker");
         const heroTitle = document.querySelector(".banner h2.wsite-content-title");
         const heroHighlight = document.querySelector(".banner .sri-lanka-tracks");
@@ -1962,13 +1867,14 @@
         const heroBtn = document.querySelector(".banner .wsite-button");
         const heroBg = document.querySelector(".banner-wrap .wsite-header-section");
         const isHome = document.body.classList.contains("wsite-page-index");
+        const contentCounterScale = isHome ? 0.81967 : 0.89285;
 
         if (heroBg) {
           const baseScale = isHome ? 1.22 : 1.12;
           gsap.fromTo(
             heroBg,
             { scale: baseScale + 0.12 },
-            { scale: baseScale, duration: 2.0, ease: "power3.out" }
+            { scale: baseScale, duration: 1.9, ease: "power3.out" }
           );
           gsap.to(heroBg, {
             backgroundPositionY: "65%",
@@ -1983,19 +1889,34 @@
           });
         }
 
-        const heroTl = gsap.timeline({ delay: 0.08 });
+        const heroTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: ".banner-wrap",
+            start: "top 95%",
+            end: "bottom 15%",
+            toggleActions: "restart none restart none",
+          },
+        });
         if (heroSectionContent) {
           heroTl.fromTo(
             heroSectionContent,
-            { autoAlpha: 0.01, y: 24 },
-            { autoAlpha: 1, y: 0, duration: 0.65, ease: "power3.out" }
+            { autoAlpha: 0, y: 28, scale: contentCounterScale * 0.96 },
+            { autoAlpha: 1, y: 0, scale: contentCounterScale, duration: 0.7, ease: "power3.out" }
+          );
+        }
+        if (heroContainer) {
+          heroTl.fromTo(
+            heroContainer,
+            { y: 24, autoAlpha: 0 },
+            { y: 0, autoAlpha: 1, duration: 0.65, ease: "power3.out" },
+            "-=0.55"
           );
         }
         if (heroKicker) {
           heroTl.fromTo(
             heroKicker,
-            { x: -60, autoAlpha: 0, skewX: -12, scale: 0.92 },
-            { x: 0, autoAlpha: 1, skewX: 0, scale: 1, duration: 0.85, ease: "expo.out" },
+            { x: -65, autoAlpha: 0, skewX: -12, scale: 0.9 },
+            { x: 0, autoAlpha: 1, skewX: 0, scale: 1, duration: 0.8, ease: "expo.out" },
             "-=0.45"
           );
         }
@@ -2003,7 +1924,7 @@
           heroTl.fromTo(
             heroTitle,
             { y: 55, autoAlpha: 0, scale: 0.92, rotateX: 20, transformPerspective: 1000 },
-            { y: 0, autoAlpha: 1, scale: 1, rotateX: 0, transformPerspective: 1000, duration: 1.0, ease: "power4.out" },
+            { y: 0, autoAlpha: 1, scale: 1, rotateX: 0, transformPerspective: 1000, duration: 0.95, ease: "back.out(1.6)" },
             "-=0.5"
           );
         }
@@ -2014,15 +1935,6 @@
             { scale: 1, rotate: 0, duration: 0.9, ease: "elastic.out(1, 0.55)" },
             "-=0.6"
           );
-          gsap.to(heroHighlight, {
-            y: -3,
-            scale: 1.02,
-            duration: 2.4,
-            repeat: -1,
-            yoyo: true,
-            ease: "sine.inOut",
-            delay: 1.5,
-          });
         }
         if (heroParagraphs.length > 0) {
           heroTl.fromTo(
@@ -2039,18 +1951,11 @@
             { y: 0, autoAlpha: 1, scale: 1, duration: 0.9, ease: "elastic.out(1, 0.55)" },
             "-=0.45"
           );
-          gsap.to(heroBtn, {
-            y: -4,
-            duration: 2.3,
-            repeat: -1,
-            yoyo: true,
-            ease: "sine.inOut",
-            delay: 1.8,
-          });
         }
+        registerForViewportReplay(heroTl, document.querySelector(".banner-wrap"));
       }
 
-      // 3. CROSS-SECTION BRIDGE
+      // 3. CROSS-SECTION BRIDGE (Selector 1: .hero-cross-bridge-card)
       const crossCard = document.querySelector(".hero-cross-bridge-card");
       if (crossCard) {
         const subLeft = crossCard.querySelector(".cross-sub-left");
@@ -2065,7 +1970,8 @@
           scrollTrigger: {
             trigger: crossCard,
             start: "top 95%",
-            toggleActions: "play none none reverse",
+            end: "bottom 5%",
+            toggleActions: "restart none restart reverse",
           },
         });
 
@@ -2107,7 +2013,6 @@
             { scale: 1, rotate: 0, autoAlpha: 1, duration: 0.8, ease: "back.out(2)" },
             "-=0.55"
           );
-          gsap.to(imgGoogle, { y: -5, rotate: 3, duration: 2.2, repeat: -1, yoyo: true, ease: "sine.inOut", delay: 1.2 });
         }
         if (imgTrip) {
           crossTl.fromTo(
@@ -2116,7 +2021,6 @@
             { scale: 1, y: 0, autoAlpha: 1, duration: 0.85, ease: "elastic.out(1, 0.5)" },
             "-=0.65"
           );
-          gsap.to(imgTrip, { y: -6, scale: 1.03, duration: 2.5, repeat: -1, yoyo: true, ease: "sine.inOut", delay: 1.5 });
         }
         if (imgTraveler) {
           crossTl.fromTo(
@@ -2125,7 +2029,6 @@
             { x: 0, scale: 1, rotate: 0, autoAlpha: 1, duration: 0.8, ease: "back.out(2)" },
             "-=0.65"
           );
-          gsap.to(imgTraveler, { y: -5, x: 3, duration: 2.0, repeat: -1, yoyo: true, ease: "sine.inOut", delay: 1.8 });
         }
         if (starsEl) {
           crossTl.fromTo(
@@ -2136,18 +2039,20 @@
           );
         }
 
+        registerForViewportReplay(crossTl, crossCard);
         bindGsap3DHover([subLeft, subCenter, subRight], 5, -5, 1.02);
         initCrossBridgeCounters("restart none restart none");
       }
 
-      // 4. SECTION: WHY EXPLORE WITH NISHA (.janaka-benefits)
+      // 4. SECTION: WHY EXPLORE WITH NISHA (Selector 2: .janaka-benefits .container)
       const benefitsSection = document.querySelector(".janaka-benefits");
       if (benefitsSection) {
+        const benefitsContainer = benefitsSection.querySelector(".container") || benefitsSection;
         const heading = benefitsSection.querySelector("h2.wsite-content-title");
         const benefitCols = gsap.utils.toArray(benefitsSection.querySelectorAll(".benefit-column"));
 
         if (heading) {
-          gsap.fromTo(
+          const hAnim = gsap.fromTo(
             heading,
             { y: -40, autoAlpha: 0, scale: 0.88, rotateX: 25, transformPerspective: 900 },
             {
@@ -2159,12 +2064,14 @@
               duration: 0.85,
               ease: "back.out(1.7)",
               scrollTrigger: {
-                trigger: benefitsSection,
-                start: "top 86%",
-                toggleActions: "play none none reverse",
+                trigger: benefitsContainer,
+                start: "top 90%",
+                end: "bottom 10%",
+                toggleActions: "restart none restart reverse",
               },
             }
           );
+          registerForViewportReplay(hAnim, benefitsContainer);
         }
 
         const distinctBenefitFromVars = [
@@ -2183,8 +2090,9 @@
           const tl = gsap.timeline({
             scrollTrigger: {
               trigger: col,
-              start: "top 88%",
-              toggleActions: "play none none reverse",
+              start: "top 90%",
+              end: "bottom 10%",
+              toggleActions: "restart none restart reverse",
             },
           });
 
@@ -2212,15 +2120,6 @@
               { scale: 1, rotate: 0, duration: 0.8, ease: "elastic.out(1, 0.5)" },
               "-=0.5"
             );
-            gsap.to(icon, {
-              y: -5,
-              rotate: i % 2 === 0 ? 4 : -4,
-              duration: 2.1 + i * 0.25,
-              repeat: -1,
-              yoyo: true,
-              ease: "sine.inOut",
-              delay: 1 + i * 0.2,
-            });
           }
           if (title) {
             tl.fromTo(
@@ -2238,12 +2137,13 @@
               "-=0.35"
             );
           }
+          registerForViewportReplay(tl, col);
         });
 
         bindGsap3DHover(benefitCols, 7, -8, 1.03);
       }
 
-      // 5. SECTION: SAVE UP TO 30% DIRECT BOOKING & ITEMS (Selector 2: .wsite-background-75 .container)
+      // 5. SECTION: SAVE UP TO 30% DIRECT BOOKING & ITEMS (Selector 3: .wsite-background-75 .container)
       const directSection = document.querySelector(".wsite-background-75");
       if (directSection) {
         const directContainer = directSection.querySelector(".container");
@@ -2254,19 +2154,21 @@
         const ctaBtn = directSection.querySelector(".wsite-button");
         const payLabel = directSection.querySelector(".janaka-payment-label");
         const payCards = gsap.utils.toArray(directSection.querySelectorAll(".janaka-payment-card"));
+        const triggerTarget = directContainer || directSection;
 
         const directTl = gsap.timeline({
           scrollTrigger: {
-            trigger: directContainer || directSection,
-            start: "top 85%",
-            toggleActions: "play none none reverse",
+            trigger: triggerTarget,
+            start: "top 90%",
+            end: "bottom 10%",
+            toggleActions: "restart none restart reverse",
           },
         });
 
         if (directContainer) {
           directTl.fromTo(
             directContainer,
-            { y: 50, scale: 0.93, rotateX: 12, transformPerspective: 1000, autoAlpha: 0 },
+            { y: 55, scale: 0.92, rotateX: 14, transformPerspective: 1000, autoAlpha: 0 },
             { y: 0, scale: 1, rotateX: 0, transformPerspective: 1000, autoAlpha: 1, duration: 0.85, ease: "power3.out" }
           );
           bindGsap3DHover(directContainer, 3, -5, 1.01);
@@ -2310,19 +2212,9 @@
             { y: 0, rotate: 0, autoAlpha: 1, scale: 1, duration: 0.75, stagger: 0.14, ease: "elastic.out(1, 0.55)" },
             "-=0.35"
           );
-          payCards.forEach((pCard, idx) => {
-            gsap.to(pCard, {
-              y: -4,
-              rotate: idx === 0 ? -2 : 2,
-              duration: 2.2 + idx * 0.3,
-              repeat: -1,
-              yoyo: true,
-              ease: "sine.inOut",
-              delay: 1.4 + idx * 0.25,
-            });
-          });
           bindGsap3DHover(payCards, 8, -5, 1.06);
         }
+        registerForViewportReplay(directTl, triggerTarget);
       }
 
       // 6. SECTION: WHY CHOOSE US (.home-why-choose)
@@ -2334,7 +2226,7 @@
         const btn = whyChooseSection.querySelector(".wsite-button");
 
         if (featureImg) {
-          gsap.fromTo(
+          const imgAnim = gsap.fromTo(
             featureImg,
             { x: -80, scale: 0.86, rotate: -4, autoAlpha: 0 },
             {
@@ -2346,18 +2238,21 @@
               ease: "back.out(1.5)",
               scrollTrigger: {
                 trigger: whyChooseSection,
-                start: "top 82%",
-                toggleActions: "play none none reverse",
+                start: "top 88%",
+                end: "bottom 12%",
+                toggleActions: "restart none restart reverse",
               },
             }
           );
+          registerForViewportReplay(imgAnim, whyChooseSection);
         }
 
         const rightTl = gsap.timeline({
           scrollTrigger: {
             trigger: whyChooseSection,
-            start: "top 82%",
-            toggleActions: "play none none reverse",
+            start: "top 88%",
+            end: "bottom 12%",
+            toggleActions: "restart none restart reverse",
           },
         });
 
@@ -2404,17 +2299,27 @@
             "-=0.3"
           );
         }
+        registerForViewportReplay(rightTl, whyChooseSection);
       }
 
-      // 7. SECTION: 6 SAFARI EXPERIENCES GRID & ITEMS (Selector 3: .wsite-background-1 .container)
+      // 7. SECTION: 6 SAFARI EXPERIENCES GRID & ITEMS (Selector 4: .wsite-background-1 .container)
       const safariSection = document.querySelector(".wsite-background-1 .container");
       const safariCards = gsap.utils.toArray(".home-safari-card");
       if (safariCards.length > 0) {
         const safariHeaders = gsap.utils.toArray(".wsite-background-1 h2.wsite-content-title");
-        if (safariHeaders.length > 0) {
-          gsap.fromTo(
+        const headerTarget = safariSection || document.querySelector(".wsite-background-1");
+        if (safariHeaders.length > 0 && headerTarget) {
+          const hTl = gsap.timeline({
+            scrollTrigger: {
+              trigger: headerTarget,
+              start: "top 90%",
+              end: "bottom 10%",
+              toggleActions: "restart none restart reverse",
+            },
+          });
+          hTl.fromTo(
             safariHeaders,
-            { y: 40, autoAlpha: 0, scale: 0.92, rotateX: 18, transformPerspective: 900 },
+            { y: 42, autoAlpha: 0, scale: 0.9, rotateX: 20, transformPerspective: 900 },
             {
               y: 0,
               autoAlpha: 1,
@@ -2424,13 +2329,9 @@
               duration: 0.8,
               stagger: 0.14,
               ease: "back.out(1.6)",
-              scrollTrigger: {
-                trigger: safariSection || ".wsite-background-1",
-                start: "top 85%",
-                toggleActions: "play none none reverse",
-              },
             }
           );
+          registerForViewportReplay(hTl, headerTarget);
         }
 
         const distinctCardVectors = [
@@ -2452,8 +2353,9 @@
           const cardTl = gsap.timeline({
             scrollTrigger: {
               trigger: card,
-              start: "top 88%",
-              toggleActions: "play none none reverse",
+              start: "top 90%",
+              end: "bottom 10%",
+              toggleActions: "restart none restart reverse",
             },
           });
 
@@ -2486,7 +2388,7 @@
           if (title) {
             cardTl.fromTo(
               title,
-              { x: -22, autoAlpha: 0 },
+              { x: -24, autoAlpha: 0 },
               { x: 0, autoAlpha: 1, duration: 0.5, ease: "back.out(1.7)" },
               "-=0.55"
             );
@@ -2507,12 +2409,13 @@
               "-=0.35"
             );
           }
+          registerForViewportReplay(cardTl, card);
         });
 
-        bindGsap3DHover(safariCards, 5, -7, 1.02);
+        bindGsap3DHover(safariCards, 5, -8, 1.025);
       }
 
-      // 8. SECTION: YALA SPOTLIGHT & WILDLIFE ENCOUNTERS + ITEMS (Selector 6: .home-wildlife-section .container)
+      // 8. SECTION: YALA SPOTLIGHT & WILDLIFE ENCOUNTERS + ITEMS (Selector 5: .home-wildlife-section .container)
       const wildlifeSection = document.querySelector(".home-wildlife-section");
       const yalaFeature = document.querySelector(".home-yala-feature");
       if (yalaFeature) {
@@ -2524,8 +2427,9 @@
         const yalaTl = gsap.timeline({
           scrollTrigger: {
             trigger: yalaFeature,
-            start: "top 85%",
-            toggleActions: "play none none reverse",
+            start: "top 90%",
+            end: "bottom 10%",
+            toggleActions: "restart none restart reverse",
           },
         });
 
@@ -2550,6 +2454,7 @@
             "-=0.6"
           );
         }
+        registerForViewportReplay(yalaTl, yalaFeature);
         bindGsap3DHover(yalaFeature, 3, -5, 1.01);
       }
 
@@ -2561,7 +2466,7 @@
         );
 
         if (wildlifeDivider) {
-          gsap.fromTo(
+          const dAnim = gsap.fromTo(
             wildlifeDivider,
             { scaleX: 0, autoAlpha: 0 },
             {
@@ -2571,14 +2476,16 @@
               ease: "expo.out",
               scrollTrigger: {
                 trigger: wildlifeDivider,
-                start: "top 90%",
-                toggleActions: "play none none reverse",
+                start: "top 92%",
+                end: "bottom 8%",
+                toggleActions: "restart none restart reverse",
               },
             }
           );
+          registerForViewportReplay(dAnim, wildlifeDivider);
         }
         if (wildlifeHeading) {
-          gsap.fromTo(
+          const whAnim = gsap.fromTo(
             wildlifeHeading,
             { y: 34, autoAlpha: 0, scale: 0.92 },
             {
@@ -2589,14 +2496,16 @@
               ease: "back.out(1.7)",
               scrollTrigger: {
                 trigger: wildlifeHeading,
-                start: "top 88%",
-                toggleActions: "play none none reverse",
+                start: "top 90%",
+                end: "bottom 10%",
+                toggleActions: "restart none restart reverse",
               },
             }
           );
+          registerForViewportReplay(whAnim, wildlifeHeading);
         }
         if (wildlifeFooterNote) {
-          gsap.fromTo(
+          const wfAnim = gsap.fromTo(
             wildlifeFooterNote,
             { y: 24, autoAlpha: 0 },
             {
@@ -2607,10 +2516,12 @@
               scrollTrigger: {
                 trigger: wildlifeFooterNote,
                 start: "top 92%",
-                toggleActions: "play none none reverse",
+                end: "bottom 8%",
+                toggleActions: "restart none restart reverse",
               },
             }
           );
+          registerForViewportReplay(wfAnim, wildlifeFooterNote);
         }
       }
 
@@ -2632,8 +2543,9 @@
           const tl = gsap.timeline({
             scrollTrigger: {
               trigger: wCard,
-              start: "top 88%",
-              toggleActions: "play none none reverse",
+              start: "top 90%",
+              end: "bottom 10%",
+              toggleActions: "restart none restart reverse",
             },
           });
           tl.fromTo(
@@ -2679,8 +2591,9 @@
               "-=0.32"
             );
           }
+          registerForViewportReplay(tl, wCard);
         });
-        bindGsap3DHover(wildlifeCards, 5, -6, 1.02);
+        bindGsap3DHover(wildlifeCards, 5, -7, 1.025);
       }
 
       // 9. SECTION: MEET NISHA & THE TEAM (.home-meet-janaka)
@@ -2694,8 +2607,9 @@
         const meetTl = gsap.timeline({
           scrollTrigger: {
             trigger: meetSection,
-            start: "top 84%",
-            toggleActions: "play none none reverse",
+            start: "top 88%",
+            end: "bottom 12%",
+            toggleActions: "restart none restart reverse",
           },
         });
 
@@ -2730,6 +2644,7 @@
             "-=0.35"
           );
         }
+        registerForViewportReplay(meetTl, meetSection);
       }
 
       // 10. SECTION: GUEST REVIEWS (.home-guest-reviews)
@@ -2744,8 +2659,9 @@
         const revTl = gsap.timeline({
           scrollTrigger: {
             trigger: reviewsSection,
-            start: "top 84%",
-            toggleActions: "play none none reverse",
+            start: "top 88%",
+            end: "bottom 12%",
+            toggleActions: "restart none restart reverse",
           },
         });
 
@@ -2788,10 +2704,11 @@
             "-=0.3"
           );
         }
+        registerForViewportReplay(revTl, reviewsSection);
         bindGsap3DHover([revAward, revSummary], 5, -5, 1.02);
       }
 
-      // 11. SECTION: HAMBANTOTA PORT SAFARIS & ITEMS (Selector 4: .home-port-section .container)
+      // 11. SECTION: HAMBANTOTA PORT SAFARIS & ITEMS (Selector 6: .home-port-section .home-port-grid)
       const portSection = document.querySelector(".home-port-section");
       if (portSection) {
         const portContainer = portSection.querySelector(".container");
@@ -2801,11 +2718,12 @@
           )
         );
         const portCards = gsap.utils.toArray(portSection.querySelectorAll(".home-port-card"));
+        const portTarget = portContainer || portSection;
 
         if (portIntroHeaderEls.length > 0) {
-          gsap.fromTo(
+          const pIntroAnim = gsap.fromTo(
             portIntroHeaderEls,
-            { y: 34, autoAlpha: 0, scale: 0.94 },
+            { y: 36, autoAlpha: 0, scale: 0.93 },
             {
               y: 0,
               autoAlpha: 1,
@@ -2814,12 +2732,14 @@
               stagger: 0.12,
               ease: "back.out(1.6)",
               scrollTrigger: {
-                trigger: portContainer || portSection,
-                start: "top 85%",
-                toggleActions: "play none none reverse",
+                trigger: portTarget,
+                start: "top 90%",
+                end: "bottom 10%",
+                toggleActions: "restart none restart reverse",
               },
             }
           );
+          registerForViewportReplay(pIntroAnim, portTarget);
         }
 
         const portVectors = [
@@ -2836,8 +2756,9 @@
           const pTl = gsap.timeline({
             scrollTrigger: {
               trigger: pCard,
-              start: "top 88%",
-              toggleActions: "play none none reverse",
+              start: "top 90%",
+              end: "bottom 10%",
+              toggleActions: "restart none restart reverse",
             },
           });
 
@@ -2882,8 +2803,9 @@
               "-=0.38"
             );
           }
+          registerForViewportReplay(pTl, pCard);
         });
-        bindGsap3DHover(portCards, 5, -6, 1.02);
+        bindGsap3DHover(portCards, 5, -7, 1.025);
       }
 
       // 12. SECTION: TRANSFERS & STAYS (.wsite-background-84)
@@ -2896,7 +2818,7 @@
           { x: 65, rotateY: -22, transformPerspective: 900, autoAlpha: 0, scale: 0.88 },
         ];
         cols.forEach((col, i) => {
-          gsap.fromTo(
+          const t = gsap.fromTo(
             col,
             colMotions[i % colMotions.length],
             {
@@ -2912,11 +2834,13 @@
               ease: "back.out(1.5)",
               scrollTrigger: {
                 trigger: col,
-                start: "top 88%",
-                toggleActions: "play none none reverse",
+                start: "top 90%",
+                end: "bottom 10%",
+                toggleActions: "restart none restart reverse",
               },
             }
           );
+          registerForViewportReplay(t, col);
         });
         bindGsap3DHover(cols, 5, -6, 1.02);
       }
@@ -2925,7 +2849,7 @@
       if (!document.querySelector(".janaka-benefits")) {
         const innerHeadings = gsap.utils.toArray(".wsite-body-section h2.wsite-content-title");
         innerHeadings.forEach((h) => {
-          gsap.fromTo(
+          const t = gsap.fromTo(
             h,
             { y: 35, autoAlpha: 0 },
             {
@@ -2935,18 +2859,20 @@
               ease: "back.out(1.5)",
               scrollTrigger: {
                 trigger: h,
-                start: "top 88%",
-                toggleActions: "play none none reverse",
+                start: "top 90%",
+                end: "bottom 10%",
+                toggleActions: "restart none restart reverse",
               },
             }
           );
+          registerForViewportReplay(t, h);
         });
 
         const innerCards = gsap.utils.toArray(
           ".parks-overview-card, .wsite-body-section .wsite-multicol-col, .port-safari-card, .udawalawe-port-card, .bundala-port-card, .reviews-widget, .janaka-gyg, .imageGallery .galleryImageHolder, body.janaka-contact .contact-cards > .wsite-multicol-table-wrap > .wsite-multicol-table > .wsite-multicol-tbody > .wsite-multicol-tr > .wsite-multicol-col"
         );
         innerCards.forEach((card, i) => {
-          gsap.fromTo(
+          const t = gsap.fromTo(
             card,
             { y: 40, scale: 0.94, autoAlpha: 0 },
             {
@@ -2958,11 +2884,13 @@
               ease: "back.out(1.4)",
               scrollTrigger: {
                 trigger: card,
-                start: "top 88%",
-                toggleActions: "play none none reverse",
+                start: "top 90%",
+                end: "bottom 10%",
+                toggleActions: "restart none restart reverse",
               },
             }
           );
+          registerForViewportReplay(t, card);
         });
       }
 
@@ -2970,7 +2898,7 @@
       const footerWrap = document.querySelector(".footer-wrap");
       if (footerWrap) {
         const footerCols = gsap.utils.toArray(footerWrap.querySelectorAll(".wsite-multicol-col"));
-        gsap.fromTo(
+        const fAnim = gsap.fromTo(
           footerCols,
           { y: 40, autoAlpha: 0, scale: 0.94 },
           {
@@ -2983,20 +2911,29 @@
             scrollTrigger: {
               trigger: footerWrap,
               start: "top 92%",
-              toggleActions: "play none none reverse",
+              end: "bottom 8%",
+              toggleActions: "restart none restart reverse",
             },
           }
         );
+        registerForViewportReplay(fAnim, footerWrap);
       }
 
       // 15. FIREBASE LIVE SECTION GALLERY (Selector 5: #firebase-section-gallery > #firebase-section-grid)
       animateFirebaseSectionGallery();
     });
 
-    // Ensure ScrollTrigger recalculates after layout/images settle
-    setTimeout(() => ScrollTrigger.refresh(), 250);
-    setTimeout(() => ScrollTrigger.refresh(), 1000);
-    window.addEventListener("load", () => ScrollTrigger.refresh());
+    // Ensure ScrollTrigger recalculates and visibly replays any section currently in the viewport
+    requestAnimationFrame(() => {
+      ScrollTrigger.refresh();
+      replayVisibleAnimations();
+    });
+    setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 350);
+    window.addEventListener("load", () => {
+      ScrollTrigger.refresh();
+    });
   }
 
   bindEditableSlots();

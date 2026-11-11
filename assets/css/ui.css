@@ -572,11 +572,6 @@ body.admin-text-edit-mode [data-admin-text-slot]:hover {
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.25s ease;
-}
-
-.firebase-section-card:hover .firebase-section-card-media img {
-  transform: scale(1.03);
 }
 
 .firebase-section-card-body {

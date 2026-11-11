@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "janakasafari",
+  "main": ".cloudflare/worker.mjs",
+  "compatibility_date": "2025-04-01",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": ".cloudflare/assets",
+    "binding": "ASSETS"
+  }
+}
