@@ -833,9 +833,22 @@ body.header-page #wsite-content .wsite-background-84 .wsite-multicol-col > .para
   box-shadow: 0 4px 10px rgba(24, 56, 43, 0.06);
 }
 
+@media screen and (min-width: 768px) {
+  div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) > div:nth-of-type(1),
+  .hero-cross-bridge-card {
+    position: relative !important;
+    top: -6px !important;
+    margin-top: -5.5% !important;
+    margin-bottom: 0 !important;
+  }
+}
+
 @media screen and (max-width: 960px) {
   div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1),
   .hero-cross-bridge-wrap {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
     margin-top: 0 !important;
     margin-bottom: 0 !important;
     padding-top: 0 !important;
@@ -847,14 +860,20 @@ body.header-page #wsite-content .wsite-background-84 .wsite-multicol-col > .para
 
   div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) > div:nth-of-type(1),
   .hero-cross-bridge-card {
-    position: relative !important;
-    bottom: 25% !important;
-    margin-top: -25% !important;
-    margin-bottom: 0 !important;
     display: grid !important;
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     align-items: stretch !important;
     gap: 4px !important;
     padding: 14px 8px !important;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) > div:nth-of-type(1),
+  .hero-cross-bridge-card {
+    position: relative !important;
+    top: -4px !important;
+    margin-top: -7% !important;
+    margin-bottom: 0 !important;
   }
 }

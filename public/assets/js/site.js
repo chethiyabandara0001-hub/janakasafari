@@ -252,7 +252,7 @@
       const message = (data.get("message") || "").toString().trim();
 
       const lines = [
-        "Hello Janaka,",
+        "Hello Nisha,",
         "",
         "I would like to enquire about a safari:",
         `Name: ${firstName} ${lastName}`.trim(),
@@ -278,7 +278,7 @@
       );
       const encodedBody = encodeURIComponent(fullMessage);
       if (emailBtn) {
-        emailBtn.href = `mailto:safarijanaka@gmail.com?subject=${subject}&body=${encodedBody}`;
+        emailBtn.href = `mailto:safarinisha@gmail.com?subject=${subject}&body=${encodedBody}`;
       }
       if (waBtn) {
         waBtn.href = `https://wa.me/94717390327?text=${encodedBody}`;
@@ -759,8 +759,8 @@
             entry.element.style.backgroundSize = "cover";
             entry.element.style.backgroundPosition = "center center";
             if (document.body.classList.contains("wsite-page-index") && window.innerWidth > 767) {
-              entry.element.style.minHeight = "112vh";
-              entry.element.style.height = "112vh";
+              entry.element.style.minHeight = "135vh";
+              entry.element.style.height = "135vh";
             }
           } else {
             if (
@@ -1157,6 +1157,230 @@
       }
     }
 
+    // Shared helper to animate #firebase-section-gallery & #firebase-section-grid items
+    // whether rendered before or after GSAP initialization
+    function animateFirebaseSectionGallery() {
+      const showcase = document.getElementById("firebase-section-gallery");
+      const grid = document.getElementById("firebase-section-grid");
+      if (!showcase || !grid || showcase.dataset.gsapAnimated === "true") return;
+      showcase.dataset.gsapAnimated = "true";
+
+      const isMobile = window.matchMedia("(max-width: 767px)").matches;
+      const hasFinePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+      const header = showcase.querySelector(".firebase-section-header");
+      const kicker = showcase.querySelector(".firebase-section-kicker");
+      const title = showcase.querySelector(".firebase-section-title");
+      const headerBtn = showcase.querySelector(".firebase-section-header .admin-dock-btn");
+      const cards = gsap.utils.toArray(grid.querySelectorAll(".firebase-section-card"));
+
+      if (isMobile) {
+        if (header) {
+          gsap.fromTo(
+            [kicker, title, headerBtn].filter(Boolean),
+            { y: 18, autoAlpha: 0 },
+            {
+              y: 0,
+              autoAlpha: 1,
+              duration: 0.5,
+              stagger: 0.08,
+              ease: "power2.out",
+              clearProps: "transform",
+              scrollTrigger: {
+                trigger: showcase,
+                start: "top 92%",
+                toggleActions: "play none none none",
+              },
+            }
+          );
+        }
+        cards.forEach((card) => {
+          const img = card.querySelector(".firebase-section-card-media img");
+          const innerItems = gsap.utils.toArray(
+            card.querySelectorAll(
+              ".firebase-section-card-tag, .firebase-section-card-heading, .firebase-section-card-caption, .firebase-section-card-actions .admin-dock-btn"
+            )
+          );
+          const tl = gsap.timeline({
+            scrollTrigger: {
+              trigger: card,
+              start: "top 93%",
+              toggleActions: "play none none none",
+            },
+          });
+          tl.fromTo(
+            card,
+            { y: 24, scale: 0.98, autoAlpha: 0 },
+            { y: 0, scale: 1, autoAlpha: 1, duration: 0.5, ease: "power2.out", clearProps: "transform" }
+          );
+          if (img) {
+            tl.fromTo(
+              img,
+              { scale: 1.12, autoAlpha: 0.7 },
+              { scale: 1, autoAlpha: 1, duration: 0.55, ease: "power2.out", clearProps: "transform" },
+              "-=0.4"
+            );
+          }
+          if (innerItems.length > 0) {
+            tl.fromTo(
+              innerItems,
+              { y: 14, autoAlpha: 0 },
+              { y: 0, autoAlpha: 1, duration: 0.4, stagger: 0.06, ease: "power2.out", clearProps: "transform" },
+              "-=0.35"
+            );
+          }
+        });
+      } else {
+        const headerTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: showcase,
+            start: "top 86%",
+            toggleActions: "play none none reverse",
+          },
+        });
+        if (kicker) {
+          headerTl.fromTo(
+            kicker,
+            { x: -45, autoAlpha: 0, skewX: -10 },
+            { x: 0, autoAlpha: 1, skewX: 0, duration: 0.65, ease: "expo.out" }
+          );
+        }
+        if (title) {
+          headerTl.fromTo(
+            title,
+            { y: 35, autoAlpha: 0, scale: 0.92, rotateX: 20, transformPerspective: 900 },
+            { y: 0, autoAlpha: 1, scale: 1, rotateX: 0, transformPerspective: 900, duration: 0.75, ease: "back.out(1.7)" },
+            "-=0.45"
+          );
+        }
+        if (headerBtn) {
+          headerTl.fromTo(
+            headerBtn,
+            { x: 40, scale: 0.82, autoAlpha: 0 },
+            { x: 0, scale: 1, autoAlpha: 1, duration: 0.75, ease: "elastic.out(1, 0.55)" },
+            "-=0.5"
+          );
+        }
+
+        const galleryVectors = [
+          { x: -65, y: 45, rotate: -4, scale: 0.88, transformPerspective: 1000 },
+          { x: 0, y: 70, rotateX: 26, scale: 0.86, transformPerspective: 1000 },
+          { x: 65, y: 45, rotate: 4, scale: 0.88, transformPerspective: 1000 },
+          { x: -55, y: 55, rotateY: 22, scale: 0.88, transformPerspective: 1000 },
+          { x: 0, y: 65, rotate: -3, scale: 0.86, transformPerspective: 1000 },
+          { x: 55, y: 55, rotateY: -22, scale: 0.88, transformPerspective: 1000 },
+        ];
+
+        cards.forEach((card, i) => {
+          const vec = galleryVectors[i % galleryVectors.length];
+          const img = card.querySelector(".firebase-section-card-media img");
+          const tag = card.querySelector(".firebase-section-card-tag");
+          const heading = card.querySelector(".firebase-section-card-heading");
+          const caption = card.querySelector(".firebase-section-card-caption");
+          const actions = gsap.utils.toArray(card.querySelectorAll(".firebase-section-card-actions .admin-dock-btn"));
+
+          const cardTl = gsap.timeline({
+            scrollTrigger: {
+              trigger: card,
+              start: "top 88%",
+              toggleActions: "play none none reverse",
+            },
+          });
+
+          cardTl.fromTo(
+            card,
+            { ...vec, autoAlpha: 0 },
+            {
+              x: 0,
+              y: 0,
+              rotate: 0,
+              rotateX: 0,
+              rotateY: 0,
+              scale: 1,
+              transformPerspective: 1000,
+              autoAlpha: 1,
+              duration: 0.85,
+              delay: (i % 3) * 0.08,
+              ease: "back.out(1.45)",
+            }
+          );
+
+          if (img) {
+            cardTl.fromTo(
+              img,
+              { scale: 1.24, autoAlpha: 0.6 },
+              { scale: 1, autoAlpha: 1, duration: 0.9, ease: "power2.out" },
+              "-=0.7"
+            );
+          }
+          if (tag) {
+            cardTl.fromTo(
+              tag,
+              { x: -20, autoAlpha: 0 },
+              { x: 0, autoAlpha: 1, duration: 0.45, ease: "back.out(1.7)" },
+              "-=0.6"
+            );
+          }
+          if (heading) {
+            cardTl.fromTo(
+              heading,
+              { y: 18, autoAlpha: 0 },
+              { y: 0, autoAlpha: 1, duration: 0.5, ease: "back.out(1.6)" },
+              "-=0.45"
+            );
+          }
+          if (caption) {
+            cardTl.fromTo(
+              caption,
+              { y: 16, autoAlpha: 0 },
+              { y: 0, autoAlpha: 1, duration: 0.45, ease: "power2.out" },
+              "-=0.38"
+            );
+          }
+          if (actions.length > 0) {
+            cardTl.fromTo(
+              actions,
+              { scale: 0.82, y: 12, autoAlpha: 0 },
+              { scale: 1, y: 0, autoAlpha: 1, duration: 0.55, stagger: 0.08, ease: "elastic.out(1, 0.55)" },
+              "-=0.35"
+            );
+          }
+
+          if (hasFinePointer && card instanceof HTMLElement) {
+            card.style.transformStyle = "preserve-3d";
+            card.addEventListener("mousemove", (e) => {
+              const rect = card.getBoundingClientRect();
+              const relX = (e.clientX - rect.left) / rect.width - 0.5;
+              const relY = (e.clientY - rect.top) / rect.height - 0.5;
+              gsap.to(card, {
+                rotateY: relX * 10,
+                rotateX: -relY * 10,
+                y: -7,
+                scale: 1.02,
+                transformPerspective: 900,
+                duration: 0.35,
+                ease: "power2.out",
+                overwrite: "auto",
+              });
+            });
+            card.addEventListener("mouseleave", () => {
+              gsap.to(card, {
+                rotateY: 0,
+                rotateX: 0,
+                y: 0,
+                scale: 1,
+                transformPerspective: 900,
+                duration: 0.65,
+                ease: "elastic.out(1, 0.5)",
+                overwrite: "auto",
+              });
+            });
+          }
+        });
+      }
+    }
+
+    window.__animateFirebaseSectionGallery = animateFirebaseSectionGallery;
+
     const mm = gsap.matchMedia();
 
     // ============================================================================
@@ -1164,7 +1388,7 @@
     //    - Zero horizontal x-offsets, skews, or 3D rotations that break mobile width
     //    - Zero heroBg scale transform so hero text/buttons never zoom off-screen
     //    - Per-element triggers ("play none none none") + clearProps: "transform"
-    //      so stacked cards reveal smoothly as the user scrolls and stay rock-solid
+    //      so stacked cards and their inner items reveal smoothly as user scrolls
     // ============================================================================
     mm.add("(max-width: 767px)", () => {
       const heroBg = document.querySelector(".banner-wrap .wsite-header-section");
@@ -1172,7 +1396,7 @@
         gsap.set(heroBg, { clearProps: "transform,scale" });
       }
 
-      // 1. Mobile Header subtle fade-in (no x-shift or infinite loop)
+      // 1. Mobile Header subtle fade-in
       const mobileHeaderItems = gsap.utils.toArray(
         ".dusk-header .logo, .dusk-header .header-action-contact, .dusk-header .hamburger"
       );
@@ -1191,13 +1415,22 @@
         );
       }
 
-      // 2. Mobile Hero content clean vertical reveal (excluding Contact page form)
+      // 2. Mobile Hero content & items clean vertical reveal (Selector 1)
       if (!document.body.classList.contains("janaka-contact")) {
+        const heroSectionContent = document.querySelector(".banner-wrap .wsite-header-section .wsite-section-content");
         const heroEls = gsap.utils.toArray(
-          ".banner .hero-editorial-kicker, .banner h2.wsite-content-title, .banner .paragraph, .banner .wsite-button"
+          ".banner .hero-editorial-kicker, .banner h2.wsite-content-title, .banner .sri-lanka-tracks, .banner .paragraph, .banner .wsite-button"
         );
+        const mobileHeroTl = gsap.timeline({ defaults: { ease: "power2.out" } });
+        if (heroSectionContent) {
+          mobileHeroTl.fromTo(
+            heroSectionContent,
+            { autoAlpha: 0.01, y: 14 },
+            { autoAlpha: 1, y: 0, duration: 0.45, clearProps: "transform" }
+          );
+        }
         if (heroEls.length > 0) {
-          gsap.fromTo(
+          mobileHeroTl.fromTo(
             heroEls,
             { y: 20, autoAlpha: 0 },
             {
@@ -1205,13 +1438,12 @@
               autoAlpha: 1,
               duration: 0.55,
               stagger: 0.08,
-              ease: "power2.out",
               clearProps: "transform",
-            }
+            },
+            "-=0.3"
           );
         }
       } else {
-        // Contact page header & cards smooth mobile entrance
         const contactTop = gsap.utils.toArray(
           "body.janaka-contact .banner h2.wsite-content-title, body.janaka-contact .banner > .wsite-section-elements > .paragraph"
         );
@@ -1222,7 +1454,9 @@
             { y: 0, autoAlpha: 1, duration: 0.45, stagger: 0.06, ease: "power2.out", clearProps: "transform" }
           );
         }
-        const contactCols = gsap.utils.toArray("body.janaka-contact .contact-cards > .wsite-multicol-table-wrap > .wsite-multicol-table > .wsite-multicol-tbody > .wsite-multicol-tr > .wsite-multicol-col");
+        const contactCols = gsap.utils.toArray(
+          "body.janaka-contact .contact-cards > .wsite-multicol-table-wrap > .wsite-multicol-table > .wsite-multicol-tbody > .wsite-multicol-tr > .wsite-multicol-col"
+        );
         contactCols.forEach((col) => {
           gsap.fromTo(
             col,
@@ -1287,11 +1521,247 @@
         initCrossBridgeCounters("play none none none");
       }
 
-      // 4. Mobile Section Headings across all pages
+      // 4. Mobile Direct Booking Section & Items (Selector 2: .wsite-background-75 .container)
+      const mobileDirectContainer = document.querySelector(".wsite-background-75 .container");
+      if (mobileDirectContainer) {
+        const directItems = gsap.utils.toArray(
+          mobileDirectContainer.querySelectorAll(
+            "h2.wsite-content-title, .paragraph, .wsite-button, .janaka-payment-card"
+          )
+        );
+        const directTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: mobileDirectContainer,
+            start: "top 92%",
+            toggleActions: "play none none none",
+          },
+        });
+        directTl.fromTo(
+          mobileDirectContainer,
+          { y: 24, scale: 0.98, autoAlpha: 0 },
+          { y: 0, scale: 1, autoAlpha: 1, duration: 0.5, ease: "power2.out", clearProps: "transform" }
+        );
+        if (directItems.length > 0) {
+          directTl.fromTo(
+            directItems,
+            { y: 16, autoAlpha: 0 },
+            { y: 0, autoAlpha: 1, duration: 0.45, stagger: 0.07, ease: "power2.out", clearProps: "transform" },
+            "-=0.3"
+          );
+        }
+      }
+
+      // 5. Mobile Safari Experiences Section & Cards + Inner Items (Selector 3: .wsite-background-1 .container)
+      const mobileSafariSection = document.querySelector(".wsite-background-1 .container");
+      if (mobileSafariSection) {
+        const safariHeadings = gsap.utils.toArray(mobileSafariSection.querySelectorAll("h2.wsite-content-title"));
+        if (safariHeadings.length > 0) {
+          gsap.fromTo(
+            safariHeadings,
+            { y: 18, autoAlpha: 0 },
+            {
+              y: 0,
+              autoAlpha: 1,
+              duration: 0.5,
+              stagger: 0.08,
+              ease: "power2.out",
+              clearProps: "transform",
+              scrollTrigger: {
+                trigger: mobileSafariSection,
+                start: "top 92%",
+                toggleActions: "play none none none",
+              },
+            }
+          );
+        }
+        const mSafariCards = gsap.utils.toArray(mobileSafariSection.querySelectorAll(".home-safari-card"));
+        mSafariCards.forEach((card) => {
+          const img = card.querySelector(".wsite-image img");
+          const innerEls = gsap.utils.toArray(
+            card.querySelectorAll(".home-safari-title, .home-safari-description, .wsite-button")
+          );
+          const tl = gsap.timeline({
+            scrollTrigger: {
+              trigger: card,
+              start: "top 92%",
+              toggleActions: "play none none none",
+            },
+          });
+          tl.fromTo(
+            card,
+            { y: 24, scale: 0.98, autoAlpha: 0 },
+            { y: 0, scale: 1, autoAlpha: 1, duration: 0.5, ease: "power2.out", clearProps: "transform" }
+          );
+          if (img) {
+            tl.fromTo(
+              img,
+              { scale: 1.12 },
+              { scale: 1, duration: 0.55, ease: "power2.out", clearProps: "transform" },
+              "-=0.4"
+            );
+          }
+          if (innerEls.length > 0) {
+            tl.fromTo(
+              innerEls,
+              { y: 14, autoAlpha: 0 },
+              { y: 0, autoAlpha: 1, duration: 0.42, stagger: 0.06, ease: "power2.out", clearProps: "transform" },
+              "-=0.35"
+            );
+          }
+        });
+      }
+
+      // 6. Mobile Yala Spotlight & Wildlife Section + Inner Items (Selector 6: .home-wildlife-section .container)
+      const mobileWildlifeContainer = document.querySelector(".home-wildlife-section .container");
+      if (mobileWildlifeContainer) {
+        const yalaFeature = mobileWildlifeContainer.querySelector(".home-yala-feature");
+        if (yalaFeature) {
+          const yalaImg = yalaFeature.querySelector(".wsite-image img");
+          const yalaItems = gsap.utils.toArray(
+            yalaFeature.querySelectorAll(".home-yala-copy .paragraph, .home-yala-copy .wsite-button")
+          );
+          const yalaTl = gsap.timeline({
+            scrollTrigger: {
+              trigger: yalaFeature,
+              start: "top 92%",
+              toggleActions: "play none none none",
+            },
+          });
+          yalaTl.fromTo(
+            yalaFeature,
+            { y: 24, scale: 0.98, autoAlpha: 0 },
+            { y: 0, scale: 1, autoAlpha: 1, duration: 0.5, ease: "power2.out", clearProps: "transform" }
+          );
+          if (yalaImg) {
+            yalaTl.fromTo(
+              yalaImg,
+              { scale: 1.1 },
+              { scale: 1, duration: 0.55, ease: "power2.out", clearProps: "transform" },
+              "-=0.4"
+            );
+          }
+          if (yalaItems.length > 0) {
+            yalaTl.fromTo(
+              yalaItems,
+              { y: 14, autoAlpha: 0 },
+              { y: 0, autoAlpha: 1, duration: 0.42, stagger: 0.06, ease: "power2.out", clearProps: "transform" },
+              "-=0.35"
+            );
+          }
+        }
+
+        const mWildlifeCards = gsap.utils.toArray(mobileWildlifeContainer.querySelectorAll(".home-wildlife-card"));
+        mWildlifeCards.forEach((wCard) => {
+          const wImg = wCard.querySelector("img");
+          const wItems = gsap.utils.toArray(wCard.querySelectorAll(".paragraph, .wildlife-card-links a"));
+          const tl = gsap.timeline({
+            scrollTrigger: {
+              trigger: wCard,
+              start: "top 92%",
+              toggleActions: "play none none none",
+            },
+          });
+          tl.fromTo(
+            wCard,
+            { y: 22, scale: 0.98, autoAlpha: 0 },
+            { y: 0, scale: 1, autoAlpha: 1, duration: 0.5, ease: "power2.out", clearProps: "transform" }
+          );
+          if (wImg) {
+            tl.fromTo(
+              wImg,
+              { scale: 1.12 },
+              { scale: 1, duration: 0.55, ease: "power2.out", clearProps: "transform" },
+              "-=0.4"
+            );
+          }
+          if (wItems.length > 0) {
+            tl.fromTo(
+              wItems,
+              { y: 12, autoAlpha: 0 },
+              { y: 0, autoAlpha: 1, duration: 0.4, stagger: 0.05, ease: "power2.out", clearProps: "transform" },
+              "-=0.35"
+            );
+          }
+        });
+      }
+
+      // 7. Mobile Hambantota Port Section & Cards + Inner Items (Selector 4: .home-port-section .container)
+      const mobilePortContainer = document.querySelector(".home-port-section .container");
+      if (mobilePortContainer) {
+        const portIntroEls = gsap.utils.toArray(
+          mobilePortContainer.querySelectorAll(
+            ":scope > .wsite-section-elements > .paragraph, :scope > .wsite-section-elements > h2.wsite-content-title"
+          )
+        );
+        if (portIntroEls.length > 0) {
+          gsap.fromTo(
+            portIntroEls,
+            { y: 18, autoAlpha: 0 },
+            {
+              y: 0,
+              autoAlpha: 1,
+              duration: 0.48,
+              stagger: 0.07,
+              ease: "power2.out",
+              clearProps: "transform",
+              scrollTrigger: {
+                trigger: mobilePortContainer,
+                start: "top 92%",
+                toggleActions: "play none none none",
+              },
+            }
+          );
+        }
+
+        const mPortCards = gsap.utils.toArray(mobilePortContainer.querySelectorAll(".home-port-card"));
+        mPortCards.forEach((pCard) => {
+          const pImg = pCard.querySelector(".wsite-image img");
+          const pItems = gsap.utils.toArray(
+            pCard.querySelectorAll(".home-port-copy .paragraph, .home-port-copy .wsite-button")
+          );
+          const tl = gsap.timeline({
+            scrollTrigger: {
+              trigger: pCard,
+              start: "top 92%",
+              toggleActions: "play none none none",
+            },
+          });
+          tl.fromTo(
+            pCard,
+            { y: 24, scale: 0.98, autoAlpha: 0 },
+            { y: 0, scale: 1, autoAlpha: 1, duration: 0.5, ease: "power2.out", clearProps: "transform" }
+          );
+          if (pImg) {
+            tl.fromTo(
+              pImg,
+              { scale: 1.12 },
+              { scale: 1, duration: 0.55, ease: "power2.out", clearProps: "transform" },
+              "-=0.4"
+            );
+          }
+          if (pItems.length > 0) {
+            tl.fromTo(
+              pItems,
+              { y: 14, autoAlpha: 0 },
+              { y: 0, autoAlpha: 1, duration: 0.42, stagger: 0.06, ease: "power2.out", clearProps: "transform" },
+              "-=0.35"
+            );
+          }
+        });
+      }
+
+      // 8. Remaining Mobile Section Headings across all pages
       const mobileHeadings = gsap.utils.toArray(
         "#wsite-content h2.wsite-content-title, #wsite-content .home-wildlife-heading"
       );
       mobileHeadings.forEach((h) => {
+        if (
+          h.closest(".wsite-background-75") ||
+          h.closest(".wsite-background-1") ||
+          h.closest(".home-port-section")
+        ) {
+          return;
+        }
         gsap.fromTo(
           h,
           { y: 18, autoAlpha: 0 },
@@ -1310,18 +1780,13 @@
         );
       });
 
-      // 5. Mobile Individual Cards & Feature Blocks (each triggers when IT enters view)
+      // 9. Remaining Mobile Individual Cards & Feature Blocks
       const mobileCardSelectors = [
         ".janaka-benefits .benefit-column",
-        ".wsite-background-75 .container",
         ".home-why-choose .wsite-image",
         ".home-why-choose .why-row .paragraph",
-        ".home-safari-card",
-        ".home-yala-feature",
-        ".home-wildlife-card",
         ".home-meet-janaka .wsite-multicol-col",
         ".home-guest-reviews .wsite-multicol-col",
-        ".home-port-card",
         ".wsite-background-84 .wsite-multicol-col",
         ".parks-overview-card",
         ".about-intro .wsite-multicol-col",
@@ -1375,12 +1840,14 @@
           }
         );
       });
+
+      animateFirebaseSectionGallery();
     });
 
     // ============================================================================
     // B. DESKTOP & TABLET GSAP PROFILE (min-width: 768px)
     //    - Distinct multi-directional choreographies, 3D hover physics (fine pointer),
-    //      hero Ken Burns parallax, and ambient floating badges
+    //      hero Ken Burns parallax, and staggered inner-item animations
     // ============================================================================
     mm.add("(min-width: 768px)", () => {
       const hasFinePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
@@ -1485,8 +1952,9 @@
         );
       }
 
-      // 2. HERO BANNER (Photo Hero Pages Only)
+      // 2. HERO BANNER & ITEMS (Selector 1: .banner-wrap .wsite-header-section .wsite-section-content)
       if (!document.body.classList.contains("janaka-contact")) {
+        const heroSectionContent = document.querySelector(".banner-wrap .wsite-header-section .wsite-section-content");
         const heroKicker = document.querySelector(".banner .hero-editorial-kicker");
         const heroTitle = document.querySelector(".banner h2.wsite-content-title");
         const heroHighlight = document.querySelector(".banner .sri-lanka-tracks");
@@ -1515,12 +1983,20 @@
           });
         }
 
-        const heroTl = gsap.timeline({ delay: 0.1 });
+        const heroTl = gsap.timeline({ delay: 0.08 });
+        if (heroSectionContent) {
+          heroTl.fromTo(
+            heroSectionContent,
+            { autoAlpha: 0.01, y: 24 },
+            { autoAlpha: 1, y: 0, duration: 0.65, ease: "power3.out" }
+          );
+        }
         if (heroKicker) {
           heroTl.fromTo(
             heroKicker,
             { x: -60, autoAlpha: 0, skewX: -12, scale: 0.92 },
-            { x: 0, autoAlpha: 1, skewX: 0, scale: 1, duration: 0.85, ease: "expo.out" }
+            { x: 0, autoAlpha: 1, skewX: 0, scale: 1, duration: 0.85, ease: "expo.out" },
+            "-=0.45"
           );
         }
         if (heroTitle) {
@@ -1563,6 +2039,14 @@
             { y: 0, autoAlpha: 1, scale: 1, duration: 0.9, ease: "elastic.out(1, 0.55)" },
             "-=0.45"
           );
+          gsap.to(heroBtn, {
+            y: -4,
+            duration: 2.3,
+            repeat: -1,
+            yoyo: true,
+            ease: "sine.inOut",
+            delay: 1.8,
+          });
         }
       }
 
@@ -1656,7 +2140,7 @@
         initCrossBridgeCounters("restart none restart none");
       }
 
-      // 4. SECTION: WHY EXPLORE WITH JANAKA (.janaka-benefits)
+      // 4. SECTION: WHY EXPLORE WITH NISHA (.janaka-benefits)
       const benefitsSection = document.querySelector(".janaka-benefits");
       if (benefitsSection) {
         const heading = benefitsSection.querySelector("h2.wsite-content-title");
@@ -1759,52 +2243,85 @@
         bindGsap3DHover(benefitCols, 7, -8, 1.03);
       }
 
-      // 5. SECTION: SAVE UP TO 30% DIRECT BOOKING (.wsite-background-75)
+      // 5. SECTION: SAVE UP TO 30% DIRECT BOOKING & ITEMS (Selector 2: .wsite-background-75 .container)
       const directSection = document.querySelector(".wsite-background-75");
       if (directSection) {
+        const directContainer = directSection.querySelector(".container");
         const title = directSection.querySelector("h2.wsite-content-title");
-        const paragraphs = gsap.utils.toArray(directSection.querySelectorAll(".paragraph"));
+        const paragraphs = gsap.utils.toArray(
+          directSection.querySelectorAll(".paragraph:not(.janaka-payment-label)")
+        );
         const ctaBtn = directSection.querySelector(".wsite-button");
+        const payLabel = directSection.querySelector(".janaka-payment-label");
         const payCards = gsap.utils.toArray(directSection.querySelectorAll(".janaka-payment-card"));
 
         const directTl = gsap.timeline({
           scrollTrigger: {
-            trigger: directSection,
+            trigger: directContainer || directSection,
             start: "top 85%",
             toggleActions: "play none none reverse",
           },
         });
 
+        if (directContainer) {
+          directTl.fromTo(
+            directContainer,
+            { y: 50, scale: 0.93, rotateX: 12, transformPerspective: 1000, autoAlpha: 0 },
+            { y: 0, scale: 1, rotateX: 0, transformPerspective: 1000, autoAlpha: 1, duration: 0.85, ease: "power3.out" }
+          );
+          bindGsap3DHover(directContainer, 3, -5, 1.01);
+        }
         if (title) {
           directTl.fromTo(
             title,
-            { scale: 0.78, autoAlpha: 0, y: 40, rotateX: 22, transformPerspective: 900 },
-            { scale: 1, autoAlpha: 1, y: 0, rotateX: 0, transformPerspective: 900, duration: 0.85, ease: "back.out(1.8)" }
+            { scale: 0.78, autoAlpha: 0, y: 36, rotateX: 22, transformPerspective: 900 },
+            { scale: 1, autoAlpha: 1, y: 0, rotateX: 0, transformPerspective: 900, duration: 0.8, ease: "back.out(1.8)" },
+            "-=0.55"
           );
         }
         if (paragraphs.length > 0) {
           directTl.fromTo(
             paragraphs,
-            { x: (idx) => (idx % 2 === 0 ? -60 : 60), autoAlpha: 0 },
-            { x: 0, autoAlpha: 1, duration: 0.7, stagger: 0.12, ease: "power3.out" },
+            { x: (idx) => (idx % 2 === 0 ? -55 : 55), autoAlpha: 0 },
+            { x: 0, autoAlpha: 1, duration: 0.65, stagger: 0.12, ease: "power3.out" },
             "-=0.45"
           );
         }
         if (ctaBtn) {
           directTl.fromTo(
             ctaBtn,
-            { scale: 0.65, autoAlpha: 0, y: 24 },
+            { scale: 0.68, autoAlpha: 0, y: 24 },
             { scale: 1, autoAlpha: 1, y: 0, duration: 0.85, ease: "elastic.out(1, 0.5)" },
             "-=0.35"
+          );
+        }
+        if (payLabel) {
+          directTl.fromTo(
+            payLabel,
+            { y: 18, autoAlpha: 0 },
+            { y: 0, autoAlpha: 1, duration: 0.5, ease: "power2.out" },
+            "-=0.4"
           );
         }
         if (payCards.length > 0) {
           directTl.fromTo(
             payCards,
             { y: 36, rotate: (idx) => (idx === 0 ? -16 : 16), autoAlpha: 0, scale: 0.7 },
-            { y: 0, rotate: 0, autoAlpha: 1, scale: 1, duration: 0.7, stagger: 0.14, ease: "elastic.out(1, 0.55)" },
-            "-=0.4"
+            { y: 0, rotate: 0, autoAlpha: 1, scale: 1, duration: 0.75, stagger: 0.14, ease: "elastic.out(1, 0.55)" },
+            "-=0.35"
           );
+          payCards.forEach((pCard, idx) => {
+            gsap.to(pCard, {
+              y: -4,
+              rotate: idx === 0 ? -2 : 2,
+              duration: 2.2 + idx * 0.3,
+              repeat: -1,
+              yoyo: true,
+              ease: "sine.inOut",
+              delay: 1.4 + idx * 0.25,
+            });
+          });
+          bindGsap3DHover(payCards, 8, -5, 1.06);
         }
       }
 
@@ -1889,23 +2406,26 @@
         }
       }
 
-      // 7. SECTION: 6 SAFARI EXPERIENCES GRID (.home-safari-grid)
+      // 7. SECTION: 6 SAFARI EXPERIENCES GRID & ITEMS (Selector 3: .wsite-background-1 .container)
+      const safariSection = document.querySelector(".wsite-background-1 .container");
       const safariCards = gsap.utils.toArray(".home-safari-card");
       if (safariCards.length > 0) {
         const safariHeaders = gsap.utils.toArray(".wsite-background-1 h2.wsite-content-title");
         if (safariHeaders.length > 0) {
           gsap.fromTo(
             safariHeaders,
-            { y: 40, autoAlpha: 0, scale: 0.92 },
+            { y: 40, autoAlpha: 0, scale: 0.92, rotateX: 18, transformPerspective: 900 },
             {
               y: 0,
               autoAlpha: 1,
               scale: 1,
+              rotateX: 0,
+              transformPerspective: 900,
               duration: 0.8,
-              stagger: 0.12,
+              stagger: 0.14,
               ease: "back.out(1.6)",
               scrollTrigger: {
-                trigger: ".wsite-background-1",
+                trigger: safariSection || ".wsite-background-1",
                 start: "top 85%",
                 toggleActions: "play none none reverse",
               },
@@ -1917,9 +2437,9 @@
           { x: -75, y: 50, rotate: -5, scale: 0.88, transformPerspective: 1000 },
           { x: 0, y: 80, scale: 0.84, rotateX: 30, transformPerspective: 1000 },
           { x: 75, y: 50, rotate: 5, scale: 0.88, transformPerspective: 1000 },
-          { x: -70, y: -40, rotateY: 30, scale: 0.88, transformPerspective: 1000 },
-          { x: 0, y: -70, scale: 0.8, rotate: 4, transformPerspective: 1000 },
-          { x: 70, y: -40, rotateY: -30, scale: 0.88, transformPerspective: 1000 },
+          { x: -70, y: 45, rotateY: 28, scale: 0.88, transformPerspective: 1000 },
+          { x: 0, y: 70, scale: 0.82, rotate: 4, transformPerspective: 1000 },
+          { x: 70, y: 45, rotateY: -28, scale: 0.88, transformPerspective: 1000 },
         ];
 
         safariCards.forEach((card, i) => {
@@ -1950,6 +2470,7 @@
               transformPerspective: 1000,
               autoAlpha: 1,
               duration: 0.85,
+              delay: (i % 3) * 0.08,
               ease: "back.out(1.4)",
             }
           );
@@ -1991,7 +2512,8 @@
         bindGsap3DHover(safariCards, 5, -7, 1.02);
       }
 
-      // 8. SECTION: YALA SPOTLIGHT & WILDLIFE ENCOUNTERS (.home-wildlife-section)
+      // 8. SECTION: YALA SPOTLIGHT & WILDLIFE ENCOUNTERS + ITEMS (Selector 6: .home-wildlife-section .container)
+      const wildlifeSection = document.querySelector(".home-wildlife-section");
       const yalaFeature = document.querySelector(".home-yala-feature");
       if (yalaFeature) {
         const yalaImg = yalaFeature.querySelector(".wsite-image img");
@@ -2028,6 +2550,68 @@
             "-=0.6"
           );
         }
+        bindGsap3DHover(yalaFeature, 3, -5, 1.01);
+      }
+
+      if (wildlifeSection) {
+        const wildlifeDivider = wildlifeSection.querySelector("hr.styled-hr");
+        const wildlifeHeading = wildlifeSection.querySelector(".home-wildlife-heading");
+        const wildlifeFooterNote = wildlifeSection.querySelector(
+          ".wsite-section-elements > .paragraph:last-of-type"
+        );
+
+        if (wildlifeDivider) {
+          gsap.fromTo(
+            wildlifeDivider,
+            { scaleX: 0, autoAlpha: 0 },
+            {
+              scaleX: 1,
+              autoAlpha: 1,
+              duration: 0.8,
+              ease: "expo.out",
+              scrollTrigger: {
+                trigger: wildlifeDivider,
+                start: "top 90%",
+                toggleActions: "play none none reverse",
+              },
+            }
+          );
+        }
+        if (wildlifeHeading) {
+          gsap.fromTo(
+            wildlifeHeading,
+            { y: 34, autoAlpha: 0, scale: 0.92 },
+            {
+              y: 0,
+              autoAlpha: 1,
+              scale: 1,
+              duration: 0.75,
+              ease: "back.out(1.7)",
+              scrollTrigger: {
+                trigger: wildlifeHeading,
+                start: "top 88%",
+                toggleActions: "play none none reverse",
+              },
+            }
+          );
+        }
+        if (wildlifeFooterNote) {
+          gsap.fromTo(
+            wildlifeFooterNote,
+            { y: 24, autoAlpha: 0 },
+            {
+              y: 0,
+              autoAlpha: 1,
+              duration: 0.65,
+              ease: "power2.out",
+              scrollTrigger: {
+                trigger: wildlifeFooterNote,
+                start: "top 92%",
+                toggleActions: "play none none reverse",
+              },
+            }
+          );
+        }
       }
 
       const wildlifeCards = gsap.utils.toArray(".home-wildlife-card");
@@ -2035,13 +2619,15 @@
         const wildlifeVectors = [
           { x: -70, rotate: -4, scale: 0.88, transformPerspective: 900 },
           { y: 70, scale: 0.86, rotateX: 30, transformPerspective: 900 },
-          { y: -70, scale: 0.86, rotateX: -30, transformPerspective: 900 },
+          { y: 65, scale: 0.86, rotateX: -28, transformPerspective: 900 },
           { x: 70, rotate: 4, scale: 0.88, transformPerspective: 900 },
         ];
         wildlifeCards.forEach((wCard, idx) => {
           const wVec = wildlifeVectors[idx % wildlifeVectors.length];
           const wImg = wCard.querySelector("img");
-          const wTexts = wCard.querySelectorAll(".paragraph");
+          const wTitle = wCard.querySelector(".wildlife-card-title");
+          const wDesc = wCard.querySelector(".paragraph:not(.wildlife-card-title):not(.wildlife-card-links)");
+          const wLinks = gsap.utils.toArray(wCard.querySelectorAll(".wildlife-card-links a"));
 
           const tl = gsap.timeline({
             scrollTrigger: {
@@ -2067,21 +2653,37 @@
             }
           );
           if (wImg) {
-            tl.fromTo(wImg, { scale: 1.2 }, { scale: 1, duration: 0.85, ease: "power2.out" }, "-=0.6");
+            tl.fromTo(wImg, { scale: 1.22 }, { scale: 1, duration: 0.85, ease: "power2.out" }, "-=0.6");
           }
-          if (wTexts.length > 0) {
+          if (wTitle) {
             tl.fromTo(
-              wTexts,
+              wTitle,
               { x: 24, autoAlpha: 0 },
-              { x: 0, autoAlpha: 1, duration: 0.45, stagger: 0.08, ease: "power2.out" },
-              "-=0.45"
+              { x: 0, autoAlpha: 1, duration: 0.45, ease: "back.out(1.6)" },
+              "-=0.5"
+            );
+          }
+          if (wDesc) {
+            tl.fromTo(
+              wDesc,
+              { y: 16, autoAlpha: 0 },
+              { y: 0, autoAlpha: 1, duration: 0.45, ease: "power2.out" },
+              "-=0.38"
+            );
+          }
+          if (wLinks.length > 0) {
+            tl.fromTo(
+              wLinks,
+              { y: 12, scale: 0.86, autoAlpha: 0 },
+              { y: 0, scale: 1, autoAlpha: 1, duration: 0.45, stagger: 0.06, ease: "back.out(1.8)" },
+              "-=0.32"
             );
           }
         });
         bindGsap3DHover(wildlifeCards, 5, -6, 1.02);
       }
 
-      // 9. SECTION: MEET JANAKA & THE TEAM (.home-meet-janaka)
+      // 9. SECTION: MEET NISHA & THE TEAM (.home-meet-janaka)
       const meetSection = document.querySelector(".home-meet-janaka");
       if (meetSection) {
         const meetImg = meetSection.querySelector(".wsite-image img");
@@ -2189,36 +2791,57 @@
         bindGsap3DHover([revAward, revSummary], 5, -5, 1.02);
       }
 
-      // 11. SECTION: HAMBANTOTA PORT SAFARIS (.home-port-section)
+      // 11. SECTION: HAMBANTOTA PORT SAFARIS & ITEMS (Selector 4: .home-port-section .container)
       const portSection = document.querySelector(".home-port-section");
       if (portSection) {
-        const portHeading = portSection.querySelector("h2.wsite-content-title");
+        const portContainer = portSection.querySelector(".container");
+        const portIntroHeaderEls = gsap.utils.toArray(
+          portSection.querySelectorAll(
+            ".container > .wsite-section-elements > .paragraph, .container > .wsite-section-elements > h2.wsite-content-title"
+          )
+        );
         const portCards = gsap.utils.toArray(portSection.querySelectorAll(".home-port-card"));
-        if (portHeading) {
+
+        if (portIntroHeaderEls.length > 0) {
           gsap.fromTo(
-            portHeading,
-            { y: 36, autoAlpha: 0 },
+            portIntroHeaderEls,
+            { y: 34, autoAlpha: 0, scale: 0.94 },
             {
               y: 0,
               autoAlpha: 1,
+              scale: 1,
               duration: 0.75,
-              ease: "power3.out",
+              stagger: 0.12,
+              ease: "back.out(1.6)",
               scrollTrigger: {
-                trigger: portSection,
+                trigger: portContainer || portSection,
                 start: "top 85%",
                 toggleActions: "play none none reverse",
               },
             }
           );
         }
+
         const portVectors = [
-          { x: -65, y: 40, rotate: -4, scale: 0.88 },
+          { x: -65, y: 40, rotate: -4, scale: 0.88, transformPerspective: 900 },
           { x: 0, y: 65, scale: 0.85, rotateX: 25, transformPerspective: 900 },
-          { x: 65, y: 40, rotate: 4, scale: 0.88 },
+          { x: 65, y: 40, rotate: 4, scale: 0.88, transformPerspective: 900 },
         ];
         portCards.forEach((pCard, i) => {
           const v = portVectors[i % portVectors.length];
-          gsap.fromTo(
+          const pImg = pCard.querySelector(".wsite-image img");
+          const pTitle = pCard.querySelector(".home-port-copy .paragraph");
+          const pBtn = pCard.querySelector(".home-port-copy .wsite-button");
+
+          const pTl = gsap.timeline({
+            scrollTrigger: {
+              trigger: pCard,
+              start: "top 88%",
+              toggleActions: "play none none reverse",
+            },
+          });
+
+          pTl.fromTo(
             pCard,
             { ...v, autoAlpha: 0 },
             {
@@ -2229,18 +2852,38 @@
               scale: 1,
               transformPerspective: 900,
               autoAlpha: 1,
-              duration: 0.8,
+              duration: 0.82,
               delay: i * 0.1,
               ease: "back.out(1.5)",
-              scrollTrigger: {
-                trigger: pCard,
-                start: "top 88%",
-                toggleActions: "play none none reverse",
-              },
             }
           );
+
+          if (pImg) {
+            pTl.fromTo(
+              pImg,
+              { scale: 1.24 },
+              { scale: 1, duration: 0.88, ease: "power2.out" },
+              "-=0.65"
+            );
+          }
+          if (pTitle) {
+            pTl.fromTo(
+              pTitle,
+              { y: 18, autoAlpha: 0 },
+              { y: 0, autoAlpha: 1, duration: 0.5, ease: "back.out(1.6)" },
+              "-=0.5"
+            );
+          }
+          if (pBtn) {
+            pTl.fromTo(
+              pBtn,
+              { scale: 0.8, y: 14, autoAlpha: 0 },
+              { scale: 1, y: 0, autoAlpha: 1, duration: 0.65, ease: "elastic.out(1, 0.55)" },
+              "-=0.38"
+            );
+          }
         });
-        bindGsap3DHover(portCards, 5, -5, 1.02);
+        bindGsap3DHover(portCards, 5, -6, 1.02);
       }
 
       // 12. SECTION: TRANSFERS & STAYS (.wsite-background-84)
@@ -2345,6 +2988,9 @@
           }
         );
       }
+
+      // 15. FIREBASE LIVE SECTION GALLERY (Selector 5: #firebase-section-gallery > #firebase-section-grid)
+      animateFirebaseSectionGallery();
     });
 
     // Ensure ScrollTrigger recalculates after layout/images settle
@@ -2359,6 +3005,9 @@
   initUltraSmoothScroll();
   void initDistinctGsapAnimations();
   void hydrateFromFirebaseCms().then(() => {
+    if (typeof window.__animateFirebaseSectionGallery === "function") {
+      window.__animateFirebaseSectionGallery();
+    }
     if (window.ScrollTrigger) {
       window.ScrollTrigger.refresh();
     }

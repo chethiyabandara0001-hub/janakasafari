@@ -240,7 +240,7 @@ export const INITIAL_FIREBASE_SECTION_IMAGES: SeedSectionGalleryItem[] = [
     "itemId": "about_sec_1",
     "page": "about.html",
     "sectionKey": "about_team_section",
-    "sectionTitle": "Janaka & Experienced Tracker Team",
+    "sectionTitle": "Nisha & Experienced Tracker Team",
     "title": "15+ Years Born & Raised Beside Yala",
     "caption": "Deep local knowledge of animal behavior, alarm calls, and territorial tracks across all five blocks of Yala.",
     "src": "https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?auto=format&fit=crop&w=1280&q=85&v=sec20",
@@ -251,7 +251,7 @@ export const INITIAL_FIREBASE_SECTION_IMAGES: SeedSectionGalleryItem[] = [
     "itemId": "about_sec_2",
     "page": "about.html",
     "sectionKey": "about_team_section",
-    "sectionTitle": "Janaka & Experienced Tracker Team",
+    "sectionTitle": "Nisha & Experienced Tracker Team",
     "title": "Ethical Wildlife Distance & Conservation First",
     "caption": "We respect park speed limits, never crowd resting animals, and position our jeeps thoughtfully for natural sightings.",
     "src": "https://images.unsplash.com/photo-1602491453631-e2a5ad90a131?auto=format&fit=crop&w=1280&q=85&v=sec21",
@@ -314,10 +314,10 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "page": "index.html",
     "slotIndex": 0,
     "type": "logo",
-    "label": "Janaka Safari",
+    "label": "Nisha Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
-    "alt": "Janaka Safari"
+    "src": "/assets/media/nisha-safari-logo.svg",
+    "alt": "Nisha Safari"
   },
   {
     "slotId": "index_html__slot_1",
@@ -474,10 +474,10 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "page": "index.html",
     "slotIndex": 16,
     "type": "img",
-    "label": "Janaka with safari guests beside a jeep at Yala National Park",
-    "sectionContext": "Meet Janaka & the Team",
+    "label": "Nisha with safari guests beside a jeep at Yala National Park",
+    "sectionContext": "Meet Nisha & the Team",
     "src": "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1000&q=82&v=idx16",
-    "alt": "Janaka with safari guests beside a jeep at Yala National Park"
+    "alt": "Nisha with safari guests beside a jeep at Yala National Park"
   },
   {
     "slotId": "index_html__slot_17",
@@ -534,10 +534,10 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "page": "index.html",
     "slotIndex": 22,
     "type": "img",
-    "label": "Safari Janaka Taxi Service",
-    "sectionContext": "Transfers & Stays with Janaka · Safari Janaka Taxi Service",
+    "label": "Safari Nisha Taxi Service",
+    "sectionContext": "Transfers & Stays with Nisha · Safari Nisha Taxi Service",
     "src": "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=1000&q=82&v=idx22",
-    "alt": "Safari Janaka Taxi Service"
+    "alt": "Safari Nisha Taxi Service"
   },
   {
     "slotId": "index_html__slot_23",
@@ -545,7 +545,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "slotIndex": 23,
     "type": "img",
     "label": "My Resort Yala",
-    "sectionContext": "Transfers & Stays with Janaka · My Resort Yala",
+    "sectionContext": "Transfers & Stays with Nisha · My Resort Yala",
     "src": "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=1000&q=82&v=idx23",
     "alt": "My Resort Yala"
   },
@@ -555,7 +555,7 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "slotIndex": 24,
     "type": "img",
     "label": "Lake Face Cabana",
-    "sectionContext": "Transfers & Stays with Janaka · Lake Face Cabana",
+    "sectionContext": "Transfers & Stays with Nisha · Lake Face Cabana",
     "src": "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1000&q=82&v=idx24",
     "alt": "Lake Face Cabana"
   },
@@ -564,40 +564,40 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "page": "index.html",
     "slotIndex": 25,
     "type": "logo",
-    "label": "Janaka Safari Logo",
+    "label": "Nisha Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
-    "alt": "Janaka Safari Logo"
+    "src": "/assets/media/nisha-safari-logo.svg",
+    "alt": "Nisha Safari Logo"
   },
   {
     "slotId": "about_html__slot_0",
     "page": "about.html",
     "slotIndex": 0,
     "type": "logo",
-    "label": "Janaka Safari",
+    "label": "Nisha Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
-    "alt": "Janaka Safari"
+    "src": "/assets/media/nisha-safari-logo.svg",
+    "alt": "Nisha Safari"
   },
   {
     "slotId": "about_html__slot_1",
     "page": "about.html",
     "slotIndex": 1,
     "type": "hero-bg",
-    "label": "About Janaka Safari Jeep Tours",
-    "sectionContext": "Hero Banner (About Janaka Safari Jeep Tours)",
+    "label": "About Nisha Safari Jeep Tours",
+    "sectionContext": "Hero Banner (About Nisha Safari Jeep Tours)",
     "src": "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1600&q=85&v=hero-about",
-    "alt": "About Janaka Safari Jeep Tours"
+    "alt": "About Nisha Safari Jeep Tours"
   },
   {
     "slotId": "about_html__slot_2",
     "page": "about.html",
     "slotIndex": 2,
     "type": "img",
-    "label": "Janaka with German visitors",
-    "sectionContext": "About Janaka Safari Jeep Tours",
+    "label": "Nisha with German visitors",
+    "sectionContext": "About Nisha Safari Jeep Tours",
     "src": "https://images.unsplash.com/photo-1523805009345-7448845a9e53?auto=format&fit=crop&w=1000&q=82&v=ab2",
-    "alt": "Janaka with German visitors"
+    "alt": "Nisha with German visitors"
   },
   {
     "slotId": "about_html__slot_3",
@@ -614,20 +614,20 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "page": "about.html",
     "slotIndex": 4,
     "type": "logo",
-    "label": "Janaka Safari Logo",
+    "label": "Nisha Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
-    "alt": "Janaka Safari Logo"
+    "src": "/assets/media/nisha-safari-logo.svg",
+    "alt": "Nisha Safari Logo"
   },
   {
     "slotId": "safari-parks_html__slot_0",
     "page": "safari-parks.html",
     "slotIndex": 0,
     "type": "logo",
-    "label": "Janaka Safari",
+    "label": "Nisha Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
-    "alt": "Janaka Safari"
+    "src": "/assets/media/nisha-safari-logo.svg",
+    "alt": "Nisha Safari"
   },
   {
     "slotId": "safari-parks_html__slot_1",
@@ -704,20 +704,20 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "page": "safari-parks.html",
     "slotIndex": 8,
     "type": "logo",
-    "label": "Janaka Safari Logo",
+    "label": "Nisha Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
-    "alt": "Janaka Safari Logo"
+    "src": "/assets/media/nisha-safari-logo.svg",
+    "alt": "Nisha Safari Logo"
   },
   {
     "slotId": "yala-safari_html__slot_0",
     "page": "yala-safari.html",
     "slotIndex": 0,
     "type": "logo",
-    "label": "Janaka Safari",
+    "label": "Nisha Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
-    "alt": "Janaka Safari"
+    "src": "/assets/media/nisha-safari-logo.svg",
+    "alt": "Nisha Safari"
   },
   {
     "slotId": "yala-safari_html__slot_1",
@@ -845,52 +845,52 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "page": "yala-safari.html",
     "slotIndex": 13,
     "type": "img",
-    "label": "Mr. Janaka with guests and a safari jeep.",
+    "label": "Mr. Nisha with guests and a safari jeep.",
     "sectionContext": "Your Safari Experience",
     "src": "https://images.unsplash.com/photo-1519066629447-267fffa62d4b?auto=format&fit=crop&w=1000&q=82&v=yl13",
-    "alt": "Mr. Janaka with guests and a safari jeep."
+    "alt": "Mr. Nisha with guests and a safari jeep."
   },
   {
     "slotId": "yala-safari_html__slot_14",
     "page": "yala-safari.html",
     "slotIndex": 14,
     "type": "lightbox-img",
-    "label": "Janaka Safari Jeep in Yala",
+    "label": "Nisha Safari Jeep in Yala",
     "sectionContext": "Your Safari Experience",
     "src": "https://images.unsplash.com/photo-1523805009345-7448845a9e53?auto=format&fit=crop&w=1000&q=82&v=yl14",
     "lightboxHref": "https://images.unsplash.com/photo-1523805009345-7448845a9e53?auto=format&fit=crop&w=1200&q=85&v=yl14",
-    "alt": "Janaka Safari Jeep in Yala"
+    "alt": "Nisha Safari Jeep in Yala"
   },
   {
     "slotId": "yala-safari_html__slot_15",
     "page": "yala-safari.html",
     "slotIndex": 15,
     "type": "lightbox-img",
-    "label": "Janaka Safari Guests on Game Drive",
+    "label": "Nisha Safari Guests on Game Drive",
     "sectionContext": "Your Safari Experience",
     "src": "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1000&q=82&v=yl15",
     "lightboxHref": "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=85&v=yl15",
-    "alt": "Janaka Safari Guests on Game Drive"
+    "alt": "Nisha Safari Guests on Game Drive"
   },
   {
     "slotId": "yala-safari_html__slot_16",
     "page": "yala-safari.html",
     "slotIndex": 16,
     "type": "logo",
-    "label": "Janaka Safari Logo",
+    "label": "Nisha Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
-    "alt": "Janaka Safari Logo"
+    "src": "/assets/media/nisha-safari-logo.svg",
+    "alt": "Nisha Safari Logo"
   },
   {
     "slotId": "udawalawe-safari_html__slot_0",
     "page": "udawalawe-safari.html",
     "slotIndex": 0,
     "type": "logo",
-    "label": "Janaka Safari",
+    "label": "Nisha Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
-    "alt": "Janaka Safari"
+    "src": "/assets/media/nisha-safari-logo.svg",
+    "alt": "Nisha Safari"
   },
   {
     "slotId": "udawalawe-safari_html__slot_1",
@@ -998,21 +998,21 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "page": "udawalawe-safari.html",
     "slotIndex": 11,
     "type": "img",
-    "label": "Mr. Janaka with guests and a safari jeep.",
+    "label": "Mr. Nisha with guests and a safari jeep.",
     "sectionContext": "Your Safari Experience",
     "src": "https://images.unsplash.com/photo-1519066629447-267fffa62d4b?auto=format&fit=crop&w=1000&q=82&v=ud11",
-    "alt": "Mr. Janaka with guests and a safari jeep."
+    "alt": "Mr. Nisha with guests and a safari jeep."
   },
   {
     "slotId": "udawalawe-safari_html__slot_12",
     "page": "udawalawe-safari.html",
     "slotIndex": 12,
     "type": "lightbox-img",
-    "label": "Safari Janaka and Team in Udawalawe",
+    "label": "Safari Nisha and Team in Udawalawe",
     "sectionContext": "Your Safari Experience",
     "src": "https://images.unsplash.com/photo-1534759846116-5799c33ce22a?auto=format&fit=crop&w=1000&q=82&v=ud12",
     "lightboxHref": "https://images.unsplash.com/photo-1534759846116-5799c33ce22a?auto=format&fit=crop&w=1200&q=85&v=ud12",
-    "alt": "Safari Janaka and Team"
+    "alt": "Safari Nisha and Team"
   },
   {
     "slotId": "udawalawe-safari_html__slot_13",
@@ -1023,27 +1023,27 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "sectionContext": "Your Safari Experience",
     "src": "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=1000&q=82&v=ud13",
     "lightboxHref": "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=1200&q=85&v=ud13",
-    "alt": "Safari Janaka and Team"
+    "alt": "Safari Nisha and Team"
   },
   {
     "slotId": "udawalawe-safari_html__slot_14",
     "page": "udawalawe-safari.html",
     "slotIndex": 14,
     "type": "logo",
-    "label": "Janaka Safari Logo",
+    "label": "Nisha Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
-    "alt": "Janaka Safari Logo"
+    "src": "/assets/media/nisha-safari-logo.svg",
+    "alt": "Nisha Safari Logo"
   },
   {
     "slotId": "bundala-birding-safari_html__slot_0",
     "page": "bundala-birding-safari.html",
     "slotIndex": 0,
     "type": "logo",
-    "label": "Janaka Safari",
+    "label": "Nisha Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
-    "alt": "Janaka Safari"
+    "src": "/assets/media/nisha-safari-logo.svg",
+    "alt": "Nisha Safari"
   },
   {
     "slotId": "bundala-birding-safari_html__slot_1",
@@ -1193,20 +1193,20 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "page": "bundala-birding-safari.html",
     "slotIndex": 15,
     "type": "logo",
-    "label": "Janaka Safari Logo",
+    "label": "Nisha Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
-    "alt": "Janaka Safari Logo"
+    "src": "/assets/media/nisha-safari-logo.svg",
+    "alt": "Nisha Safari Logo"
   },
   {
     "slotId": "wilpattu-safari_html__slot_0",
     "page": "wilpattu-safari.html",
     "slotIndex": 0,
     "type": "logo",
-    "label": "Janaka Safari",
+    "label": "Nisha Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
-    "alt": "Janaka Safari"
+    "src": "/assets/media/nisha-safari-logo.svg",
+    "alt": "Nisha Safari"
   },
   {
     "slotId": "wilpattu-safari_html__slot_1",
@@ -1346,20 +1346,20 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "page": "wilpattu-safari.html",
     "slotIndex": 14,
     "type": "logo",
-    "label": "Janaka Safari Logo",
+    "label": "Nisha Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
-    "alt": "Janaka Safari Logo"
+    "src": "/assets/media/nisha-safari-logo.svg",
+    "alt": "Nisha Safari Logo"
   },
   {
     "slotId": "minneriya-safari_html__slot_0",
     "page": "minneriya-safari.html",
     "slotIndex": 0,
     "type": "logo",
-    "label": "Janaka Safari",
+    "label": "Nisha Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
-    "alt": "Janaka Safari"
+    "src": "/assets/media/nisha-safari-logo.svg",
+    "alt": "Nisha Safari"
   },
   {
     "slotId": "minneriya-safari_html__slot_1",
@@ -1489,20 +1489,20 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "page": "minneriya-safari.html",
     "slotIndex": 13,
     "type": "logo",
-    "label": "Janaka Safari Logo",
+    "label": "Nisha Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
-    "alt": "Janaka Safari Logo"
+    "src": "/assets/media/nisha-safari-logo.svg",
+    "alt": "Nisha Safari Logo"
   },
   {
     "slotId": "kumana-birding-safari_html__slot_0",
     "page": "kumana-birding-safari.html",
     "slotIndex": 0,
     "type": "logo",
-    "label": "Janaka Safari",
+    "label": "Nisha Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
-    "alt": "Janaka Safari"
+    "src": "/assets/media/nisha-safari-logo.svg",
+    "alt": "Nisha Safari"
   },
   {
     "slotId": "kumana-birding-safari_html__slot_1",
@@ -1632,20 +1632,20 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "page": "kumana-birding-safari.html",
     "slotIndex": 13,
     "type": "logo",
-    "label": "Janaka Safari Logo",
+    "label": "Nisha Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
-    "alt": "Janaka Safari Logo"
+    "src": "/assets/media/nisha-safari-logo.svg",
+    "alt": "Nisha Safari Logo"
   },
   {
     "slotId": "gallery_html__slot_0",
     "page": "gallery.html",
     "slotIndex": 0,
     "type": "logo",
-    "label": "Janaka Safari",
+    "label": "Nisha Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
-    "alt": "Janaka Safari"
+    "src": "/assets/media/nisha-safari-logo.svg",
+    "alt": "Nisha Safari"
   },
   {
     "slotId": "gallery_html__slot_1",
@@ -1817,11 +1817,11 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "page": "gallery.html",
     "slotIndex": 16,
     "type": "lightbox-img",
-    "label": "Janaka standing beside a safari jeep with guests seated inside",
+    "label": "Nisha standing beside a safari jeep with guests seated inside",
     "sectionContext": "Our Guests & Safari Moments",
     "src": "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=900&q=82&v=gal16",
     "lightboxHref": "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=85&v=gal16",
-    "alt": "Janaka standing beside a safari jeep with guests seated inside"
+    "alt": "Nisha standing beside a safari jeep with guests seated inside"
   },
   {
     "slotId": "gallery_html__slot_17",
@@ -1883,30 +1883,30 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "page": "gallery.html",
     "slotIndex": 22,
     "type": "logo",
-    "label": "Janaka Safari Logo",
+    "label": "Nisha Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
-    "alt": "Janaka Safari Logo"
+    "src": "/assets/media/nisha-safari-logo.svg",
+    "alt": "Nisha Safari Logo"
   },
   {
     "slotId": "reviews_html__slot_0",
     "page": "reviews.html",
     "slotIndex": 0,
     "type": "logo",
-    "label": "Janaka Safari",
+    "label": "Nisha Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
-    "alt": "Janaka Safari"
+    "src": "/assets/media/nisha-safari-logo.svg",
+    "alt": "Nisha Safari"
   },
   {
     "slotId": "reviews_html__slot_1",
     "page": "reviews.html",
     "slotIndex": 1,
     "type": "img",
-    "label": "Janaka with safari guests beside a jeep at Yala National Park",
+    "label": "Nisha with safari guests beside a jeep at Yala National Park",
     "sectionContext": "Featured in Travel Stories",
     "src": "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=1000&q=82&v=rev1",
-    "alt": "Janaka with safari guests beside a jeep at Yala National Park"
+    "alt": "Nisha with safari guests beside a jeep at Yala National Park"
   },
   {
     "slotId": "reviews_html__slot_2",
@@ -1923,29 +1923,29 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "page": "reviews.html",
     "slotIndex": 3,
     "type": "logo",
-    "label": "Janaka Safari Logo",
+    "label": "Nisha Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
-    "alt": "Janaka Safari Logo"
+    "src": "/assets/media/nisha-safari-logo.svg",
+    "alt": "Nisha Safari Logo"
   },
   {
     "slotId": "contact_html__slot_0",
     "page": "contact.html",
     "slotIndex": 0,
     "type": "logo",
-    "label": "Janaka Safari",
+    "label": "Nisha Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
-    "alt": "Janaka Safari"
+    "src": "/assets/media/nisha-safari-logo.svg",
+    "alt": "Nisha Safari"
   },
   {
     "slotId": "contact_html__slot_1",
     "page": "contact.html",
     "slotIndex": 1,
     "type": "logo",
-    "label": "Janaka Safari Logo",
+    "label": "Nisha Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "https://www.srilankayalasafaris.com/uploads/7/2/3/0/7230455/janaka-safari-logo-web.png",
-    "alt": "Janaka Safari Logo"
+    "src": "/assets/media/nisha-safari-logo.svg",
+    "alt": "Nisha Safari Logo"
   }
 ];

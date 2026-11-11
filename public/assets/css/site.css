@@ -414,15 +414,15 @@ main#main-content,
   }
 }
 
-/* Hero Banner — 112vh Extra Height Viewport on Home Page & Balanced Hero on Inner Pages (Excluding Contact Page) */
+/* Hero Banner — Extra Height Viewport on Home Page & Balanced Hero on Inner Pages (Excluding Contact Page) */
 body:not(.janaka-contact) .banner-wrap,
 body:not(.janaka-contact) .banner-wrap > .wsite-elements,
 body:not(.janaka-contact) .banner-wrap .wsite-header-elements,
 body:not(.janaka-contact) .banner-wrap .wsite-section-wrap {
   position: relative;
   width: 100%;
-  min-height: 68vh;
-  height: 68vh;
+  min-height: 123vh;
+  height: 123vh;
   margin: 0;
   border-radius: 0;
   overflow: hidden !important;
@@ -434,15 +434,15 @@ body.wsite-page-index .banner-wrap,
 body.wsite-page-index .banner-wrap > .wsite-elements,
 body.wsite-page-index .banner-wrap .wsite-header-elements,
 body.wsite-page-index .banner-wrap .wsite-section-wrap {
-  min-height: 112vh !important;
-  height: 112vh !important;
+  min-height: 135vh !important;
+  height: 135vh !important;
 }
 
 body:not(.janaka-contact) .banner-wrap .wsite-header-section {
   position: absolute !important;
   inset: 0 !important;
   width: 100% !important;
-  min-height: 68vh;
+  min-height: 123vh;
   height: 100% !important;
   margin: 0 !important;
   display: flex;
@@ -457,7 +457,7 @@ body:not(.janaka-contact) .banner-wrap .wsite-header-section {
 }
 
 body.wsite-page-index .banner-wrap .wsite-header-section {
-  min-height: 112vh !important;
+  min-height: 135vh !important;
   transform: scale(1.22);
   filter: saturate(1.18) contrast(1.06) brightness(1.03);
 }
@@ -512,15 +512,15 @@ body:not(.janaka-contact) .wsite-header-section .wsite-section-content {
   flex: 1;
   display: flex;
   align-items: center;
-  min-height: 68vh;
+  min-height: 123vh;
   padding-bottom: 40px;
   transform: scale(0.89285);
   transform-origin: center center;
 }
 
 body.wsite-page-index .wsite-header-section .wsite-section-content {
-  min-height: 112vh;
-  padding-bottom: 120px;
+  min-height: 135vh !important;
+  padding-bottom: 140px;
   /* Counteract parent 1.22 zoom scale so text and buttons remain crisp at 1:1 scale */
   transform: scale(0.81967);
 }
@@ -739,12 +739,15 @@ body:not(.janaka-contact) .banner .paragraph * {
 div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1),
 body.wsite-page-index div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) {
   position: relative;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
   width: 100%;
   z-index: 35;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
   padding-top: 0 !important;
-  padding-bottom: 24px !important;
+  padding-bottom: 28px !important;
   pointer-events: auto;
   overflow: visible !important;
   background-color: #012f23 !important;
@@ -754,10 +757,10 @@ body.wsite-page-index div:nth-of-type(1) > div:nth-of-type(1) > main#main-conten
 .hero-cross-bridge-card,
 div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) > div:nth-of-type(1),
 body.wsite-page-index div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) > div:nth-of-type(1) {
-  position: relative;
-  bottom: 25%;
-  margin-top: -25%;
-  margin-bottom: 0;
+  position: relative !important;
+  top: -6px !important;
+  margin-top: -5.5% !important;
+  margin-bottom: 0 !important;
   z-index: 40;
   width: 90%;
   max-width: 1360px;
@@ -955,14 +958,21 @@ body.wsite-page-index div:nth-of-type(1) > div:nth-of-type(1) > main#main-conten
   letter-spacing: 0.02em;
 }
 
-@media screen and (max-width: 960px) {
+@media screen and (min-width: 768px) {
   .hero-cross-bridge-card,
   div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) > div:nth-of-type(1),
   body.wsite-page-index div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) > div:nth-of-type(1) {
     position: relative !important;
-    bottom: 25% !important;
-    margin-top: -25% !important;
+    top: -6px !important;
+    margin-top: -5.5% !important;
     margin-bottom: 0 !important;
+  }
+}
+
+@media screen and (max-width: 960px) {
+  .hero-cross-bridge-card,
+  div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) > div:nth-of-type(1),
+  body.wsite-page-index div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) > div:nth-of-type(1) {
     width: calc(100% - 20px) !important;
     margin-left: auto !important;
     margin-right: auto !important;
@@ -972,6 +982,17 @@ body.wsite-page-index div:nth-of-type(1) > div:nth-of-type(1) > main#main-conten
     gap: 4px !important;
     padding: 14px 8px !important;
     border-radius: 18px !important;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  .hero-cross-bridge-card,
+  div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) > div:nth-of-type(1),
+  body.wsite-page-index div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) > div:nth-of-type(1) {
+    position: relative !important;
+    top: -4px !important;
+    margin-top: -7% !important;
+    margin-bottom: 0 !important;
   }
 
   .hero-cross-sub-section {
