@@ -10,7 +10,7 @@ const R2_INDEX_PATH = path.join(PUBLIC_DIR, 'assets', 'r2-bucket', '_index.json'
 const CF_DIR = path.join(ROOT_DIR, '.cloudflare');
 const CF_ASSETS_DIR = path.join(CF_DIR, 'assets');
 const DEFAULT_R2_BUCKET_NAME =
-  process.env.R2_BUCKET_NAME || 'ai-studio-applet-opennext-cache';
+  process.env.R2_BUCKET_NAME || 'nishatravels';
 
 const SITE_PAGES = [
   { file: 'index.html', title: 'Home' },
@@ -984,6 +984,71 @@ const worker = {
         return new Response(JSON.stringify({ ok: true, ...IMAGES_INVENTORY, r2Objects }), {
           status: 200,
           headers: JSON_HEADERS,
+        });
+      }
+    }
+
+    // API: /api/admin/auth
+    if (pathname === '/api/admin/auth') {
+      const COOKIE_NAME = 'nisha_admin_session';
+      const toSha256Hex = async (str) => {
+        const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+        return Array.from(new Uint8Array(buf))
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join('');
+      };
+      const expectedEmailHash = await toSha256Hex('nishasafari@gmail.com');
+      const expectedPassHash = await toSha256Hex('g2jabB80');
+      const sessionToken = await toSha256Hex(
+        expectedEmailHash + ':' + expectedPassHash + ':nisha_safari_admin_v1'
+      );
+
+      if (request.method === 'GET') {
+        const cookieHeader = request.headers.get('cookie') || '';
+        const match = cookieHeader.match(/(?:^|;\s*)nisha_admin_session=([^;]+)/);
+        const token = match ? match[1].trim() : '';
+        return new Response(
+          JSON.stringify({ authenticated: Boolean(token && token === sessionToken) }),
+          { status: 200, headers: JSON_HEADERS }
+        );
+      }
+
+      if (request.method === 'POST') {
+        let body = {};
+        try {
+          body = await request.json();
+        } catch (e) {}
+        const action = String(body.action || 'login');
+        if (action === 'logout') {
+          return new Response(JSON.stringify({ authenticated: false }), {
+            status: 200,
+            headers: {
+              ...JSON_HEADERS,
+              'Set-Cookie':
+                COOKIE_NAME + '=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0',
+            },
+          });
+        }
+
+        const emailHash = await toSha256Hex(String(body.email || '').trim().toLowerCase());
+        const passHash = await toSha256Hex(String(body.password || ''));
+        if (emailHash !== expectedEmailHash || passHash !== expectedPassHash) {
+          return new Response(
+            JSON.stringify({ authenticated: false, error: 'Invalid email or password.' }),
+            { status: 401, headers: JSON_HEADERS }
+          );
+        }
+
+        return new Response(JSON.stringify({ authenticated: true }), {
+          status: 200,
+          headers: {
+            ...JSON_HEADERS,
+            'Set-Cookie':
+              COOKIE_NAME +
+              '=' +
+              sessionToken +
+              '; HttpOnly; SameSite=Lax; Path=/; Max-Age=604800',
+          },
         });
       }
     }

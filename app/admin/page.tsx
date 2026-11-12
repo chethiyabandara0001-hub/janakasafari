@@ -34,8 +34,8 @@ import {
 } from 'lucide-react';
 import {
   auth,
-  googleProvider,
-  signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   firebaseSignOut,
   onAuthStateChanged,
   saveSiteImageInFirestore,
@@ -136,7 +136,7 @@ interface PageMeta {
   title: string;
 }
 
-type ViewMode = 'slots' | 'section-images' | 'texts' | 'library';
+type ViewMode = 'slots' | 'hero-slideshow' | 'section-images' | 'texts' | 'library';
 type SlotTypeFilter = 'all' | 'hero-bg' | 'img' | 'lightbox-img' | 'logo';
 type TextTypeFilter = 'all' | 'headings' | 'paragraphs' | 'buttons' | 'lists' | 'custom';
 
@@ -163,7 +163,7 @@ function getSlotTypeLabel(type: ImageSlot['type']): string {
 }
 
 export default function AdminCmsStudioPage() {
-  const [bucketName, setBucketName] = useState<string>('ai-studio-applet-opennext-cache');
+  const [bucketName, setBucketName] = useState<string>('nishatravels');
   const [slots, setSlots] = useState<ImageSlot[]>([]);
   const [mediaAssets, setMediaAssets] = useState<MediaAssetInfo[]>([]);
   const [r2Objects, setR2Objects] = useState<R2BucketObject[]>([]);
@@ -173,6 +173,14 @@ export default function AdminCmsStudioPage() {
   const [pages, setPages] = useState<PageMeta[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [cacheBuster, setCacheBuster] = useState<number>(() => Date.now());
+
+  // Admin Panel Authentication State
+  const [authChecking, setAuthChecking] = useState<boolean>(true);
+  const [adminAuthenticated, setAdminAuthenticated] = useState<boolean>(false);
+  const [loginEmail, setLoginEmail] = useState<string>('');
+  const [loginPassword, setLoginPassword] = useState<string>('');
+  const [loginError, setLoginError] = useState<string>('');
+  const [loggingIn, setLoggingIn] = useState<boolean>(false);
 
   // Firebase Auth & Firestore Live Sync State
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -338,8 +346,35 @@ export default function AdminCmsStudioPage() {
     await fetchInventory();
   }, [fetchInventory]);
 
-  // Initial load of inventory from server + R2 bucket
+  // Check existing admin session on mount
   useEffect(() => {
+    let cancelled = false;
+    fetch('/api/admin/auth', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : { authenticated: false }))
+      .then((data) => {
+        if (cancelled) return;
+        const isAuthed =
+          Boolean(data?.authenticated) ||
+          (typeof window !== 'undefined' && sessionStorage.getItem('nisha_admin_auth') === '1');
+        setAdminAuthenticated(isAuthed);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        const cached =
+          typeof window !== 'undefined' && sessionStorage.getItem('nisha_admin_auth') === '1';
+        setAdminAuthenticated(cached);
+      })
+      .finally(() => {
+        if (!cancelled) setAuthChecking(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Initial load of inventory from server + R2 bucket once authenticated
+  useEffect(() => {
+    if (!adminAuthenticated) return;
     let cancelled = false;
     Promise.all([
       fetch(`/api/admin/images?t=${Date.now()}`, { cache: 'no-store' }).then((r) => r.json()),
@@ -381,7 +416,7 @@ export default function AdminCmsStudioPage() {
     return () => {
       cancelled = true;
     };
-  }, [showNotice]);
+  }, [adminAuthenticated, showNotice]);
 
   // Cloudflare R2 Connection Testing & Credentials Handlers
   const handleTestR2Connection = useCallback(async () => {
@@ -723,24 +758,81 @@ export default function AdminCmsStudioPage() {
 
   // One-time sync when R2 & CMS inventory is loaded
   useEffect(() => {
-    if (!loading && slots.length > 0 && !autoSeededRef.current) {
+    if (adminAuthenticated && !loading && slots.length > 0 && !autoSeededRef.current) {
       autoSeededRef.current = true;
       void handleSeedSectionImagesToFirestore(true);
     }
-  }, [loading, slots.length, handleSeedSectionImagesToFirestore]);
+  }, [adminAuthenticated, loading, slots.length, handleSeedSectionImagesToFirestore]);
 
-  const handleGoogleSignIn = async () => {
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError('');
+    setLoggingIn(true);
     try {
-      await signInWithPopup(auth, googleProvider);
-      showNotice('Connected to Firebase + R2 Admin as ' + (auth.currentUser?.email || 'Admin'));
-    } catch (err) {
-      showNotice(err instanceof Error ? err.message : 'Google Sign-In failed', 'error');
+      const emailClean = loginEmail.trim().toLowerCase();
+      const passwordRaw = loginPassword;
+
+      const res = await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'login',
+          email: emailClean,
+          password: passwordRaw,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.authenticated) {
+        setLoginError(data.error || 'Invalid email or password.');
+        return;
+      }
+
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('nisha_admin_auth', '1');
+      }
+
+      // Optionally sign into Firebase Auth if email/password provider is enabled
+      try {
+        await signInWithEmailAndPassword(auth, emailClean, passwordRaw);
+      } catch {
+        try {
+          await createUserWithEmailAndPassword(auth, emailClean, passwordRaw);
+        } catch {
+          // Proceed with server session + Firestore authorized CMS author
+        }
+      }
+
+      setLoginPassword('');
+      setAdminAuthenticated(true);
+    } catch {
+      setLoginError('Unable to sign in. Please try again.');
+    } finally {
+      setLoggingIn(false);
     }
   };
 
-  const handleGoogleSignOut = async () => {
-    await firebaseSignOut(auth);
-    showNotice('Signed out of Admin.');
+  const handleAdminLogout = async () => {
+    try {
+      await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'logout' }),
+      });
+    } catch {
+      // Ignore network error on logout
+    }
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('nisha_admin_auth');
+    }
+    try {
+      await firebaseSignOut(auth);
+    } catch {
+      // Ignore
+    }
+    setAdminAuthenticated(false);
+    setLoginEmail('');
+    setLoginPassword('');
+    setLoginError('');
   };
 
   // Authoritative R2 & server slots (never let stale non-R2 Firestore docs overwrite R2 edits/deletions)
@@ -866,9 +958,33 @@ export default function AdminCmsStudioPage() {
     });
   }, [mergedSlots, selectedPage, selectedType, searchQuery]);
 
-  // Filtered section gallery items
+  // Hero Section Slideshow items (sectionKey === 'hero_slideshow')
+  const heroSlideshowItems = useMemo(() => {
+    return mergedSectionImages.filter((item) => item.sectionKey === 'hero_slideshow');
+  }, [mergedSectionImages]);
+
+  // Filtered Hero Slideshow items
+  const filteredHeroSlides = useMemo(() => {
+    return heroSlideshowItems.filter((item) => {
+      if (selectedPage !== 'all' && item.page !== selectedPage) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        return (
+          item.title.toLowerCase().includes(q) ||
+          item.caption.toLowerCase().includes(q) ||
+          item.alt.toLowerCase().includes(q) ||
+          (item.r2Key && item.r2Key.toLowerCase().includes(q)) ||
+          item.page.toLowerCase().includes(q)
+        );
+      }
+      return true;
+    });
+  }, [heroSlideshowItems, selectedPage, searchQuery]);
+
+  // Filtered section gallery items (excluding hero_slideshow when in section-images mode)
   const filteredSectionImages = useMemo(() => {
     return mergedSectionImages.filter((item) => {
+      if (item.sectionKey === 'hero_slideshow') return false;
       if (selectedPage !== 'all' && item.page !== selectedPage) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -953,9 +1069,15 @@ export default function AdminCmsStudioPage() {
     if (viewMode === 'slots') {
       counts.all = mergedSlots.length;
       for (const s of mergedSlots) counts[s.page] = (counts[s.page] || 0) + 1;
+    } else if (viewMode === 'hero-slideshow') {
+      const heroSlots = mergedSlots.filter((s) => s.type === 'hero-bg' && !s.isDeleted);
+      counts.all = heroSlots.length + heroSlideshowItems.length;
+      for (const s of heroSlots) counts[s.page] = (counts[s.page] || 0) + 1;
+      for (const hs of heroSlideshowItems) counts[hs.page] = (counts[hs.page] || 0) + 1;
     } else if (viewMode === 'section-images') {
-      counts.all = mergedSectionImages.length;
-      for (const s of mergedSectionImages) counts[s.page] = (counts[s.page] || 0) + 1;
+      const nonHeroSec = mergedSectionImages.filter((s) => s.sectionKey !== 'hero_slideshow');
+      counts.all = nonHeroSec.length;
+      for (const s of nonHeroSec) counts[s.page] = (counts[s.page] || 0) + 1;
     } else if (viewMode === 'texts') {
       counts.all = mergedTexts.length;
       for (const t of mergedTexts) counts[t.page] = (counts[t.page] || 0) + 1;
@@ -968,7 +1090,7 @@ export default function AdminCmsStudioPage() {
       }
     }
     return counts;
-  }, [viewMode, mergedSlots, mergedSectionImages, mergedTexts, enrichedR2Objects, pages]);
+  }, [viewMode, mergedSlots, heroSlideshowItems, mergedSectionImages, mergedTexts, enrichedR2Objects, pages]);
 
   // --- Slot Image Editor Handlers (Pushes binary to R2 -> saves R2 CDN link in Firestore) ---
   const openSlotEditor = (slot: ImageSlot) => {
@@ -1121,7 +1243,27 @@ export default function AdminCmsStudioPage() {
     }
   };
 
-  // --- Section Wildlife Gallery Handlers (Pushes to R2 -> stores R2 CDN URL in Firebase Firestore) ---
+  // --- Section Wildlife Gallery & Hero Section Slideshow (4s) Handlers ---
+  const openNewHeroSlideModal = (targetPage?: string) => {
+    const defaultPage = targetPage || (selectedPage === 'all' ? 'index.html' : selectedPage);
+    const pageSlidesCount = heroSlideshowItems.filter((s) => s.page === defaultPage).length;
+    setIsNewSectionImg(true);
+    setSecImgUploadFile(null);
+    setSecImgPreviewUrl(null);
+    setEditingSectionImg({
+      itemId: `hero_slide_${defaultPage.replace('.html', '').replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`,
+      page: defaultPage,
+      sectionKey: 'hero_slideshow',
+      sectionTitle: 'Hero Section Slideshow (4s)',
+      title: `Hero Slide #${pageSlidesCount + 2}`,
+      caption: '4-second auto-advancing hero banner slide',
+      src: '',
+      r2Key: undefined,
+      alt: 'Yala Safari & Sri Lanka Wildlife Safari Hero Slide',
+      order: pageSlidesCount + 1,
+    });
+  };
+
   const openNewSectionImageModal = () => {
     const defaultPage = selectedPage === 'all' ? 'index.html' : selectedPage;
     setIsNewSectionImg(true);
@@ -1715,6 +1857,99 @@ export default function AdminCmsStudioPage() {
 
   const currentPageObj = pages.find((p) => p.file === selectedPage);
 
+  if (authChecking) {
+    return (
+      <div className="min-h-screen bg-[#0B0F0D] text-[#F1F5F2] flex items-center justify-center p-6 font-sans">
+        <div className="flex items-center gap-2.5 text-xs text-[#9CA9A1]">
+          <RefreshCw className="w-4 h-4 animate-spin text-[#E59819]" />
+          <span>Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!adminAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#0B0F0D] text-[#F1F5F2] flex flex-col items-center justify-center p-6 font-sans selection:bg-[#E59819]/30 selection:text-[#FBBF24]">
+        <div className="w-full max-w-sm bg-[#111714] border border-[#1F2923] rounded-lg p-6 sm:p-7 shadow-2xl space-y-6">
+          <div className="space-y-1 text-center">
+            <div className="text-xs font-medium uppercase tracking-widest text-[#E59819]">
+              Nisha Safari
+            </div>
+            <h1 className="text-lg font-semibold text-[#F1F5F2] tracking-tight">
+              Admin Sign In
+            </h1>
+          </div>
+
+          <form onSubmit={handleAdminLogin} className="space-y-4">
+            {loginError && (
+              <div className="px-3 py-2 rounded-md bg-[#2A1414] border border-[#5C2424] text-xs text-[#FCA5A5]">
+                {loginError}
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <label
+                htmlFor="admin-email"
+                className="block text-xs font-medium text-[#9CA9A1]"
+              >
+                Email
+              </label>
+              <input
+                id="admin-email"
+                type="email"
+                required
+                autoComplete="username"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                placeholder="Email address"
+                className="w-full bg-[#0B0F0D] border border-[#243029] focus:border-[#E59819] rounded-md px-3 py-2 text-xs text-[#F1F5F2] placeholder-[#526058] focus:outline-none transition-colors"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label
+                htmlFor="admin-password"
+                className="block text-xs font-medium text-[#9CA9A1]"
+              >
+                Password
+              </label>
+              <input
+                id="admin-password"
+                type="password"
+                required
+                autoComplete="current-password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                placeholder="Password"
+                className="w-full bg-[#0B0F0D] border border-[#243029] focus:border-[#E59819] rounded-md px-3 py-2 text-xs text-[#F1F5F2] placeholder-[#526058] focus:outline-none transition-colors"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loggingIn}
+              className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-md text-xs font-semibold bg-[#E59819] hover:bg-[#F5A623] text-[#0B0F0D] transition-colors disabled:opacity-50"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>{loggingIn ? 'Signing in...' : 'Sign In'}</span>
+            </button>
+          </form>
+
+          <div className="pt-3 border-t border-[#1F2923] text-center">
+            <a
+              href="/index.html"
+              className="inline-flex items-center gap-1 text-xs text-[#9CA9A1] hover:text-[#F1F5F2] transition-colors"
+            >
+              <span>Back to Website</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#0B0F0D] text-[#F1F5F2] flex flex-col md:flex-row font-sans selection:bg-[#E59819]/30 selection:text-[#FBBF24]">
       {/* Sidebar Navigation */}
@@ -1724,79 +1959,76 @@ export default function AdminCmsStudioPage() {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-xs font-medium uppercase tracking-wider text-[#E59819]">
-                Nisha Safari Tours
+                Nisha Safari
               </div>
               <h1 className="text-base font-semibold text-[#F1F5F2] tracking-tight mt-0.5">
-                R2 + Firebase Studio
+                Admin Panel
               </h1>
             </div>
             <a
               href={`/${selectedPage === 'all' ? 'index.html' : selectedPage}?editImages=1`}
               className="inline-flex items-center gap-1 text-xs font-medium text-[#9CA9A1] hover:text-[#F1F5F2] bg-[#18211C] hover:bg-[#202C25] border border-[#26332B] px-2.5 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0"
-              title="Open live page with visual click-to-edit overlays"
+              title="Open live page with click-to-edit overlays"
             >
               <span>Live Edit</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
             </a>
           </div>
 
-          {/* Cloudflare R2 + Firebase Admin Status Box */}
+          {/* Clean Session & Sync Bar */}
           <div className="p-3 rounded-md bg-[#151D19] border border-[#233029] space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="font-medium text-[#D5E0D9] flex items-center gap-1.5">
                 <Database className="w-3.5 h-3.5 text-[#E59819]" />
-                <span>Cloudflare R2 + Firebase</span>
+                <span>Storage ({bucketName})</span>
               </span>
-              <span className="text-[11px] font-mono text-[#86EFAC]">Active</span>
+              <span className="text-[11px] font-mono text-[#86EFAC]">Connected</span>
             </div>
-            <div className="text-[11px] font-mono text-[#9CA9A1] truncate" title={bucketName}>
-              Bucket: <span className="text-[#E59819]">{bucketName}</span>
-            </div>
-            <div className="text-[10px] text-[#86EFAC]/90 leading-snug">
-              All image files stored in R2. Firestore stores only R2 CDN links.
-            </div>
-            {currentUser ? (
-              <div className="space-y-2 pt-1 border-t border-[#222F28]">
-                <div className="text-[11px] text-[#9CA9A1] truncate" title={currentUser.email || ''}>
-                  Admin: <span className="text-[#F1F5F2]">{currentUser.email}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => handleSeedSectionImagesToFirestore(false)}
-                    disabled={syncingSeed}
-                    className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-[#1F2D25] hover:bg-[#283A30] text-[#E59819] border border-[#2F4438] transition-colors"
-                  >
-                    <RefreshCw className={`w-3 h-3 ${syncingSeed ? 'animate-spin' : ''}`} />
-                    <span>{syncingSeed ? 'Syncing...' : 'Sync CDN Links'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleGoogleSignOut}
-                    className="p-1 rounded bg-[#1A231E] hover:bg-[#2A1616] text-[#9CA9A1] hover:text-[#FCA5A5] border border-[#26332B]"
-                    title="Sign Out"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            ) : (
+            <div className="flex items-center gap-1.5 pt-1 border-t border-[#222F28]">
               <button
                 type="button"
-                onClick={handleGoogleSignIn}
-                className="w-full inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-semibold bg-[#E59819] hover:bg-[#F5A623] text-[#0B0F0D] transition-colors"
+                onClick={() => handleSeedSectionImagesToFirestore(false)}
+                disabled={syncingSeed}
+                className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-[#1F2D25] hover:bg-[#283A30] text-[#E59819] border border-[#2F4438] transition-colors"
               >
-                <LogIn className="w-3.5 h-3.5" />
-                <span>Sign In with Google Admin</span>
+                <RefreshCw className={`w-3 h-3 ${syncingSeed ? 'animate-spin' : ''}`} />
+                <span>{syncingSeed ? 'Syncing...' : 'Sync Changes'}</span>
               </button>
-            )}
+              <button
+                type="button"
+                onClick={handleAdminLogout}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium bg-[#1A231E] hover:bg-[#2A1616] text-[#9CA9A1] hover:text-[#FCA5A5] border border-[#26332B] transition-colors"
+                title="Sign Out"
+              >
+                <LogOut className="w-3 h-3" />
+                <span>Sign Out</span>
+              </button>
+            </div>
           </div>
 
-          {/* Primary Mode Switcher (4 Tabs) */}
+          {/* Primary Mode Switcher (5 Tabs) */}
           <div className="space-y-1">
             <div className="px-2 text-[11px] font-medium uppercase tracking-wider text-[#68756D] mb-1">
-              CMS & R2 Workspaces
+              Workspaces
             </div>
+            <button
+              type="button"
+              onClick={() => setViewMode('hero-slideshow')}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${
+                viewMode === 'hero-slideshow'
+                  ? 'bg-[#1A2620] text-[#F1F5F2] border-l-2 border-[#E59819]'
+                  : 'text-[#9CA9A1] hover:text-[#F1F5F2] hover:bg-[#161E1A]'
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-[#E59819]" />
+                <span>Hero Slideshow (4s)</span>
+              </span>
+              <span className="text-xs font-mono tabular-nums text-[#E59819]">
+                {mergedSlots.filter((s) => s.type === 'hero-bg').length + heroSlideshowItems.length}
+              </span>
+            </button>
+
             <button
               type="button"
               onClick={() => setViewMode('slots')}
@@ -1808,7 +2040,7 @@ export default function AdminCmsStudioPage() {
             >
               <span className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-[#E59819]" />
-                <span>Page Image Slots</span>
+                <span>Page Images</span>
               </span>
               <span className="text-xs font-mono tabular-nums text-[#68756D]">
                 {mergedSlots.length}
@@ -1826,10 +2058,10 @@ export default function AdminCmsStudioPage() {
             >
               <span className="flex items-center gap-2">
                 <Grid className="w-4 h-4 text-[#E59819]" />
-                <span>Section Wildlife Photos</span>
+                <span>Section Photos</span>
               </span>
               <span className="text-xs font-mono tabular-nums text-[#68756D]">
-                {mergedSectionImages.length}
+                {mergedSectionImages.filter((s) => s.sectionKey !== 'hero_slideshow').length}
               </span>
             </button>
 
@@ -1844,7 +2076,7 @@ export default function AdminCmsStudioPage() {
             >
               <span className="flex items-center gap-2">
                 <Type className="w-4 h-4 text-[#E59819]" />
-                <span>Site Text Editor</span>
+                <span>Site Text</span>
               </span>
               <span className="text-xs font-mono tabular-nums text-[#68756D]">
                 {mergedTexts.length}
@@ -1862,7 +2094,7 @@ export default function AdminCmsStudioPage() {
             >
               <span className="flex items-center gap-2">
                 <FolderOpen className="w-4 h-4 text-[#E59819]" />
-                <span>R2 Storage Bucket</span>
+                <span>R2 Bucket</span>
               </span>
               <span className="text-xs font-mono tabular-nums text-[#68756D]">
                 {enrichedR2Objects.length}
@@ -1873,7 +2105,7 @@ export default function AdminCmsStudioPage() {
           {/* Page Filter Navigation */}
           <div className="space-y-1">
             <div className="px-2 text-[11px] font-medium uppercase tracking-wider text-[#68756D] mb-1">
-              Filter by Page (12)
+              Pages (12)
             </div>
             <div className="max-h-[260px] md:max-h-[calc(100vh-470px)] overflow-y-auto space-y-0.5 pr-1">
               <button
@@ -1932,7 +2164,7 @@ export default function AdminCmsStudioPage() {
             className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs font-medium text-[#F87171] hover:bg-[#2A1616] border border-transparent hover:border-[#4C2222] transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Restore Factory Defaults</span>
+            <span>Restore Defaults</span>
           </button>
         </div>
       </aside>
@@ -1942,20 +2174,22 @@ export default function AdminCmsStudioPage() {
         {/* Top Utility Header */}
         <header className="h-auto min-h-16 px-6 py-3 bg-[#111714] border-b border-[#1F2923] flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-[#68756D]">R2 + Firebase CMS</span>
+            <span className="text-[#68756D]">Admin</span>
             <span className="text-[#3B4740]">/</span>
             <span className="font-medium text-[#F1F5F2]">
-              {viewMode === 'slots'
-                ? 'Page Image Slots (R2 CDN)'
+              {viewMode === 'hero-slideshow'
+                ? 'Hero Slideshow (4s)'
+                : viewMode === 'slots'
+                ? 'Page Images'
                 : viewMode === 'section-images'
-                ? 'Section Wildlife Galleries (R2 CDN)'
+                ? 'Section Photos'
                 : viewMode === 'texts'
-                ? 'Site Text Editor'
-                : `Cloudflare R2 Bucket (${bucketName})`}
+                ? 'Site Text'
+                : `R2 Bucket (${bucketName})`}
             </span>
             <span className="text-[#3B4740]">/</span>
             <span className="text-[#E59819] font-medium">
-              {selectedPage === 'all' ? 'All 12 Pages' : currentPageObj?.title || selectedPage}
+              {selectedPage === 'all' ? 'All Pages' : currentPageObj?.title || selectedPage}
             </span>
           </div>
 
@@ -1969,16 +2203,30 @@ export default function AdminCmsStudioPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={
                   viewMode === 'texts'
-                    ? 'Search any heading, paragraph, button...'
+                    ? 'Search text...'
+                    : viewMode === 'hero-slideshow'
+                    ? 'Search hero slides...'
                     : viewMode === 'section-images'
-                    ? 'Search section photos, R2 keys...'
+                    ? 'Search section photos...'
                     : viewMode === 'library'
-                    ? 'Search R2 key, filename, CDN link...'
-                    : 'Search section, alt text, R2 key...'
+                    ? 'Search bucket files...'
+                    : 'Search images...'
                 }
                 className="w-full bg-[#0B0F0D] border border-[#243029] focus:border-[#E59819] rounded-md pl-9 pr-3 py-1.5 text-xs text-[#F1F5F2] placeholder-[#68756D] focus:outline-none transition-colors"
               />
             </div>
+
+            {(viewMode === 'hero-slideshow' ||
+              (viewMode === 'slots' && selectedType === 'hero-bg')) && (
+              <button
+                type="button"
+                onClick={() => openNewHeroSlideModal()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-[#E59819] hover:bg-[#F5A623] text-[#0B0F0D] transition-colors whitespace-nowrap shrink-0"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Hero Slide (4s)</span>
+              </button>
+            )}
 
             {viewMode === 'section-images' && (
               <button
@@ -1987,7 +2235,7 @@ export default function AdminCmsStudioPage() {
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-[#E59819] hover:bg-[#F5A623] text-[#0B0F0D] transition-colors whitespace-nowrap shrink-0"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Add Section Image (R2)</span>
+                <span>Add Section Photo</span>
               </button>
             )}
 
@@ -1998,7 +2246,7 @@ export default function AdminCmsStudioPage() {
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-[#182820] hover:bg-[#22382D] text-[#86EFAC] border border-[#2B4739] transition-colors whitespace-nowrap shrink-0"
               >
                 <Upload className="w-3.5 h-3.5" />
-                <span>Upload Image to R2 Bucket</span>
+                <span>Upload Image</span>
               </button>
             )}
 
@@ -2009,7 +2257,7 @@ export default function AdminCmsStudioPage() {
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-[#E59819] hover:bg-[#F5A623] text-[#0B0F0D] transition-colors whitespace-nowrap shrink-0"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Add New Text Block</span>
+                <span>Add Text Block</span>
               </button>
             )}
 
@@ -2017,7 +2265,7 @@ export default function AdminCmsStudioPage() {
               type="button"
               onClick={handleManualRefresh}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-[#1A241E] hover:bg-[#222F28] text-[#D5E0D9] border border-[#2A3830] transition-colors whitespace-nowrap shrink-0"
-              title="Refresh R2 & Firebase inventory"
+              title="Refresh"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
               <span>Refresh</span>
@@ -2027,7 +2275,11 @@ export default function AdminCmsStudioPage() {
 
         {/* Sub-Toolbar: Context Filters & Counts */}
         <div className="px-6 py-3 bg-[#0E1411] border-b border-[#1A231E] flex flex-wrap items-center justify-between gap-4">
-          {viewMode === 'slots' ? (
+          {viewMode === 'hero-slideshow' ? (
+            <div className="text-xs text-[#9CA9A1]">
+              Hero Section slideshow interval: <span className="text-[#E59819] font-semibold">4 seconds</span>
+            </div>
+          ) : viewMode === 'slots' ? (
             <div className="flex flex-wrap items-center gap-1.5">
               {(
                 [
@@ -2056,12 +2308,12 @@ export default function AdminCmsStudioPage() {
             <div className="flex flex-wrap items-center gap-1.5">
               {(
                 [
-                  { id: 'all', label: 'All Text Elements' },
-                  { id: 'headings', label: 'Headings (H1–H4)' },
-                  { id: 'paragraphs', label: 'Paragraphs & Quotes' },
-                  { id: 'buttons', label: 'Buttons & Links' },
-                  { id: 'lists', label: 'Bullet Items' },
-                  { id: 'custom', label: 'Added Text Blocks' },
+                  { id: 'all', label: 'All Text' },
+                  { id: 'headings', label: 'Headings' },
+                  { id: 'paragraphs', label: 'Paragraphs' },
+                  { id: 'buttons', label: 'Buttons' },
+                  { id: 'lists', label: 'Lists' },
+                  { id: 'custom', label: 'Added Blocks' },
                 ] as { id: TextTypeFilter; label: string }[]
               ).map((tab) => (
                 <button
@@ -2079,23 +2331,27 @@ export default function AdminCmsStudioPage() {
               ))}
             </div>
           ) : viewMode === 'section-images' ? (
-            <div className="text-xs text-[#9CA9A1]">
-              Uploaded section photos are pushed directly to the Cloudflare R2 bucket and accessed through Firebase Firestore via R2 CDN links.
-            </div>
+            <div className="text-xs text-[#9CA9A1]">Section Photos</div>
           ) : (
-            <div className="text-xs text-[#9CA9A1]">
-              Direct Cloudflare R2 Bucket Manager ({bucketName}): Add new images from device storage, replace/edit existing R2 objects, copy CDN links, or delete from R2.
-            </div>
+            <div className="text-xs text-[#9CA9A1]">Bucket: {bucketName}</div>
           )}
 
           <div className="text-xs text-[#9CA9A1] font-mono tabular-nums">
-            {viewMode === 'slots'
-              ? `Showing ${filteredSlots.length} of ${mergedSlots.length} image slots`
+            {viewMode === 'hero-slideshow'
+              ? `${
+                  mergedSlots.filter(
+                    (s) =>
+                      s.type === 'hero-bg' &&
+                      (selectedPage === 'all' || s.page === selectedPage)
+                  ).length + filteredHeroSlides.length
+                } slides`
+              : viewMode === 'slots'
+              ? `${filteredSlots.length} / ${mergedSlots.length} slots`
               : viewMode === 'section-images'
-              ? `Showing ${filteredSectionImages.length} of ${mergedSectionImages.length} section photos`
+              ? `${filteredSectionImages.length} photos`
               : viewMode === 'texts'
-              ? `Showing ${filteredTexts.length} of ${mergedTexts.length} text elements`
-              : `Showing ${filteredR2Objects.length} of ${enrichedR2Objects.length} R2 bucket objects`}
+              ? `${filteredTexts.length} items`
+              : `${filteredR2Objects.length} files`}
           </div>
         </div>
 
@@ -2136,6 +2392,185 @@ export default function AdminCmsStudioPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          ) : viewMode === 'hero-slideshow' ? (
+            /* Hero Section 4-Second Multi-Image Slideshow Manager */
+            <div className="space-y-6">
+              {(selectedPage === 'all' ? pages : pages.filter((p) => p.file === selectedPage)).map(
+                (pageMeta) => {
+                  const primaryHeroSlot = mergedSlots.find(
+                    (s) => s.page === pageMeta.file && s.type === 'hero-bg'
+                  );
+                  const extraSlides = filteredHeroSlides.filter(
+                    (item) => item.page === pageMeta.file
+                  );
+                  const totalSlidesCount = (primaryHeroSlot ? 1 : 0) + extraSlides.length;
+
+                  return (
+                    <section
+                      key={pageMeta.file}
+                      className="bg-[#121915] border border-[#1F2923] rounded-lg p-5 space-y-4"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1F2923] pb-3.5">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h2 className="text-sm font-semibold text-[#F1F5F2]">
+                              {pageMeta.title}
+                            </h2>
+                            <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#182820] text-[#86EFAC] border border-[#2B4739]">
+                              {totalSlidesCount} Slide{totalSlidesCount === 1 ? '' : 's'} · 4s Interval
+                            </span>
+                          </div>
+                          <p className="text-xs text-[#9CA9A1] mt-0.5">
+                            Page: <span className="font-mono text-[#E59819]">{pageMeta.file}</span> ·
+                            Add multiple hero images to automatically crossfade every 4 seconds.
+                          </p>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => openNewHeroSlideModal(pageMeta.file)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-[#E59819] hover:bg-[#F5A623] text-[#0B0F0D] transition-colors"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Add Hero Slide to {pageMeta.title}</span>
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {primaryHeroSlot && (
+                          <article className="bg-[#0E1411] border border-[#26352D] rounded-lg overflow-hidden flex flex-col justify-between group">
+                            <div>
+                              <div
+                                onClick={() => openSlotEditor(primaryHeroSlot)}
+                                className="relative h-40 bg-[#090D0B] border-b border-[#1A231E] overflow-hidden cursor-pointer flex items-center justify-center"
+                              >
+                                <img
+                                  src={resolveImageUrl(primaryHeroSlot.src)}
+                                  alt={primaryHeroSlot.alt || primaryHeroSlot.label}
+                                  className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+                                  loading="lazy"
+                                />
+                                <div className="absolute top-2 left-2 bg-[#E59819] text-[#0B0F0D] px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
+                                  Slide #1 (Primary Hero)
+                                </div>
+                                {primaryHeroSlot.r2Key && (
+                                  <div className="absolute bottom-2 left-2 bg-[#13261C]/90 border border-[#234734] px-2 py-0.5 rounded text-[10px] font-mono text-[#86EFAC] truncate max-w-[90%]">
+                                    R2: {primaryHeroSlot.r2Key}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="p-3.5 space-y-1">
+                                <h3 className="text-xs font-semibold text-[#F1F5F2] truncate">
+                                  {primaryHeroSlot.label}
+                                </h3>
+                                <div
+                                  className="text-[11px] font-mono text-[#68756D] truncate"
+                                  title={primaryHeroSlot.src}
+                                >
+                                  CDN: {primaryHeroSlot.src}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="px-3.5 pb-3.5 pt-1 flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => openSlotEditor(primaryHeroSlot)}
+                                className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#1B2620] hover:bg-[#E59819] text-[#F1F5F2] hover:text-[#0B0F0D] border border-[#2A3A31] hover:border-[#E59819] font-medium text-xs py-1.5 px-2.5 rounded-md transition-colors"
+                              >
+                                <Upload className="w-3.5 h-3.5" />
+                                <span>Change Slide #1</span>
+                              </button>
+                            </div>
+                          </article>
+                        )}
+
+                        {extraSlides.map((slide, idx) => (
+                          <article
+                            key={slide.itemId}
+                            className="bg-[#0E1411] border border-[#26352D] rounded-lg overflow-hidden flex flex-col justify-between group"
+                          >
+                            <div>
+                              <div
+                                onClick={() => openEditSectionImageModal(slide)}
+                                className="relative h-40 bg-[#090D0B] border-b border-[#1A231E] overflow-hidden cursor-pointer flex items-center justify-center"
+                              >
+                                <img
+                                  src={resolveImageUrl(slide.src)}
+                                  alt={slide.alt || slide.title}
+                                  className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+                                  loading="lazy"
+                                />
+                                <div className="absolute top-2 left-2 bg-[#13261C]/95 border border-[#2B4739] text-[#86EFAC] px-2 py-0.5 rounded text-[10px] font-mono font-semibold">
+                                  Slide #{idx + 2} · 4s Auto-Slide
+                                </div>
+                                {slide.r2Key && (
+                                  <div className="absolute bottom-2 left-2 bg-[#13261C]/90 border border-[#234734] px-2 py-0.5 rounded text-[10px] font-mono text-[#86EFAC] truncate max-w-[90%]">
+                                    R2: {slide.r2Key}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="p-3.5 space-y-1">
+                                <h3
+                                  className="text-xs font-semibold text-[#F1F5F2] truncate"
+                                  title={slide.title}
+                                >
+                                  {slide.title}
+                                </h3>
+                                <div
+                                  className="text-[11px] font-mono text-[#68756D] truncate"
+                                  title={slide.src}
+                                >
+                                  CDN: {slide.src}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="px-3.5 pb-3.5 pt-1 flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => openEditSectionImageModal(slide)}
+                                className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#1B2620] hover:bg-[#E59819] text-[#F1F5F2] hover:text-[#0B0F0D] border border-[#2A3A31] hover:border-[#E59819] font-medium text-xs py-1.5 px-2.5 rounded-md transition-colors"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                                <span>Edit / Replace</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteSectionImage(slide)}
+                                className="p-1.5 rounded-md bg-[#161F1A] hover:bg-[#2A1616] text-[#9CA9A1] hover:text-[#FCA5A5] border border-[#24322A] transition-colors"
+                                title="Remove slide from Hero Slideshow"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </article>
+                        ))}
+
+                        {/* Quick Add Slide Card */}
+                        <button
+                          type="button"
+                          onClick={() => openNewHeroSlideModal(pageMeta.file)}
+                          className="h-full min-h-[210px] rounded-lg bg-[#0B0F0D] border border-dashed border-[#2F4237] hover:border-[#E59819] flex flex-col items-center justify-center p-4 text-center transition-colors group"
+                        >
+                          <div className="w-9 h-9 rounded-full bg-[#18221D] group-hover:bg-[#E59819] text-[#E59819] group-hover:text-[#0B0F0D] flex items-center justify-center mb-2 transition-colors">
+                            <Plus className="w-5 h-5" />
+                          </div>
+                          <span className="text-xs font-semibold text-[#F1F5F2]">
+                            + Add Hero Slide Image
+                          </span>
+                          <span className="text-[11px] text-[#9CA9A1] mt-1">
+                            Uploads to R2 & slides every 4s on {pageMeta.title}
+                          </span>
+                        </button>
+                      </div>
+                    </section>
+                  );
+                }
+              )}
             </div>
           ) : viewMode === 'slots' ? (
             filteredSlots.length === 0 ? (
@@ -2234,6 +2669,16 @@ export default function AdminCmsStudioPage() {
                         <Upload className="w-3.5 h-3.5" />
                         <span>{slot.isDeleted ? 'Add Image to R2' : 'Update via R2'}</span>
                       </button>
+                      {slot.type === 'hero-bg' && (
+                        <button
+                          type="button"
+                          onClick={() => openNewHeroSlideModal(slot.page)}
+                          className="px-2.5 py-2 rounded-md bg-[#182820] hover:bg-[#22382D] text-[#86EFAC] border border-[#2B4739] text-xs font-semibold transition-colors whitespace-nowrap shrink-0"
+                          title="Add another image to this page's 4-second Hero Slideshow"
+                        >
+                          + Slide (4s)
+                        </button>
+                      )}
                       {(slot.isModified || slot.isDeleted) && (
                         <button
                           type="button"
@@ -2653,7 +3098,36 @@ export default function AdminCmsStudioPage() {
                 />
               </div>
 
-              {editingSlot.type !== 'hero-bg' && (
+              {editingSlot.type === 'hero-bg' ? (
+                <div className="p-3.5 rounded-md bg-[#0E1512] border border-[#23352B] space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <div className="text-xs font-semibold text-[#86EFAC]">
+                        Hero Section 4-Second Slideshow Images
+                      </div>
+                      <div className="text-[11px] text-[#9CA9A1]">
+                        {
+                          heroSlideshowItems.filter((item) => item.page === editingSlot.page)
+                            .length
+                        }{' '}
+                        additional slide(s) configured for {editingSlot.pageTitle}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const targetPage = editingSlot.page;
+                        setEditingSlot(null);
+                        openNewHeroSlideModal(targetPage);
+                      }}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded bg-[#E59819] hover:bg-[#F5A623] text-[#0B0F0D] text-xs font-semibold transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Slide Image (4s)</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
                 <div className="space-y-1.5">
                   <label className="block text-xs font-medium text-[#9CA9A1]">
                     Image Alt Text (SEO & Accessibility)
@@ -2715,17 +3189,25 @@ export default function AdminCmsStudioPage() {
         </div>
       )}
 
-      {/* Modal 2: Add / Edit Section Wildlife Photo (Pushes to R2 -> saves R2 CDN URL in Firebase Firestore) */}
+      {/* Modal 2: Add / Edit Section Wildlife Photo or Hero Slideshow Image */}
       {editingSectionImg && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-[#121915] border border-[#26352D] rounded-lg max-w-xl w-full overflow-hidden shadow-2xl">
             <div className="px-6 py-4 bg-[#161F1A] border-b border-[#222F28] flex items-center justify-between">
               <div>
                 <div className="text-xs text-[#E59819] font-medium">
-                  Cloudflare R2 + Firebase Section Gallery Photo
+                  {editingSectionImg.sectionKey === 'hero_slideshow'
+                    ? 'Cloudflare R2 + Hero Section 4-Second Slideshow'
+                    : 'Cloudflare R2 + Firebase Section Gallery Photo'}
                 </div>
                 <h2 className="text-base font-semibold text-[#F1F5F2] mt-0.5">
-                  {isNewSectionImg ? 'Add New Photo to R2 & Page Section' : 'Edit R2 Section Photo'}
+                  {editingSectionImg.sectionKey === 'hero_slideshow'
+                    ? isNewSectionImg
+                      ? 'Add Hero Section Slideshow Image (4s Interval)'
+                      : 'Edit Hero Section Slideshow Image'
+                    : isNewSectionImg
+                    ? 'Add New Photo to R2 & Page Section'
+                    : 'Edit R2 Section Photo'}
                 </h2>
               </div>
               <button
@@ -2739,6 +3221,39 @@ export default function AdminCmsStudioPage() {
 
             <form onSubmit={handleSaveSectionImage} className="p-6 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-[#9CA9A1] mb-1">
+                    Placement on Page
+                  </label>
+                  <select
+                    value={
+                      editingSectionImg.sectionKey === 'hero_slideshow'
+                        ? 'hero_slideshow'
+                        : 'custom_section_gallery'
+                    }
+                    onChange={(e) => {
+                      const isHero = e.target.value === 'hero_slideshow';
+                      setEditingSectionImg({
+                        ...editingSectionImg,
+                        sectionKey: isHero ? 'hero_slideshow' : 'custom_section_gallery',
+                        sectionTitle: isHero
+                          ? 'Hero Section Slideshow (4s)'
+                          : editingSectionImg.sectionTitle === 'Hero Section Slideshow (4s)'
+                          ? 'Featured Wildlife & Safari Moments'
+                          : editingSectionImg.sectionTitle,
+                      });
+                    }}
+                    className="w-full bg-[#0B0F0D] border border-[#26352D] focus:border-[#E59819] rounded-md px-3 py-2 text-xs text-[#F1F5F2]"
+                  >
+                    <option value="hero_slideshow">
+                      Hero Section Slideshow (4-Second Interval)
+                    </option>
+                    <option value="custom_section_gallery">
+                      Page Section Wildlife Gallery
+                    </option>
+                  </select>
+                </div>
+
                 <div>
                   <label className="block text-xs font-medium text-[#9CA9A1] mb-1">
                     Target Website Page
@@ -2757,7 +3272,9 @@ export default function AdminCmsStudioPage() {
                     ))}
                   </select>
                 </div>
+              </div>
 
+              {editingSectionImg.sectionKey !== 'hero_slideshow' && (
                 <div>
                   <label className="block text-xs font-medium text-[#9CA9A1] mb-1">
                     Section Heading / Group Name
@@ -2775,7 +3292,7 @@ export default function AdminCmsStudioPage() {
                     className="w-full bg-[#0B0F0D] border border-[#26352D] focus:border-[#E59819] rounded-md px-3 py-2 text-xs text-[#F1F5F2]"
                   />
                 </div>
-              </div>
+              )}
 
               <div>
                 <label className="block text-xs font-medium text-[#9CA9A1] mb-1">

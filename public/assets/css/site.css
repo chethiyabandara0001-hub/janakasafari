@@ -532,6 +532,75 @@ body:not(.janaka-contact) .banner-wrap::after {
   z-index: 3;
 }
 
+/* Hero Multi-Image Slideshow (4-Second Interval Crossfade) */
+.hero-slideshow-stage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.hero-slide-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center 35%;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 1.15s ease-in-out;
+  will-change: opacity;
+}
+
+.hero-slide-layer.is-active {
+  opacity: 1;
+}
+
+.hero-slideshow-dots {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(118px, 14.5vh, 175px);
+  transform: translateX(-50%);
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(8, 24, 18, 0.42);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+body:not(.wsite-page-index) .hero-slideshow-dots {
+  bottom: clamp(28px, 4.5vh, 52px);
+}
+
+.hero-slideshow-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: none;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.42);
+  cursor: pointer;
+  transition: width 0.28s ease, background-color 0.28s ease;
+}
+
+.hero-slideshow-dot:hover {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.hero-slideshow-dot.is-active {
+  width: 24px;
+  background: #f5a623;
+}
+
 body:not(.janaka-contact) .wsite-header-section .wsite-section-content {
   position: relative;
   z-index: 4;

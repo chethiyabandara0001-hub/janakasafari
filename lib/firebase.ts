@@ -3,6 +3,8 @@ import {
   getAuth,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
   type User,
@@ -531,4 +533,12 @@ export function subscribePublicCollection<T>(
   );
 }
 
-export { signInWithPopup, firebaseSignOut, onAuthStateChanged, type User };
+export {
+  signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  firebaseSignOut,
+  onAuthStateChanged,
+  type User,
+};
+

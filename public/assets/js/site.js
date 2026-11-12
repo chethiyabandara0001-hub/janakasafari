@@ -777,12 +777,150 @@
     });
   }
 
-  // Hydrate page with Firebase CMS state (slot image R2 CDN overrides, section wildlife galleries, text edits, and custom text blocks)
+  // Hero Section Multi-Image Slideshow (4-Second Interval)
+  let heroSlideshowTimer = null;
+  let activeHeroSlideIndex = 0;
+  const heroHeaderSectionEl = document.querySelector(".banner-wrap .wsite-header-section");
+  const heroBannerWrapEl = document.querySelector(".banner-wrap");
+  const initialHeroStyle = (heroHeaderSectionEl && heroHeaderSectionEl.getAttribute("style")) || "";
+  const initialHeroMatch = initialHeroStyle.match(/url\(['"]?([^'")]+)['"]?\)/i);
+  let primaryHeroBannerSrc = initialHeroMatch ? initialHeroMatch[1] : "";
+
+  function normalizeSlideSrc(src) {
+    if (!src) return "";
+    const trimmed = String(src).trim();
+    if (
+      trimmed.startsWith("http://") ||
+      trimmed.startsWith("https://") ||
+      trimmed.startsWith("/") ||
+      trimmed.startsWith("data:")
+    ) {
+      return trimmed;
+    }
+    if (trimmed.includes(".")) {
+      return "https://" + trimmed;
+    }
+    return "/" + trimmed;
+  }
+
+  function initOrUpdateHeroSlideshow(slidesList) {
+    if (!heroHeaderSectionEl || document.body.classList.contains("janaka-contact")) return;
+
+    if (heroSlideshowTimer) {
+      clearInterval(heroSlideshowTimer);
+      heroSlideshowTimer = null;
+    }
+
+    const seen = new Set();
+    const validSlides = [];
+    (slidesList || []).forEach((item) => {
+      const normalized = normalizeSlideSrc(typeof item === "string" ? item : item && item.src);
+      if (!normalized || /^data:/i.test(normalized) || /payment-|visa|mastercard/i.test(normalized)) {
+        return;
+      }
+      if (!seen.has(normalized)) {
+        seen.add(normalized);
+        validSlides.push({
+          src: normalized,
+          alt: (typeof item === "object" && item && (item.alt || item.title)) || "Sri Lanka Safari Hero Slide",
+        });
+      }
+    });
+
+    let stage = heroHeaderSectionEl.querySelector(".hero-slideshow-stage");
+    let dotsWrap = heroBannerWrapEl ? heroBannerWrapEl.querySelector(".hero-slideshow-dots") : null;
+
+    if (validSlides.length === 0) {
+      if (stage) stage.remove();
+      if (dotsWrap) dotsWrap.remove();
+      return;
+    }
+
+    if (!stage) {
+      stage = document.createElement("div");
+      stage.className = "hero-slideshow-stage";
+      stage.setAttribute("aria-hidden", "true");
+      heroHeaderSectionEl.insertBefore(stage, heroHeaderSectionEl.firstChild);
+    }
+
+    stage.innerHTML = "";
+    activeHeroSlideIndex = 0;
+
+    validSlides.forEach((slide, idx) => {
+      const layer = document.createElement("div");
+      layer.className = "hero-slide-layer" + (idx === 0 ? " is-active" : "");
+      layer.style.backgroundImage = `url("${slide.src}")`;
+      layer.setAttribute("role", "img");
+      layer.setAttribute("aria-label", slide.alt);
+      stage.appendChild(layer);
+    });
+
+    heroHeaderSectionEl.style.backgroundImage = `url("${validSlides[0].src}")`;
+    heroHeaderSectionEl.style.backgroundSize = "cover";
+    heroHeaderSectionEl.style.backgroundPosition = "center 35%";
+
+    if (validSlides.length > 1 && heroBannerWrapEl) {
+      if (!dotsWrap) {
+        dotsWrap = document.createElement("div");
+        dotsWrap.className = "hero-slideshow-dots";
+        dotsWrap.setAttribute("role", "tablist");
+        dotsWrap.setAttribute("aria-label", "Hero Section Slideshow Controls");
+        heroBannerWrapEl.appendChild(dotsWrap);
+      }
+      dotsWrap.innerHTML = "";
+
+      const goToSlide = (targetIdx) => {
+        const layers = stage.querySelectorAll(".hero-slide-layer");
+        const dots = dotsWrap ? dotsWrap.querySelectorAll(".hero-slideshow-dot") : [];
+        if (!layers.length) return;
+        activeHeroSlideIndex = ((targetIdx % validSlides.length) + validSlides.length) % validSlides.length;
+        layers.forEach((l, i) => {
+          l.classList.toggle("is-active", i === activeHeroSlideIndex);
+        });
+        dots.forEach((d, i) => {
+          d.classList.toggle("is-active", i === activeHeroSlideIndex);
+          d.setAttribute("aria-selected", String(i === activeHeroSlideIndex));
+        });
+        heroHeaderSectionEl.style.backgroundImage = `url("${validSlides[activeHeroSlideIndex].src}")`;
+      };
+
+      const startTimer = () => {
+        if (heroSlideshowTimer) clearInterval(heroSlideshowTimer);
+        heroSlideshowTimer = setInterval(() => {
+          goToSlide(activeHeroSlideIndex + 1);
+        }, 4000);
+      };
+
+      validSlides.forEach((slide, idx) => {
+        const dot = document.createElement("button");
+        dot.type = "button";
+        dot.className = "hero-slideshow-dot" + (idx === 0 ? " is-active" : "");
+        dot.setAttribute("role", "tab");
+        dot.setAttribute("aria-selected", String(idx === 0));
+        dot.setAttribute("aria-label", `Hero Slide ${idx + 1}: ${slide.alt}`);
+        dot.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          goToSlide(idx);
+          startTimer();
+        });
+        dotsWrap.appendChild(dot);
+      });
+
+      startTimer();
+    } else if (dotsWrap) {
+      dotsWrap.remove();
+    }
+  }
+
+  // Hydrate page with Firebase CMS state (slot image R2 CDN overrides, 4s hero slideshow, section wildlife galleries, text edits, and custom text blocks)
   async function hydrateFromFirebaseCms() {
     try {
       const res = await fetch(`/api/admin/cms?t=${Date.now()}`, { cache: "no-store" });
       if (!res.ok) return;
       const cms = await res.json();
+
+      let heroSlotDeleted = false;
 
       // 1. Apply image slot overrides (strictly R2 CDN links or explicit slot deletions, never raw data: URIs)
       if (cms.imageOverrides) {
@@ -793,6 +931,8 @@
 
           if (ov.isDeleted) {
             if (entry.type === "hero-bg") {
+              heroSlotDeleted = true;
+              primaryHeroBannerSrc = "";
               entry.element.style.backgroundImage = "none";
             } else {
               entry.element.removeAttribute("src");
@@ -807,6 +947,7 @@
             if (/payment-|visa|mastercard/i.test(ov.src)) return;
             if (entry.element.classList.contains("wsite-body-section")) return;
             if (document.body.classList.contains("janaka-contact")) return;
+            primaryHeroBannerSrc = ov.src;
             entry.element.style.backgroundImage = `url("${ov.src}")`;
             entry.element.style.backgroundSize = "cover";
             entry.element.style.backgroundPosition = "center center";
@@ -825,6 +966,34 @@
           }
         });
       }
+
+      // 1b. Build & start 4-Second Hero Section Multi-Image Slideshow for this page
+      const pageHeroSlides = Array.isArray(cms.sectionGalleryItems)
+        ? cms.sectionGalleryItems
+            .filter(
+              (item) =>
+                item.page === currentPageFile &&
+                item.sectionKey === "hero_slideshow" &&
+                item.src &&
+                !/^data:/i.test(item.src)
+            )
+            .sort((a, b) => (a.order || 0) - (b.order || 0))
+        : [];
+
+      const combinedHeroSlides = [];
+      if (!heroSlotDeleted && primaryHeroBannerSrc) {
+        combinedHeroSlides.push({
+          src: primaryHeroBannerSrc,
+          alt: document.title || "Sri Lanka Safari Hero Banner",
+        });
+      }
+      pageHeroSlides.forEach((s) => {
+        combinedHeroSlides.push({
+          src: s.src,
+          alt: s.alt || s.title || "Sri Lanka Safari Hero Slide",
+        });
+      });
+      initOrUpdateHeroSlideshow(combinedHeroSlides);
 
       // 2. Apply text overrides & deletions for this page
       if (Array.isArray(cms.textSlots)) {
@@ -883,10 +1052,14 @@
         });
       }
 
-      // 4. Render Curated Firebase Section Wildlife Gallery for this page (from R2 CDN links)
+      // 4. Render Curated Firebase Section Wildlife Gallery for this page (excluding hero_slideshow items)
       const pageSectionItems = Array.isArray(cms.sectionGalleryItems)
         ? cms.sectionGalleryItems.filter(
-            (item) => item.page === currentPageFile && item.src && !/^data:/i.test(item.src)
+            (item) =>
+              item.page === currentPageFile &&
+              item.sectionKey !== "hero_slideshow" &&
+              item.src &&
+              !/^data:/i.test(item.src)
           )
         : [];
       if (pageSectionItems.length > 0 && mainEl) {

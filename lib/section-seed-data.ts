@@ -30,6 +30,66 @@ export interface SeedSlotOverrideItem {
  */
 export const INITIAL_FIREBASE_SECTION_IMAGES: SeedSectionGalleryItem[] = [
   {
+    "itemId": "hero_slide_home_2",
+    "page": "index.html",
+    "sectionKey": "hero_slideshow",
+    "sectionTitle": "Hero Section Slideshow (4s)",
+    "title": "Yala National Park Leopard Safari at Golden Hour",
+    "caption": "Private 4x4 Yala Leopard Safari tracking Panthera pardus kotiya across Block 1 and Block 5.",
+    "src": "/api/r2/file/sections/home_hero_1.jpg",
+    "alt": "Yala Leopard Safari — Sri Lankan Leopard resting on granite rock in Yala National Park",
+    "order": 1,
+    "r2Key": "sections/home_hero_1.jpg"
+  },
+  {
+    "itemId": "hero_slide_home_3",
+    "page": "index.html",
+    "sectionKey": "hero_slideshow",
+    "sectionTitle": "Hero Section Slideshow (4s)",
+    "title": "Udawalawe & Minneriya Wild Elephant Safari",
+    "caption": "Wild Asian elephant herds gathering along reservoir grasslands on our Sri Lanka Safari Tours.",
+    "src": "/api/r2/file/sections/home_parks_1.jpg",
+    "alt": "Udawalawe National Park Safari — Wild Sri Lankan elephant herd",
+    "order": 2,
+    "r2Key": "sections/home_parks_1.jpg"
+  },
+  {
+    "itemId": "hero_slide_home_4",
+    "page": "index.html",
+    "sectionKey": "hero_slideshow",
+    "sectionTitle": "Hero Section Slideshow (4s)",
+    "title": "Private 4x4 Safari Jeep Tours Across Six National Parks",
+    "caption": "Custom open-view 4x4 safari jeeps for Yala Morning Safari, Full Day Safari, and Hambantota Shore Excursions.",
+    "src": "/api/r2/file/sections/home_welcome_2.jpg",
+    "alt": "Yala National Park Jeep Safari — Custom 4x4 safari jeep in Sri Lanka",
+    "order": 3,
+    "r2Key": "sections/home_welcome_2.jpg"
+  },
+  {
+    "itemId": "hero_slide_yala_2",
+    "page": "yala-safari.html",
+    "sectionKey": "hero_slideshow",
+    "sectionTitle": "Hero Section Slideshow (4s)",
+    "title": "Yala Leopard Safari — Close Sightings",
+    "caption": "Morning, Afternoon, Full Day, and Share Safari options in Yala National Park.",
+    "src": "/api/r2/file/sections/yala_sec_leopard_1.jpg",
+    "alt": "Yala Leopard Safari in Yala National Park Sri Lanka",
+    "order": 1,
+    "r2Key": "sections/yala_sec_leopard_1.jpg"
+  },
+  {
+    "itemId": "hero_slide_yala_3",
+    "page": "yala-safari.html",
+    "sectionKey": "hero_slideshow",
+    "sectionTitle": "Hero Section Slideshow (4s)",
+    "title": "Yala Full Day & Morning Jeep Safari",
+    "caption": "Scenic watering holes and savannah tracks with pickup from Tissamaharama, Kataragama, and Hambantota Port.",
+    "src": "/api/r2/file/sections/yala_sec_packages_3.jpg",
+    "alt": "Yala National Park Safari landscape at sunrise",
+    "order": 2,
+    "r2Key": "sections/yala_sec_packages_3.jpg"
+  },
+  {
     "itemId": "home_hero_1",
     "page": "index.html",
     "sectionKey": "home_welcome_section",
@@ -38,7 +98,7 @@ export const INITIAL_FIREBASE_SECTION_IMAGES: SeedSectionGalleryItem[] = [
     "caption": "Early morning 5:00 AM entry into Yala National Park aboard our custom-built 4x4 Toyota Hilux safari jeeps.",
     "src": "/api/r2/file/sections/home_hero_1.jpg",
     "alt": "Sri Lankan Leopard resting on granite outcrop at golden hour in Yala",
-    "order": 1,
+    "order": 4,
     "r2Key": "sections/home_hero_1.jpg"
   },
   {
@@ -50,7 +110,7 @@ export const INITIAL_FIREBASE_SECTION_IMAGES: SeedSectionGalleryItem[] = [
     "caption": "Forward-facing cushioned bucket seats with unobstructed 360-degree photography angles and roll-up canvas sides.",
     "src": "/api/r2/file/sections/home_welcome_2.jpg",
     "alt": "Custom 4x4 safari jeep traversing Sri Lankan national park trail",
-    "order": 2,
+    "order": 5,
     "r2Key": "sections/home_welcome_2.jpg"
   },
   {
@@ -62,7 +122,7 @@ export const INITIAL_FIREBASE_SECTION_IMAGES: SeedSectionGalleryItem[] = [
     "caption": "Multi-generational Asian elephant families gathering along the Udawalawe reservoir shoreline.",
     "src": "/api/r2/file/sections/home_parks_1.jpg",
     "alt": "Asian elephant family walking across grasslands in Udawalawe National Park",
-    "order": 3,
+    "order": 6,
     "r2Key": "sections/home_parks_1.jpg"
   },
   {
@@ -74,7 +134,7 @@ export const INITIAL_FIREBASE_SECTION_IMAGES: SeedSectionGalleryItem[] = [
     "caption": "Migratory Greater Flamingos, Painted Storks, and Bee-eaters feeding in shallow brackish lagoons.",
     "src": "/api/r2/file/sections/home_parks_2.jpg",
     "alt": "Flock of flamingos wading in Bundala coastal lagoon at sunrise",
-    "order": 4,
+    "order": 7,
     "r2Key": "sections/home_parks_2.jpg"
   },
   {
