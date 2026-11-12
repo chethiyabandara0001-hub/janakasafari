@@ -37,9 +37,18 @@ const nextConfig: NextConfig = {
         destination: '/api/pages/index.html',
       },
       {
+        source: '/sitemap_index.xml',
+        destination: '/sitemap.xml',
+      },
+      {
         source:
           '/:page(index\\.html|about\\.html|safari-parks\\.html|yala-safari\\.html|udawalawe-safari\\.html|bundala-birding-safari\\.html|wilpattu-safari\\.html|minneriya-safari\\.html|kumana-birding-safari\\.html|gallery\\.html|reviews\\.html|contact\\.html)',
         destination: '/api/pages/:page',
+      },
+      {
+        source:
+          '/:slug(index|about|safari-parks|yala-safari|udawalawe-safari|bundala-birding-safari|wilpattu-safari|minneriya-safari|kumana-birding-safari|gallery|reviews|contact)',
+        destination: '/api/pages/:slug.html',
       },
       {
         source: '/assets/media/:path*',

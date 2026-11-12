@@ -14,6 +14,28 @@ export const metadata: Metadata = {
   alternates: {
     canonical: SITE_BASE_URL,
   },
+  icons: {
+    icon: [
+      {
+        url: '/assets/aistudio/images__8_-removebg-preview__1__c2145e28.png',
+        sizes: '96x96',
+        type: 'image/png',
+      },
+      {
+        url: '/favicon.png',
+        sizes: '96x96',
+        type: 'image/png',
+      },
+    ],
+    shortcut: '/assets/aistudio/images__8_-removebg-preview__1__c2145e28.png',
+    apple: [
+      {
+        url: '/assets/aistudio/images__8_-removebg-preview__1__c2145e28.png',
+        sizes: '96x96',
+        type: 'image/png',
+      },
+    ],
+  },
   robots: {
     index: true,
     follow: true,

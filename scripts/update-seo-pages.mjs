@@ -413,12 +413,22 @@ function enrichHtmlFile(filePath, pageFile) {
   // 2. Replace <title>...</title>
   html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeAttr(cfg.title)}</title>`);
 
-  // 3. Remove any standalone legacy description/keywords tags outside our block
+  // 3. Remove any standalone legacy description/keywords/favicon tags outside our block
   html = html.replace(/<meta\s+name=["']description["'][^>]*>\s*/gi, '');
   html = html.replace(/<meta\s+name=["']keywords["'][^>]*>\s*/gi, '');
   html = html.replace(/<link\s+rel=["']canonical["'][^>]*>\s*/gi, '');
+  html = html.replace(/<link\s+rel=["']sitemap["'][^>]*>\s*/gi, '');
+  html = html.replace(/<link\s+rel=["'](?:shortcut\s+)?icon["'][^>]*>\s*/gi, '');
+  html = html.replace(/<link\s+rel=["']apple-touch-icon["'][^>]*>\s*/gi, '');
+
+  const faviconPath = '/assets/aistudio/images__8_-removebg-preview__1__c2145e28.png';
 
   const seoMetaBlock = `<!-- START_SAFARI_SEO_META -->
+<link rel="icon" type="image/png" sizes="96x96" href="${faviconPath}">
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon.png">
+<link rel="shortcut icon" type="image/png" href="${faviconPath}">
+<link rel="apple-touch-icon" sizes="96x96" href="${faviconPath}">
+<link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml">
 <meta name="description" content="${escapeAttr(cfg.description)}">
 <meta name="keywords" content="${escapeAttr(keywordsStr)}">
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
@@ -474,49 +484,22 @@ function enrichHtmlFile(filePath, pageFile) {
 
 const publicDir = path.join(process.cwd(), 'public');
 const defaultsDir = path.join(publicDir, 'assets', 'html-defaults');
+const uploadedFavicon = path.join(
+  publicDir,
+  'assets',
+  'aistudio',
+  'images__8_-removebg-preview__1__c2145e28.png'
+);
+
+if (fs.existsSync(uploadedFavicon)) {
+  fs.copyFileSync(uploadedFavicon, path.join(publicDir, 'favicon.png'));
+  fs.copyFileSync(uploadedFavicon, path.join(publicDir, 'favicon-96x96.png'));
+  fs.copyFileSync(uploadedFavicon, path.join(publicDir, 'favicon.ico'));
+}
 
 for (const pageFile of Object.keys(PAGE_SEO)) {
   enrichHtmlFile(path.join(publicDir, pageFile), pageFile);
   enrichHtmlFile(path.join(defaultsDir, pageFile), pageFile);
 }
 
-// Generate static public/sitemap.xml & public/robots.txt for Cloudflare Pages / static edge serving
-const nowIso = new Date().toISOString();
-const sitemapEntries = Object.entries(PAGE_SEO)
-  .map(([pageFile, cfg]) => {
-    const loc = cfg.canonicalPath === '/' ? `${SITE_URL}/` : `${SITE_URL}${cfg.canonicalPath}`;
-    const priority =
-      pageFile === 'index.html' || pageFile === 'yala-safari.html'
-        ? '1.0'
-        : pageFile.includes('safari')
-        ? '0.9'
-        : '0.8';
-    return `  <url>
-    <loc>${loc}</loc>
-    <lastmod>${nowIso}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>${priority}</priority>
-  </url>`;
-  })
-  .join('\n');
-
-const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${sitemapEntries}
-</urlset>
-`;
-
-fs.writeFileSync(path.join(publicDir, 'sitemap.xml'), sitemapXml, 'utf8');
-
-const robotsTxt = `User-agent: *
-Allow: /
-Disallow: /admin
-Disallow: /api/
-
-Sitemap: ${SITE_URL}/sitemap.xml
-Host: ${SITE_URL}
-`;
-
-fs.writeFileSync(path.join(publicDir, 'robots.txt'), robotsTxt, 'utf8');
-
-console.log('Successfully updated SEO meta tags, JSON-LD, alt/title attributes, sitemap.xml, and robots.txt across all 12 pages.');
+console.log('Successfully updated 96x96 favicon, <link rel="sitemap">, SEO meta tags, JSON-LD, and alt/title attributes across all 12 pages.');

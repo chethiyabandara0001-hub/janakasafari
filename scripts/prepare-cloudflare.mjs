@@ -1066,6 +1066,97 @@ const worker = {
       }
     }
 
+    // Sitemap XML: /sitemap.xml and /sitemap_index.xml
+    if (pathname === '/sitemap.xml' || pathname === '/sitemap_index.xml') {
+      const origin =
+        url.hostname === 'localhost' || url.hostname === '127.0.0.1'
+          ? 'https://srilankabestsafari.com'
+          : 'https://' + url.host;
+      const nowIso = new Date().toISOString();
+      const pagesMeta = [
+        { path: '/', file: 'index.html', priority: '1.0', title: 'Yala Safari & Sri Lanka Safari Tours' },
+        { path: '/yala-safari.html', file: 'yala-safari.html', priority: '1.0', title: 'Yala National Park Safari & Leopard Jeep Tours' },
+        { path: '/udawalawe-safari.html', file: 'udawalawe-safari.html', priority: '0.9', title: 'Udawalawe National Park Elephant Safari' },
+        { path: '/bundala-birding-safari.html', file: 'bundala-birding-safari.html', priority: '0.9', title: 'Bundala National Park Bird Watching Safari' },
+        { path: '/wilpattu-safari.html', file: 'wilpattu-safari.html', priority: '0.9', title: 'Wilpattu National Park Leopard Safari' },
+        { path: '/minneriya-safari.html', file: 'minneriya-safari.html', priority: '0.9', title: 'Minneriya National Park Elephant Gathering Safari' },
+        { path: '/kumana-birding-safari.html', file: 'kumana-birding-safari.html', priority: '0.9', title: 'Kumana National Park Bird Watching Safari' },
+        { path: '/safari-parks.html', file: 'safari-parks.html', priority: '0.9', title: 'Sri Lanka National Park Safari Tours' },
+        { path: '/about.html', file: 'about.html', priority: '0.8', title: 'About Nisha Safari Jeep Tours' },
+        { path: '/gallery.html', file: 'gallery.html', priority: '0.8', title: 'Sri Lanka Wildlife Safari Photo Gallery' },
+        { path: '/reviews.html', file: 'reviews.html', priority: '0.8', title: 'Yala Safari Guest Reviews' },
+        { path: '/contact.html', file: 'contact.html', priority: '0.8', title: 'Yala Safari Booking & Contact' },
+      ];
+      const urlsXml = pagesMeta
+        .map((p) => {
+          const loc = p.path === '/' ? origin + '/' : origin + p.path;
+          const imgLoc =
+            origin + '/api/r2/file/slots/' + p.file.replace('.', '_') + '__slot_1.jpg';
+          return (
+            '  <url>\\n' +
+            '    <loc>' + loc + '</loc>\\n' +
+            '    <lastmod>' + nowIso + '</lastmod>\\n' +
+            '    <changefreq>weekly</changefreq>\\n' +
+            '    <priority>' + p.priority + '</priority>\\n' +
+            '    <image:image>\\n' +
+            '      <image:loc>' + imgLoc + '</image:loc>\\n' +
+            '      <image:title>' + p.title.replace(/&/g, '&amp;') + '</image:title>\\n' +
+            '    </image:image>\\n' +
+            '  </url>'
+          );
+        })
+        .join('\\n');
+      const sitemapXml =
+        '<?xml version="1.0" encoding="UTF-8"?>\\n' +
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\\n' +
+        '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\\n' +
+        urlsXml +
+        '\\n</urlset>\\n';
+      return new Response(sitemapXml, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/xml; charset=utf-8',
+          'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+        },
+      });
+    }
+
+    // Robots.txt for Google Search Console & Crawlers: /robots.txt
+    if (pathname === '/robots.txt') {
+      const origin =
+        url.hostname === 'localhost' || url.hostname === '127.0.0.1'
+          ? 'https://srilankabestsafari.com'
+          : 'https://' + url.host;
+      const robotsTxt =
+        'User-agent: *\\n' +
+        'Allow: /\\n' +
+        'Allow: /assets/\\n' +
+        'Allow: /api/r2/file/\\n' +
+        'Allow: /api/media/\\n' +
+        'Disallow: /admin\\n' +
+        'Disallow: /api/admin/\\n\\n' +
+        'User-agent: Googlebot\\n' +
+        'Allow: /\\n' +
+        'Allow: /assets/\\n' +
+        'Allow: /api/r2/file/\\n' +
+        'Allow: /api/media/\\n' +
+        'Disallow: /admin\\n' +
+        'Disallow: /api/admin/\\n\\n' +
+        'User-agent: Googlebot-Image\\n' +
+        'Allow: /\\n' +
+        'Allow: /assets/\\n' +
+        'Allow: /api/r2/file/\\n' +
+        'Allow: /api/media/\\n\\n' +
+        'Sitemap: ' + origin + '/sitemap.xml\\n';
+      return new Response(robotsTxt, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+        },
+      });
+    }
+
     // API: /api/pages/:page
     if (pathname.startsWith('/api/pages/')) {
       const page = pathname.slice('/api/pages/'.length);
@@ -1087,6 +1178,28 @@ const worker = {
     // Admin route -> /admin.html
     if (pathname === '/admin' || pathname === '/admin/') {
       return env.ASSETS.fetch(new Request(new URL('/admin.html', url.origin), request));
+    }
+
+    // Clean slug routes without .html (e.g., /yala-safari -> /yala-safari.html)
+    const cleanSlug = pathname.replace(/^\\/+|\\/+$/g, '');
+    const knownHtmlPages = [
+      'index',
+      'about',
+      'safari-parks',
+      'yala-safari',
+      'udawalawe-safari',
+      'bundala-birding-safari',
+      'wilpattu-safari',
+      'minneriya-safari',
+      'kumana-birding-safari',
+      'gallery',
+      'reviews',
+      'contact',
+    ];
+    if (knownHtmlPages.includes(cleanSlug)) {
+      return env.ASSETS.fetch(
+        new Request(new URL('/' + cleanSlug + '.html', url.origin), request)
+      );
     }
 
     return env.ASSETS.fetch(request);
