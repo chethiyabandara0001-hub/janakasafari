@@ -523,14 +523,46 @@ function sanitizeKey(raw) {
     .replace(/[^a-zA-Z0-9._/-]/g, '-');
 }
 
+function getR2BucketBinding(env) {
+  if (!env) return null;
+  if (env.R2_BUCKET && typeof env.R2_BUCKET.put === 'function') return env.R2_BUCKET;
+  if (env.nishatravels && typeof env.nishatravels.put === 'function') return env.nishatravels;
+  if (env.BUCKET && typeof env.BUCKET.put === 'function') return env.BUCKET;
+  if (env.ai_studio_applet_opennext_cache && typeof env.ai_studio_applet_opennext_cache.put === 'function') return env.ai_studio_applet_opennext_cache;
+  for (const k of Object.keys(env)) {
+    if (env[k] && typeof env[k].put === 'function' && typeof env[k].get === 'function') {
+      return env[k];
+    }
+  }
+  return null;
+}
+
+function getWorkerCdnBase(env) {
+  const publicUrl = (env && (env.R2_PUBLIC_URL || env.NEXT_PUBLIC_R2_PUBLIC_URL)) || '';
+  if (publicUrl && String(publicUrl).trim()) {
+    const trimmed = String(publicUrl).trim().replace(/\/+$/, '');
+    return trimmed.startsWith('http://') || trimmed.startsWith('https://') ? trimmed : 'https://' + trimmed;
+  }
+  return '/api/r2/file';
+}
+
 async function listLiveR2Objects(env) {
   const map = new Map();
+  const cdnBase = getWorkerCdnBase(env);
+  const r2Bucket = getR2BucketBinding(env);
+  const activeBucketName = (env && (env.R2_BUCKET_NAME || env.BUCKET_NAME)) || BUCKET_NAME;
+
   for (const item of IMAGES_INVENTORY.r2Objects || []) {
-    map.set(item.r2Key, { ...item });
+    map.set(item.r2Key, {
+      ...item,
+      cdnUrl: cdnBase + '/' + item.r2Key,
+      bucketName: activeBucketName,
+    });
   }
-  if (env && env.R2_BUCKET && typeof env.R2_BUCKET.list === 'function') {
+
+  if (r2Bucket && typeof r2Bucket.list === 'function') {
     try {
-      const listed = await env.R2_BUCKET.list({ include: ['httpMetadata', 'customMetadata'] });
+      const listed = await r2Bucket.list({ include: ['httpMetadata', 'customMetadata'] });
       for (const obj of listed.objects || []) {
         const r2Key = obj.key;
         const filename = r2Key.split('/').pop() || r2Key;
@@ -538,14 +570,14 @@ async function listLiveR2Objects(env) {
         map.set(r2Key, {
           r2Key,
           filename,
-          cdnUrl: '/api/r2/file/' + r2Key,
+          cdnUrl: cdnBase + '/' + r2Key,
           mimeType: (obj.httpMetadata && obj.httpMetadata.contentType) || guessMimeType(r2Key),
           sizeBytes: obj.size || 0,
           alt: meta.alt || filename,
           title: meta.title || filename,
           page: meta.page || undefined,
           updatedAt: obj.uploaded ? new Date(obj.uploaded).toISOString() : new Date().toISOString(),
-          bucketName: BUCKET_NAME,
+          bucketName: activeBucketName,
         });
       }
     } catch (e) {
@@ -578,14 +610,17 @@ async function uploadFileToWorkerR2(env, { bytes, originalFilename, mimeType, cu
 
   const finalMime = mimeType || guessMimeType(r2Key);
   const now = new Date().toISOString();
+  const r2Bucket = getR2BucketBinding(env);
+  const cdnBase = getWorkerCdnBase(env);
+  const activeBucketName = (env && (env.R2_BUCKET_NAME || env.BUCKET_NAME)) || BUCKET_NAME;
 
-  if (env && env.R2_BUCKET) {
+  if (r2Bucket) {
     if (replaceKey && replaceKey !== r2Key) {
       try {
-        await env.R2_BUCKET.delete(sanitizeKey(replaceKey));
+        await r2Bucket.delete(sanitizeKey(replaceKey));
       } catch (e) {}
     }
-    await env.R2_BUCKET.put(r2Key, bytes, {
+    await r2Bucket.put(r2Key, bytes, {
       httpMetadata: { contentType: finalMime },
       customMetadata: {
         alt: String(alt || baseSlug),
@@ -599,14 +634,14 @@ async function uploadFileToWorkerR2(env, { bytes, originalFilename, mimeType, cu
   return {
     r2Key,
     filename: r2Key.split('/').pop() || r2Key,
-    cdnUrl: '/api/r2/file/' + r2Key,
+    cdnUrl: cdnBase + '/' + r2Key,
     mimeType: finalMime,
     sizeBytes: bytes.byteLength || 0,
     alt: String(alt || baseSlug),
     title: String(title || originalFilename || r2Key),
     page: page || undefined,
     updatedAt: now,
-    bucketName: BUCKET_NAME,
+    bucketName: activeBucketName,
   };
 }
 
@@ -614,6 +649,9 @@ const worker = {
   async fetch(request, env) {
     const url = new URL(request.url);
     const pathname = url.pathname;
+    const r2Bucket = getR2BucketBinding(env);
+    const cdnBase = getWorkerCdnBase(env);
+    const activeBucketName = (env && (env.R2_BUCKET_NAME || env.BUCKET_NAME)) || BUCKET_NAME;
 
     // 1. Serve R2 Bucket Object via CDN URL: /api/r2/file/:key*
     if (pathname.startsWith('/api/r2/file/')) {
@@ -623,9 +661,9 @@ const worker = {
         return new Response('Missing R2 key', { status: 400 });
       }
 
-      if (env && env.R2_BUCKET) {
+      if (r2Bucket) {
         try {
-          const obj = await env.R2_BUCKET.get(r2Key);
+          const obj = await r2Bucket.get(r2Key);
           if (obj) {
             const headers = new Headers();
             if (typeof obj.writeHttpMetadata === 'function') {
@@ -660,7 +698,7 @@ const worker = {
     if (pathname === '/api/r2') {
       if (request.method === 'GET') {
         const objects = await listLiveR2Objects(env);
-        return new Response(JSON.stringify({ ok: true, bucketName: BUCKET_NAME, objects }), {
+        return new Response(JSON.stringify({ ok: true, bucketName: activeBucketName, objects }), {
           status: 200,
           headers: JSON_HEADERS,
         });
@@ -729,12 +767,12 @@ const worker = {
         if (body.action === 'update-meta' && body.r2Key) {
           const oldKey = sanitizeKey(body.r2Key);
           const newKey = body.newKey ? sanitizeKey(body.newKey) : oldKey;
-          if (env && env.R2_BUCKET) {
-            const existingObj = await env.R2_BUCKET.get(oldKey);
+          if (r2Bucket) {
+            const existingObj = await r2Bucket.get(oldKey);
             if (existingObj) {
               const buf = await existingObj.arrayBuffer();
               const mime = (existingObj.httpMetadata && existingObj.httpMetadata.contentType) || guessMimeType(newKey);
-              await env.R2_BUCKET.put(newKey, buf, {
+              await r2Bucket.put(newKey, buf, {
                 httpMetadata: { contentType: mime },
                 customMetadata: {
                   alt: String(body.alt ?? ''),
@@ -744,7 +782,7 @@ const worker = {
                 },
               });
               if (newKey !== oldKey) {
-                await env.R2_BUCKET.delete(oldKey);
+                await r2Bucket.delete(oldKey);
               }
             }
           }
@@ -753,7 +791,7 @@ const worker = {
             JSON.stringify({
               ok: true,
               r2Key: newKey,
-              cdnUrl: '/api/r2/file/' + newKey,
+              cdnUrl: cdnBase + '/' + newKey,
               objects,
             }),
             { status: 200, headers: JSON_HEADERS }
@@ -763,8 +801,8 @@ const worker = {
         if (body.action === 'delete' && (body.r2Key || body.cdnUrl)) {
           const rawTarget = String(body.r2Key || body.cdnUrl).replace(/^.*\\/api\\/r2\\/file\\//, '');
           const cleanTarget = sanitizeKey(rawTarget);
-          if (env && env.R2_BUCKET && cleanTarget) {
-            await env.R2_BUCKET.delete(cleanTarget);
+          if (r2Bucket && cleanTarget) {
+            await r2Bucket.delete(cleanTarget);
           }
           const objects = await listLiveR2Objects(env);
           return new Response(JSON.stringify({ ok: true, deletedKey: cleanTarget, objects }), {
@@ -778,12 +816,12 @@ const worker = {
         const body = await request.json();
         const oldKey = sanitizeKey(body.r2Key || '');
         const newKey = body.newKey ? sanitizeKey(body.newKey) : oldKey;
-        if (env && env.R2_BUCKET && oldKey) {
-          const existingObj = await env.R2_BUCKET.get(oldKey);
+        if (r2Bucket && oldKey) {
+          const existingObj = await r2Bucket.get(oldKey);
           if (existingObj) {
             const buf = await existingObj.arrayBuffer();
             const mime = (existingObj.httpMetadata && existingObj.httpMetadata.contentType) || guessMimeType(newKey);
-            await env.R2_BUCKET.put(newKey, buf, {
+            await r2Bucket.put(newKey, buf, {
               httpMetadata: { contentType: mime },
               customMetadata: {
                 alt: String(body.alt ?? ''),
@@ -793,7 +831,7 @@ const worker = {
               },
             });
             if (newKey !== oldKey) {
-              await env.R2_BUCKET.delete(oldKey);
+              await r2Bucket.delete(oldKey);
             }
           }
         }
@@ -802,7 +840,7 @@ const worker = {
           JSON.stringify({
             ok: true,
             r2Key: newKey,
-            cdnUrl: '/api/r2/file/' + newKey,
+            cdnUrl: cdnBase + '/' + newKey,
             objects,
           }),
           { status: 200, headers: JSON_HEADERS }
@@ -818,8 +856,8 @@ const worker = {
           } catch (e) {}
         }
         const cleanTarget = sanitizeKey(keyParam.replace(/^.*\\/api\\/r2\\/file\\//, ''));
-        if (env && env.R2_BUCKET && cleanTarget) {
-          await env.R2_BUCKET.delete(cleanTarget);
+        if (r2Bucket && cleanTarget) {
+          await r2Bucket.delete(cleanTarget);
         }
         const objects = await listLiveR2Objects(env);
         return new Response(JSON.stringify({ ok: true, deletedKey: cleanTarget, objects }), {

@@ -107,10 +107,38 @@ export function extractR2KeyFromUrl(url?: string): string | undefined {
     const key = clean.slice(idx + marker.length).replace(/^\/+/, '');
     return key ? key.slice(0, 512) : undefined;
   }
-  const publicBase = (process.env.NEXT_PUBLIC_R2_PUBLIC_URL || '').trim().replace(/\/+$/, '');
-  if (publicBase && clean.startsWith(publicBase + '/')) {
-    const key = clean.slice(publicBase.length + 1).replace(/^\/+/, '');
+  const publicBase = (
+    process.env.NEXT_PUBLIC_R2_PUBLIC_URL ||
+    process.env.R2_PUBLIC_URL ||
+    ''
+  )
+    .trim()
+    .replace(/\/+$/, '');
+  if (publicBase) {
+    const withProto = publicBase.startsWith('http://') || publicBase.startsWith('https://')
+      ? publicBase
+      : `https://${publicBase}`;
+    const bareDomain = publicBase.replace(/^https?:\/\//i, '');
+    if (clean.startsWith(withProto + '/')) {
+      const key = clean.slice(withProto.length + 1).replace(/^\/+/, '');
+      return key ? key.slice(0, 512) : undefined;
+    }
+    if (clean.startsWith(bareDomain + '/')) {
+      const key = clean.slice(bareDomain.length + 1).replace(/^\/+/, '');
+      return key ? key.slice(0, 512) : undefined;
+    }
+    if (clean.startsWith('http://' + bareDomain + '/')) {
+      const key = clean.slice(('http://' + bareDomain).length + 1).replace(/^\/+/, '');
+      return key ? key.slice(0, 512) : undefined;
+    }
+  }
+  if (clean.startsWith('/assets/r2-bucket/') || clean.startsWith('assets/r2-bucket/')) {
+    const key = clean.replace(/^\/+/, '').replace(/^assets\/r2-bucket\//, '');
     return key ? key.slice(0, 512) : undefined;
+  }
+  if (clean.startsWith('/assets/media/') || clean.startsWith('assets/media/')) {
+    const filename = clean.replace(/^\/+/, '').split('/').pop();
+    return filename ? `media/${filename}` : undefined;
   }
   return undefined;
 }
@@ -134,6 +162,8 @@ export async function uploadImageToR2Bucket(
   cdnUrl: string;
   sizeBytes: number;
   mimeType: string;
+  remotePushed?: boolean;
+  remoteError?: string;
 }> {
   const formData = new FormData();
   formData.append('file', file);
@@ -151,11 +181,19 @@ export async function uploadImageToR2Bucket(
   if (!res.ok || !data.cdnUrl) {
     throw new Error(data.error || 'Failed to upload image to Cloudflare R2 bucket');
   }
+
+  let finalCdn = String(data.cdnUrl);
+  if (!finalCdn.startsWith('/') && !finalCdn.startsWith('http://') && !finalCdn.startsWith('https://')) {
+    finalCdn = `https://${finalCdn}`;
+  }
+
   return {
     r2Key: String(data.r2Key),
-    cdnUrl: String(data.cdnUrl),
+    cdnUrl: finalCdn,
     sizeBytes: Number(data.sizeBytes || file.size),
     mimeType: String(data.mimeType || file.type || 'image/jpeg'),
+    remotePushed: Boolean(data.remotePushed),
+    remoteError: data.remoteError ? String(data.remoteError) : undefined,
   };
 }
 
@@ -188,9 +226,14 @@ export async function migrateDataUrlToR2Bucket(
   if (!res.ok || !data.cdnUrl) {
     throw new Error(data.error || 'Failed to migrate data URL to Cloudflare R2 bucket');
   }
+  const rawCdn = String(data.cdnUrl);
+  const finalCdn =
+    !rawCdn.startsWith('/') && !rawCdn.startsWith('http://') && !rawCdn.startsWith('https://')
+      ? `https://${rawCdn}`
+      : rawCdn;
   return {
     r2Key: String(data.r2Key),
-    cdnUrl: String(data.cdnUrl),
+    cdnUrl: finalCdn,
   };
 }
 
@@ -213,9 +256,14 @@ export async function updateR2BucketObjectMeta(options: {
   if (!res.ok) {
     throw new Error(data.error || 'Failed to update R2 object metadata');
   }
+  const rawMetaCdn = String(data.cdnUrl || `/api/r2/file/${options.newKey || options.r2Key}`);
+  const finalMetaCdn =
+    !rawMetaCdn.startsWith('/') && !rawMetaCdn.startsWith('http://') && !rawMetaCdn.startsWith('https://')
+      ? `https://${rawMetaCdn}`
+      : rawMetaCdn;
   return {
     r2Key: String(data.r2Key || options.newKey || options.r2Key),
-    cdnUrl: String(data.cdnUrl || `/api/r2/file/${options.newKey || options.r2Key}`),
+    cdnUrl: finalMetaCdn,
   };
 }
 
@@ -268,6 +316,28 @@ export async function saveSiteImageInFirestore(input: {
 
     const resolvedR2Key = input.r2Key || extractR2KeyFromUrl(input.src);
 
+    let normalizedSrc = input.src.trim();
+    if (
+      !normalizedSrc.startsWith('/') &&
+      !normalizedSrc.startsWith('http://') &&
+      !normalizedSrc.startsWith('https://')
+    ) {
+      normalizedSrc = `https://${normalizedSrc}`;
+    }
+
+    let cleanLb =
+      input.lightboxHref && !input.lightboxHref.startsWith('data:')
+        ? input.lightboxHref.trim()
+        : normalizedSrc;
+    if (
+      cleanLb &&
+      !cleanLb.startsWith('/') &&
+      !cleanLb.startsWith('http://') &&
+      !cleanLb.startsWith('https://')
+    ) {
+      cleanLb = `https://${cleanLb}`;
+    }
+
     const payload: Record<string, unknown> = {
       slotId: input.slotId,
       page: input.page,
@@ -275,7 +345,7 @@ export async function saveSiteImageInFirestore(input: {
       type: input.type,
       label: input.label.slice(0, 300),
       sectionContext: input.sectionContext.slice(0, 300),
-      src: input.src.slice(0, 2048),
+      src: normalizedSrc.slice(0, 2048),
       alt: input.alt.slice(0, 500),
       visibility: 'public',
       authorId,
@@ -283,9 +353,6 @@ export async function saveSiteImageInFirestore(input: {
       updatedAt: serverTimestamp(),
     };
 
-    const cleanLb = input.lightboxHref && !input.lightboxHref.startsWith('data:')
-      ? input.lightboxHref
-      : input.src;
     if (cleanLb) {
       payload.lightboxHref = cleanLb.slice(0, 2048);
     }
@@ -341,6 +408,15 @@ export async function saveSectionGalleryItemInFirestore(input: {
     const authorId = existing.exists() ? existing.data().authorId : uid;
     const resolvedR2Key = input.r2Key || extractR2KeyFromUrl(input.src);
 
+    let normalizedSrc = input.src.trim();
+    if (
+      !normalizedSrc.startsWith('/') &&
+      !normalizedSrc.startsWith('http://') &&
+      !normalizedSrc.startsWith('https://')
+    ) {
+      normalizedSrc = `https://${normalizedSrc}`;
+    }
+
     const payload: Record<string, unknown> = {
       itemId: input.itemId,
       page: input.page,
@@ -348,7 +424,7 @@ export async function saveSectionGalleryItemInFirestore(input: {
       sectionTitle: input.sectionTitle.slice(0, 200),
       title: input.title.slice(0, 200),
       caption: input.caption.slice(0, 1000),
-      src: input.src.slice(0, 2048),
+      src: normalizedSrc.slice(0, 2048),
       alt: input.alt.slice(0, 500),
       order: input.order,
       visibility: 'public',

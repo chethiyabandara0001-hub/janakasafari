@@ -14,6 +14,8 @@ export interface R2ObjectRecord {
   originUrl?: string;
   updatedAt: string;
   bucketName: string;
+  remotePushed?: boolean;
+  remoteError?: string;
 }
 
 export interface R2IndexFile {
@@ -42,11 +44,70 @@ const R2_LOCAL_DIR = path.join(PUBLIC_DIR, 'assets', 'r2-bucket');
 const R2_INDEX_PATH = path.join(R2_LOCAL_DIR, '_index.json');
 const MEDIA_DIR = path.join(PUBLIC_DIR, 'assets', 'media');
 
+const R2_CONFIG_STORE_PATH = path.join(process.cwd(), '.r2-config.json');
+
+export interface R2StoredCredentials {
+  accountId?: string;
+  bucketName?: string;
+  accessKeyId?: string;
+  secretAccessKey?: string;
+  apiToken?: string;
+  cdnBaseUrl?: string;
+  updatedAt?: string;
+}
+
+let cachedStoredCreds: R2StoredCredentials | null = null;
+
+export function loadStoredCredentialsSync(): R2StoredCredentials {
+  if (cachedStoredCreds) return cachedStoredCreds;
+  try {
+    const fsSync = require('node:fs');
+    if (fsSync.existsSync(R2_CONFIG_STORE_PATH)) {
+      const raw = fsSync.readFileSync(R2_CONFIG_STORE_PATH, 'utf8');
+      cachedStoredCreds = JSON.parse(raw);
+      return cachedStoredCreds || {};
+    }
+  } catch {
+    // ignore
+  }
+  cachedStoredCreds = {};
+  return {};
+}
+
+export async function saveStoredCredentials(creds: Partial<R2StoredCredentials>): Promise<R2StoredCredentials> {
+  const current = loadStoredCredentialsSync();
+  const merged: R2StoredCredentials = {
+    ...current,
+    ...creds,
+    updatedAt: new Date().toISOString(),
+  };
+  cachedStoredCreds = merged;
+  await fs.writeFile(R2_CONFIG_STORE_PATH, JSON.stringify(merged, null, 2), 'utf8');
+  return merged;
+}
+
+export function isInvalidSecretKey(secret: string): boolean {
+  if (!secret) return true;
+  const s = secret.trim().toLowerCase();
+  // Detect if user pasted the S3 endpoint URL or a placeholder
+  if (s.startsWith('http://') || s.startsWith('https://') || s.includes('cloudflarestorage.com')) {
+    return true;
+  }
+  if (s.length < 16) return true;
+  return false;
+}
+
 export function getR2BucketName(): string {
-  return (process.env.R2_BUCKET_NAME || 'ai-studio-applet-opennext-cache').trim();
+  const stored = loadStoredCredentialsSync().bucketName;
+  if (stored && stored.trim()) return stored.trim();
+  const envVal = (process.env.R2_BUCKET_NAME || '').trim();
+  if (envVal) return envVal;
+  return 'nishatravels';
 }
 
 export function getR2AccountId(): string {
+  const stored = loadStoredCredentialsSync().accountId;
+  if (stored && stored.trim()) return stored.trim();
   const explicit = (
     process.env.R2_ACCOUNT_ID ||
     process.env.CLOUDFLARE_ACCOUNT_ID ||
@@ -64,42 +125,65 @@ export const DEFAULT_R2_BUCKET_NAME = getR2BucketName();
 export const DEFAULT_R2_ACCOUNT_ID = getR2AccountId();
 
 function getS3Credentials(): { accessKeyId: string; secretAccessKey: string } | null {
-  const accessKeyId = (
+  const stored = loadStoredCredentialsSync();
+  const rawKeyId = (
     process.env.R2_ACCESS_KEY_ID ||
     process.env.AWS_ACCESS_KEY_ID ||
     process.env.CLOUDFLARE_R2_ACCESS_KEY_ID ||
+    stored.accessKeyId ||
     ''
   ).trim();
-  const secretAccessKey = (
+
+  // Check env first, then stored
+  const envSecret = (
     process.env.R2_SECRET_ACCESS_KEY ||
     process.env.AWS_SECRET_ACCESS_KEY ||
     process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY ||
     ''
   ).trim();
-  if (accessKeyId && secretAccessKey) {
-    return { accessKeyId, secretAccessKey };
+
+  let secretAccessKey = '';
+  if (envSecret && !isInvalidSecretKey(envSecret)) {
+    secretAccessKey = envSecret;
+  } else if (stored.secretAccessKey && !isInvalidSecretKey(stored.secretAccessKey)) {
+    secretAccessKey = stored.secretAccessKey.trim();
+  }
+
+  if (rawKeyId && secretAccessKey) {
+    return { accessKeyId: rawKeyId, secretAccessKey };
   }
   return null;
 }
 
 function getApiToken(): string | null {
+  const stored = loadStoredCredentialsSync();
   const token = (
     process.env.R2_API_TOKEN ||
     process.env.CLOUDFLARE_API_TOKEN ||
     process.env.CF_API_TOKEN ||
+    stored.apiToken ||
     ''
   ).trim();
-  return token || null;
+  if (token && !isInvalidSecretKey(token)) {
+    return token;
+  }
+  return null;
 }
 
 function getWorkerR2Binding(): R2BindingLike | null {
   const g = globalThis as unknown as Record<string, unknown>;
-  if (g.R2_BUCKET && typeof (g.R2_BUCKET as R2BindingLike).put === 'function') {
-    return g.R2_BUCKET as R2BindingLike;
+  const candidates = [g.R2_BUCKET, g.nishatravels, g.BUCKET, g.r2_bucket];
+  for (const c of candidates) {
+    if (c && typeof (c as R2BindingLike).put === 'function') {
+      return c as R2BindingLike;
+    }
   }
-  const envObj = (process.env as unknown as Record<string, unknown>)?.R2_BUCKET;
-  if (envObj && typeof (envObj as R2BindingLike).put === 'function') {
-    return envObj as R2BindingLike;
+  const envObj = process.env as unknown as Record<string, unknown>;
+  const envCandidates = [envObj?.R2_BUCKET, envObj?.nishatravels, envObj?.BUCKET];
+  for (const c of envCandidates) {
+    if (c && typeof (c as R2BindingLike).put === 'function') {
+      return c as R2BindingLike;
+    }
   }
   return null;
 }
@@ -110,10 +194,42 @@ export function getR2ConfigStatus(): {
   authMode: 's3-sigv4' | 'cf-api-token' | 'worker-binding' | 'r2-local-gateway';
   remoteConfigured: boolean;
   cdnBaseUrl: string;
+  warning?: string;
+  hasAccessKey: boolean;
+  hasSecretKey: boolean;
+  secretIsUrlEndpoint?: boolean;
 } {
   const bucketName = getR2BucketName();
   const accountId = getR2AccountId();
   const cdnBaseUrl = getR2CdnBaseUrl();
+
+  const stored = loadStoredCredentialsSync();
+  const rawKeyId = (
+    process.env.R2_ACCESS_KEY_ID ||
+    process.env.AWS_ACCESS_KEY_ID ||
+    stored.accessKeyId ||
+    ''
+  ).trim();
+  const rawSecret = (
+    process.env.R2_SECRET_ACCESS_KEY ||
+    process.env.AWS_SECRET_ACCESS_KEY ||
+    stored.secretAccessKey ||
+    ''
+  ).trim();
+
+  const hasAccessKey = Boolean(rawKeyId);
+  const secretIsUrlEndpoint = isInvalidSecretKey(rawSecret) && (
+    rawSecret.startsWith('http://') ||
+    rawSecret.startsWith('https://') ||
+    rawSecret.includes('cloudflarestorage.com')
+  );
+  const hasSecretKey = Boolean(rawSecret) && !secretIsUrlEndpoint;
+
+  let warning: string | undefined;
+  if (secretIsUrlEndpoint) {
+    warning = 'R2_SECRET_ACCESS_KEY is currently set to an S3 endpoint URL instead of a secret key token. A Cloudflare Secret Access Key is a 64-character token generated from Cloudflare Dashboard -> R2 -> Manage R2 API Tokens.';
+  }
+
   if (getWorkerR2Binding()) {
     return {
       bucketName,
@@ -121,6 +237,10 @@ export function getR2ConfigStatus(): {
       authMode: 'worker-binding',
       remoteConfigured: true,
       cdnBaseUrl,
+      hasAccessKey,
+      hasSecretKey,
+      secretIsUrlEndpoint,
+      warning,
     };
   }
   if (getS3Credentials()) {
@@ -130,6 +250,10 @@ export function getR2ConfigStatus(): {
       authMode: 's3-sigv4',
       remoteConfigured: true,
       cdnBaseUrl,
+      hasAccessKey,
+      hasSecretKey,
+      secretIsUrlEndpoint,
+      warning,
     };
   }
   if (getApiToken()) {
@@ -139,6 +263,10 @@ export function getR2ConfigStatus(): {
       authMode: 'cf-api-token',
       remoteConfigured: true,
       cdnBaseUrl,
+      hasAccessKey,
+      hasSecretKey,
+      secretIsUrlEndpoint,
+      warning,
     };
   }
   return {
@@ -147,6 +275,10 @@ export function getR2ConfigStatus(): {
     authMode: 'r2-local-gateway',
     remoteConfigured: false,
     cdnBaseUrl,
+    hasAccessKey,
+    hasSecretKey,
+    secretIsUrlEndpoint,
+    warning: warning || 'Remote Cloudflare R2 credentials or Worker binding not active. Uploads are cached locally until connected.',
   };
 }
 
@@ -159,6 +291,9 @@ export function getR2CdnBaseUrl(): string {
     .trim()
     .replace(/\/+$/, '');
   if (customPublic) {
+    if (!customPublic.startsWith('http://') && !customPublic.startsWith('https://')) {
+      return `https://${customPublic}`;
+    }
     return customPublic;
   }
   return '/api/r2/file';
@@ -180,13 +315,30 @@ export function extractR2KeyFromCdnUrl(url: string): string | null {
   )
     .trim()
     .replace(/\/+$/, '');
-  if (customBase && withoutQuery.startsWith(customBase + '/')) {
-    return withoutQuery.slice(customBase.length + 1);
+  if (customBase) {
+    const withProtocol = customBase.startsWith('http://') || customBase.startsWith('https://')
+      ? customBase
+      : `https://${customBase}`;
+    const bareDomain = customBase.replace(/^https?:\/\//i, '');
+
+    if (withoutQuery.startsWith(withProtocol + '/')) {
+      return withoutQuery.slice(withProtocol.length + 1).replace(/^\/+/, '');
+    }
+    if (withoutQuery.startsWith(bareDomain + '/')) {
+      return withoutQuery.slice(bareDomain.length + 1).replace(/^\/+/, '');
+    }
+    if (withoutQuery.startsWith('http://' + bareDomain + '/')) {
+      return withoutQuery.slice(('http://' + bareDomain).length + 1).replace(/^\/+/, '');
+    }
   }
   const marker = '/api/r2/file/';
   const idx = withoutQuery.indexOf(marker);
   if (idx !== -1) {
     return withoutQuery.slice(idx + marker.length).replace(/^\/+/, '');
+  }
+  if (withoutQuery.startsWith('/assets/r2-bucket/') || withoutQuery.startsWith('assets/r2-bucket/')) {
+    const clean = withoutQuery.replace(/^\/+/, '');
+    return clean.replace(/^assets\/r2-bucket\//, '');
   }
   if (withoutQuery.startsWith('/assets/media/') || withoutQuery.startsWith('assets/media/')) {
     const clean = withoutQuery.replace(/^\/+/, '');
@@ -342,7 +494,7 @@ async function callR2S3Api(options: {
     'x-amz-date': amzDate,
   };
   if (options.contentType && options.method === 'PUT') {
-    fetchHeaders['Content-Type'] = options.contentType;
+    fetchHeaders['content-type'] = options.contentType;
   }
 
   const url = `https://${host}${canonicalUri}`;
@@ -353,13 +505,175 @@ async function callR2S3Api(options: {
   });
 }
 
-async function pushToRemoteCloudflareR2(
+export interface R2PushResult {
+  pushed: boolean;
+  provider: 'worker-binding' | 's3-sigv4' | 'cf-api-token' | 'none';
+  error?: string;
+  status?: number;
+}
+
+export async function testR2Connection(): Promise<{
+  connected: boolean;
+  provider: string;
+  message: string;
+  status?: number;
+  bucketName: string;
+  accountId: string;
+  authMode: string;
+  details?: string;
+}> {
+  const status = getR2ConfigStatus();
+  const bucketName = status.bucketName;
+  const accountId = status.accountId;
+
+  if (status.secretIsUrlEndpoint) {
+    return {
+      connected: false,
+      provider: 's3-sigv4',
+      message: 'R2_SECRET_ACCESS_KEY is set to an S3 endpoint URL instead of a secret key token. A Cloudflare Secret Access Key is a 64-character token generated from Cloudflare Dashboard -> R2 -> Manage R2 API Tokens.',
+      bucketName,
+      accountId,
+      authMode: status.authMode,
+    };
+  }
+
+  // 1. Worker binding check
+  const binding = getWorkerR2Binding();
+  if (binding) {
+    try {
+      await binding.get('__test_ping__');
+      return {
+        connected: true,
+        provider: 'worker-binding',
+        message: `Directly connected to Cloudflare R2 bucket "${bucketName}" via Cloudflare Pages Worker Binding.`,
+        bucketName,
+        accountId,
+        authMode: 'worker-binding',
+      };
+    } catch (err) {
+      return {
+        connected: false,
+        provider: 'worker-binding',
+        message: `Worker binding ping failed: ${err instanceof Error ? err.message : String(err)}`,
+        bucketName,
+        accountId,
+        authMode: 'worker-binding',
+      };
+    }
+  }
+
+  // 2. S3 SigV4 check
+  const s3Creds = getS3Credentials();
+  if (s3Creds) {
+    const testKey = 'diagnostics/test-connectivity.txt';
+    const testPayload = Buffer.from(`r2-connection-test-${Date.now()}`, 'utf8');
+    try {
+      const res = await callR2S3Api({
+        method: 'PUT',
+        r2Key: testKey,
+        body: testPayload,
+        contentType: 'text/plain',
+      });
+      if (res) {
+        if (res.ok) {
+          return {
+            connected: true,
+            provider: 's3-sigv4',
+            message: `Successfully connected to Cloudflare R2 bucket "${bucketName}" via S3 SigV4 API! Direct write verified.`,
+            status: res.status,
+            bucketName,
+            accountId,
+            authMode: 's3-sigv4',
+          };
+        }
+        const errText = await res.text();
+        let code = `HTTP ${res.status}`;
+        let msg = errText;
+        const codeMatch = errText.match(/<Code>([^<]+)<\/Code>/);
+        const msgMatch = errText.match(/<Message>([^<]+)<\/Message>/);
+        if (codeMatch && msgMatch) {
+          code = codeMatch[1];
+          msg = msgMatch[1];
+        }
+        return {
+          connected: false,
+          provider: 's3-sigv4',
+          message: `${code}: ${msg}`,
+          status: res.status,
+          bucketName,
+          accountId,
+          authMode: 's3-sigv4',
+          details: errText.slice(0, 300),
+        };
+      }
+    } catch (err) {
+      return {
+        connected: false,
+        provider: 's3-sigv4',
+        message: `Network error connecting to Cloudflare R2: ${err instanceof Error ? err.message : String(err)}`,
+        bucketName,
+        accountId,
+        authMode: 's3-sigv4',
+      };
+    }
+  }
+
+  // 3. REST API Token check
+  const apiToken = getApiToken();
+  if (apiToken) {
+    try {
+      const endpoint = `https://api.cloudflare.com/client/v4/accounts/${accountId}/r2/buckets/${bucketName}`;
+      const res = await fetch(endpoint, {
+        headers: { Authorization: `Bearer ${apiToken}` },
+      });
+      if (res.ok) {
+        return {
+          connected: true,
+          provider: 'cf-api-token',
+          message: `Successfully verified Cloudflare R2 bucket "${bucketName}" via Cloudflare REST API Token!`,
+          status: res.status,
+          bucketName,
+          accountId,
+          authMode: 'cf-api-token',
+        };
+      }
+      const errText = await res.text();
+      return {
+        connected: false,
+        provider: 'cf-api-token',
+        message: `Cloudflare REST API Error ${res.status}: ${errText.slice(0, 160)}`,
+        status: res.status,
+        bucketName,
+        accountId,
+        authMode: 'cf-api-token',
+      };
+    } catch (err) {
+      return {
+        connected: false,
+        provider: 'cf-api-token',
+        message: `Cloudflare REST API failed: ${err instanceof Error ? err.message : String(err)}`,
+        bucketName,
+        accountId,
+        authMode: 'cf-api-token',
+      };
+    }
+  }
+
+  return {
+    connected: false,
+    provider: 'r2-local-gateway',
+    message: 'No remote Cloudflare R2 credentials or Worker bindings found. Local gateway is serving files from local cache.',
+    bucketName,
+    accountId,
+    authMode: 'r2-local-gateway',
+  };
+}
+
+export async function pushToRemoteCloudflareR2(
   r2Key: string,
   buffer: Buffer,
   mimeType: string
-): Promise<boolean> {
-  let pushed = false;
-
+): Promise<R2PushResult> {
   // 1. Worker R2 Binding (when running inside Cloudflare Workers / Pages)
   const binding = getWorkerR2Binding();
   if (binding) {
@@ -367,14 +681,17 @@ async function pushToRemoteCloudflareR2(
       await binding.put(r2Key, new Uint8Array(buffer), {
         httpMetadata: { contentType: mimeType },
       });
-      pushed = true;
+      return { pushed: true, provider: 'worker-binding' };
     } catch (err) {
-      console.warn('Cloudflare R2 Worker binding PUT warning:', err);
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn('Cloudflare R2 Worker binding PUT warning:', msg);
+      return { pushed: false, provider: 'worker-binding', error: msg };
     }
   }
 
   // 2. S3-compatible R2 API Keys (R2_ACCESS_KEY_ID + R2_SECRET_ACCESS_KEY)
-  if (getS3Credentials()) {
+  const s3Creds = getS3Credentials();
+  if (s3Creds) {
     try {
       const res = await callR2S3Api({
         method: 'PUT',
@@ -382,11 +699,28 @@ async function pushToRemoteCloudflareR2(
         body: buffer,
         contentType: mimeType,
       });
-      if (res && res.ok) {
-        pushed = true;
+      if (res) {
+        if (res.ok) {
+          console.log(`[R2 S3 Sync Success] Pushed "${r2Key}" to remote Cloudflare R2 bucket (${getR2BucketName()})`);
+          return { pushed: true, provider: 's3-sigv4', status: res.status };
+        } else {
+          const errText = await res.text();
+          let parsedMsg = `HTTP ${res.status}`;
+          const codeMatch = errText.match(/<Code>([^<]+)<\/Code>/);
+          const msgMatch = errText.match(/<Message>([^<]+)<\/Message>/);
+          if (codeMatch && msgMatch) {
+            parsedMsg = `${codeMatch[1]}: ${msgMatch[1]}`;
+          } else if (errText.length < 200) {
+            parsedMsg = `${parsedMsg} - ${errText.trim()}`;
+          }
+          console.error(`[R2 S3 Sync Failed] ${parsedMsg}`);
+          return { pushed: false, provider: 's3-sigv4', error: parsedMsg, status: res.status };
+        }
       }
     } catch (err) {
-      console.warn('Cloudflare R2 S3 PUT warning:', err);
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[R2 S3 Sync Error]:', msg);
+      return { pushed: false, provider: 's3-sigv4', error: msg };
     }
   }
 
@@ -406,14 +740,27 @@ async function pushToRemoteCloudflareR2(
         body: new Uint8Array(buffer),
       });
       if (res.ok) {
-        pushed = true;
+        console.log(`[R2 REST Sync Success] Pushed "${r2Key}" via Cloudflare REST API token`);
+        return { pushed: true, provider: 'cf-api-token', status: res.status };
+      } else {
+        const errText = await res.text();
+        const msg = `HTTP ${res.status}: ${errText.slice(0, 200)}`;
+        console.error(`[R2 REST Sync Failed] ${msg}`);
+        return { pushed: false, provider: 'cf-api-token', error: msg, status: res.status };
       }
     } catch (err) {
-      console.warn('Cloudflare R2 REST API PUT warning:', err);
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[R2 REST Sync Error]:', msg);
+      return { pushed: false, provider: 'cf-api-token', error: msg };
     }
   }
 
-  return pushed;
+  const status = getR2ConfigStatus();
+  return {
+    pushed: false,
+    provider: 'none',
+    error: status.warning || 'No active remote Cloudflare R2 credentials or Worker binding configured.',
+  };
 }
 
 async function deleteFromRemoteCloudflareR2(r2Key: string): Promise<void> {
@@ -645,7 +992,7 @@ export async function putR2Object(options: {
   }
 
   // Push directly to remote Cloudflare R2 bucket (via S3 SigV4, REST API Token, or Worker Binding)
-  await pushToRemoteCloudflareR2(r2Key, options.buffer, mimeType);
+  const pushResult = await pushToRemoteCloudflareR2(r2Key, options.buffer, mimeType);
 
   const freshIndex = await loadR2Index();
   const now = new Date().toISOString();
@@ -662,6 +1009,8 @@ export async function putR2Object(options: {
     page: options.page || prev?.page,
     updatedAt: now,
     bucketName,
+    remotePushed: pushResult.pushed,
+    remoteError: pushResult.pushed ? undefined : pushResult.error,
   };
 
   freshIndex.objects[r2Key] = record;
@@ -892,31 +1241,62 @@ export async function getR2ObjectBinary(
   return null;
 }
 
-export async function syncAllObjectsToRemoteR2(): Promise<{
+export async function syncAllObjectsToRemoteR2(options?: {
+  limit?: number;
+  offset?: number;
+}): Promise<{
   total: number;
+  processed: number;
   pushed: number;
+  failed: number;
+  errors: Array<{ key: string; error: string }>;
   authMode: string;
 }> {
   const status = getR2ConfigStatus();
   const objects = await listR2Objects();
-  let pushed = 0;
+  const offset = options?.offset || 0;
+  const limit = options?.limit || objects.length;
+  const slice = objects.slice(offset, offset + limit);
 
-  const chunkSize = 10;
-  for (let i = 0; i < objects.length; i += chunkSize) {
-    const batch = objects.slice(i, i + chunkSize);
+  let pushed = 0;
+  let failed = 0;
+  const errors: Array<{ key: string; error: string }> = [];
+
+  const chunkSize = 5;
+  for (let i = 0; i < slice.length; i += chunkSize) {
+    const batch = slice.slice(i, i + chunkSize);
     const results = await Promise.all(
       batch.map(async (obj) => {
-        const bin = await getR2ObjectBinary(obj.r2Key);
-        if (!bin) return false;
-        return pushToRemoteCloudflareR2(obj.r2Key, bin.buffer, bin.mimeType);
+        try {
+          const bin = await getR2ObjectBinary(obj.r2Key);
+          if (!bin) {
+            return { key: obj.r2Key, pushed: false, error: 'Binary not found' };
+          }
+          const pushRes = await pushToRemoteCloudflareR2(obj.r2Key, bin.buffer, bin.mimeType);
+          return { key: obj.r2Key, pushed: pushRes.pushed, error: pushRes.error };
+        } catch (err) {
+          return { key: obj.r2Key, pushed: false, error: String(err) };
+        }
       })
     );
-    pushed += results.filter(Boolean).length;
+    for (const r of results) {
+      if (r.pushed) {
+        pushed++;
+      } else {
+        failed++;
+        if (errors.length < 10) {
+          errors.push({ key: r.key, error: r.error || 'Push failed' });
+        }
+      }
+    }
   }
 
   return {
     total: objects.length,
+    processed: slice.length,
     pushed,
+    failed,
+    errors,
     authMode: status.authMode,
   };
 }

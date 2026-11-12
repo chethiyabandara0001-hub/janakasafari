@@ -25,6 +25,12 @@ import {
   Grid,
   Copy,
   Link2,
+  Settings,
+  Key,
+  Info,
+  HelpCircle,
+  ExternalLink,
+  ShieldCheck,
 } from 'lucide-react';
 import {
   auth,
@@ -173,7 +179,47 @@ export default function AdminCmsStudioPage() {
   const [firestoreImageDocs, setFirestoreImageDocs] = useState<Record<string, Partial<ImageSlot>>>({});
   const [firestoreSectionDocs, setFirestoreSectionDocs] = useState<SeedSectionGalleryItem[]>([]);
   const [firestoreTextDocs, setFirestoreTextDocs] = useState<Record<string, Partial<SiteTextSlot>>>({});
-  const [syncingSeed, setSyncingSeed] = useState<boolean>(false);
+  // Cloudflare R2 Remote Configuration & Connectivity State
+  const [r2ConfigStatus, setR2ConfigStatus] = useState<{
+    authMode: string;
+    remoteConfigured: boolean;
+    bucketName: string;
+    accountId: string;
+    cdnBaseUrl: string;
+    warning?: string;
+    hasAccessKey?: boolean;
+    hasSecretKey?: boolean;
+    secretIsUrlEndpoint?: boolean;
+    storedConfig?: {
+      accountId: string;
+      bucketName: string;
+      accessKeyId: string;
+      hasSecret: boolean;
+      hasApiToken: boolean;
+      cdnBaseUrl: string;
+      updatedAt?: string;
+    };
+    testResult?: {
+      connected: boolean;
+      provider: string;
+      message: string;
+      status?: number;
+      details?: string;
+    };
+  } | null>(null);
+  const [testingR2Connection, setTestingR2Connection] = useState<boolean>(false);
+  const [syncingAllR2, setSyncingAllR2] = useState<boolean>(false);
+  const [syncProgressMsg, setSyncProgressMsg] = useState<string>('');
+  const [showR2ConfigModal, setShowR2ConfigModal] = useState<boolean>(false);
+  const [r2CredentialsForm, setR2CredentialsForm] = useState({
+    accountId: '10382badc5549c70cccebce858ee7f65',
+    bucketName: 'nishatravels',
+    accessKeyId: '',
+    secretAccessKey: '',
+    cdnBaseUrl: 'https://cdn.srilankabestsafari.com',
+  });
+  const [savingR2Creds, setSavingR2Creds] = useState<boolean>(false);
+  const [r2SetupGuideTab, setR2SetupGuideTab] = useState<'credentials' | 'pages-binding' | 'api-token'>('credentials');
 
   // Navigation & Filters
   const [viewMode, setViewMode] = useState<ViewMode>('slots');
@@ -262,6 +308,15 @@ export default function AdminCmsStudioPage() {
       if (r2Data.bucketName || imgData.bucketName) {
         setBucketName(r2Data.bucketName || imgData.bucketName);
       }
+      setR2ConfigStatus(r2Data);
+      if (r2Data.accountId || r2Data.storedConfig) {
+        setR2CredentialsForm((prev) => ({
+          ...prev,
+          accountId: r2Data.accountId || prev.accountId,
+          bucketName: r2Data.bucketName || prev.bucketName,
+          cdnBaseUrl: r2Data.cdnBaseUrl || prev.cdnBaseUrl,
+        }));
+      }
       setSlots(imgData.slots || []);
       setMediaAssets(imgData.mediaAssets || []);
       setR2Objects(r2Data.objects || imgData.r2Objects || []);
@@ -297,6 +352,15 @@ export default function AdminCmsStudioPage() {
         if (r2Data.bucketName || imgData.bucketName) {
           setBucketName(r2Data.bucketName || imgData.bucketName);
         }
+        setR2ConfigStatus(r2Data);
+        if (r2Data.accountId || r2Data.storedConfig) {
+          setR2CredentialsForm((prev) => ({
+            ...prev,
+            accountId: r2Data.accountId || prev.accountId,
+            bucketName: r2Data.bucketName || prev.bucketName,
+            cdnBaseUrl: r2Data.cdnBaseUrl || prev.cdnBaseUrl,
+          }));
+        }
         setSlots(imgData.slots || []);
         setMediaAssets(imgData.mediaAssets || []);
         setR2Objects(r2Data.objects || imgData.r2Objects || []);
@@ -317,6 +381,120 @@ export default function AdminCmsStudioPage() {
       cancelled = true;
     };
   }, [showNotice]);
+
+  // Cloudflare R2 Connection Testing & Credentials Handlers
+  const handleTestR2Connection = useCallback(async () => {
+    setTestingR2Connection(true);
+    try {
+      const res = await fetch('/api/r2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'test-connection' }),
+      });
+      const data = await res.json();
+      if (data.testResult) {
+        setR2ConfigStatus((prev) =>
+          prev
+            ? {
+                ...prev,
+                testResult: data.testResult,
+                authMode: data.status?.authMode || prev.authMode,
+                warning: data.status?.warning,
+                secretIsUrlEndpoint: data.status?.secretIsUrlEndpoint,
+              }
+            : null
+        );
+        if (data.testResult.connected) {
+          showNotice(
+            data.testResult.message || `Successfully connected to Cloudflare R2 bucket "${bucketName}"!`,
+            'success'
+          );
+        } else {
+          showNotice(`R2 Connection Failed: ${data.testResult.message}`, 'error');
+        }
+      }
+    } catch (err) {
+      showNotice(err instanceof Error ? err.message : 'Failed to test R2 connection', 'error');
+    } finally {
+      setTestingR2Connection(false);
+    }
+  }, [bucketName, showNotice]);
+
+  const handleSaveR2Credentials = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingR2Creds(true);
+    try {
+      const res = await fetch('/api/r2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'save-credentials',
+          accountId: r2CredentialsForm.accountId,
+          bucketName: r2CredentialsForm.bucketName,
+          accessKeyId: r2CredentialsForm.accessKeyId,
+          secretAccessKey: r2CredentialsForm.secretAccessKey,
+          cdnBaseUrl: r2CredentialsForm.cdnBaseUrl,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save R2 credentials');
+      setR2ConfigStatus((prev) => ({
+        ...(prev || {}),
+        ...data.status,
+        testResult: data.testResult,
+        bucketName: r2CredentialsForm.bucketName,
+      }));
+      setBucketName(r2CredentialsForm.bucketName);
+      if (data.testResult?.connected) {
+        showNotice(
+          `Credentials saved! Successfully connected to Cloudflare R2 bucket "${r2CredentialsForm.bucketName}".`,
+          'success'
+        );
+        setShowR2ConfigModal(false);
+      } else {
+        showNotice(
+          `Credentials saved, but R2 connection test failed: ${data.testResult?.message}`,
+          'warning'
+        );
+      }
+      await fetchInventory();
+    } catch (err) {
+      showNotice(err instanceof Error ? err.message : 'Error saving credentials', 'error');
+    } finally {
+      setSavingR2Creds(false);
+    }
+  };
+
+  const handleSyncAllToRemoteR2 = async () => {
+    setSyncingAllR2(true);
+    setSyncProgressMsg('Connecting to Cloudflare R2...');
+    try {
+      const res = await fetch('/api/r2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'sync-remote-r2' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to sync R2 bucket');
+      if (data.pushed > 0) {
+        showNotice(
+          `Successfully pushed ${data.pushed} images directly into Cloudflare R2 bucket (${bucketName})!`,
+          'success'
+        );
+      } else if (data.failed > 0) {
+        const firstErr = data.errors?.[0]?.error || 'Check R2 credentials';
+        showNotice(`0 images pushed to remote R2 (${data.failed} failed: ${firstErr}).`, 'error');
+      } else {
+        showNotice(`R2 sync completed (${data.total} items checked).`, 'info');
+      }
+      await fetchInventory();
+    } catch (err) {
+      showNotice(err instanceof Error ? err.message : 'Failed to sync to remote R2', 'error');
+    } finally {
+      setSyncingAllR2(false);
+      setSyncProgressMsg('');
+    }
+  };
 
   // Listen to Firebase Auth state & Firestore public collections (which store ONLY R2 CDN URLs + metadata)
   useEffect(() => {
@@ -457,9 +635,19 @@ export default function AdminCmsStudioPage() {
         }).catch(() => {});
 
         // 1. Remove any Firestore section docs that were deleted or don't use R2 CDN links
+        const isCdnUrl = (src?: string) =>
+          Boolean(
+            src &&
+              !src.startsWith('data:') &&
+              (src.includes('/api/r2/file/') ||
+                src.startsWith('http://') ||
+                src.startsWith('https://') ||
+                src.startsWith('/assets/'))
+          );
+
         const activeSectionIds = new Set(sectionImages.map((s) => s.itemId));
         for (const fbSec of firestoreSectionDocs) {
-          if (!activeSectionIds.has(fbSec.itemId) || !fbSec.src?.includes('/api/r2/file/')) {
+          if (!activeSectionIds.has(fbSec.itemId) || !isCdnUrl(fbSec.src)) {
             await deleteSectionGalleryItemInFirestore(fbSec.itemId);
           }
         }
@@ -476,7 +664,7 @@ export default function AdminCmsStudioPage() {
           const fbDoc = firestoreImageDocs[slotId];
           if (
             deletedSlotIds.has(slotId) ||
-            (fbDoc?.src && !fbDoc.src.includes('/api/r2/file/') && !fbDoc.r2Key)
+            (fbDoc?.src && !isCdnUrl(fbDoc.src) && !fbDoc.r2Key)
           ) {
             await deleteSiteImageInFirestore(slotId);
           }
@@ -549,17 +737,24 @@ export default function AdminCmsStudioPage() {
       if (slot.isDeleted) return slot;
       const fbDoc = firestoreImageDocs[slot.slotId];
       if (!fbDoc || !fbDoc.src || fbDoc.src.startsWith('data:')) return slot;
-      const isR2Cdn = fbDoc.src.includes('/api/r2/file/') || Boolean(fbDoc.r2Key);
+      const isR2Cdn =
+        fbDoc.src.includes('/api/r2/file/') ||
+        Boolean(fbDoc.r2Key) ||
+        fbDoc.src.startsWith('http://') ||
+        fbDoc.src.startsWith('https://');
       if (!isR2Cdn) return slot;
       // Only prefer fbDoc if slot wasn't more recently modified in server R2 state
       if (slot.isModified) return slot;
+      const isLbCdn =
+        fbDoc.lightboxHref &&
+        !fbDoc.lightboxHref.startsWith('data:') &&
+        (fbDoc.lightboxHref.includes('/api/r2/file/') ||
+          fbDoc.lightboxHref.startsWith('http://') ||
+          fbDoc.lightboxHref.startsWith('https://'));
       return {
         ...slot,
         src: fbDoc.src,
-        lightboxHref:
-          fbDoc.lightboxHref && fbDoc.lightboxHref.includes('/api/r2/file/')
-            ? fbDoc.lightboxHref
-            : fbDoc.src,
+        lightboxHref: isLbCdn ? fbDoc.lightboxHref : fbDoc.src,
         r2Key: fbDoc.r2Key || extractR2KeyFromUrl(fbDoc.src) || slot.r2Key,
         alt: fbDoc.alt !== undefined ? fbDoc.alt : slot.alt,
         label: fbDoc.label || slot.label,
@@ -1521,6 +1716,9 @@ export default function AdminCmsStudioPage() {
     if (!src) return '';
     if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('data:')) {
       return src;
+    }
+    if (src.includes('.') && !src.startsWith('/')) {
+      return `https://${src}`;
     }
     const normalized = src.startsWith('/') ? src : `/${src}`;
     const sep = normalized.includes('?') ? '&' : '?';

@@ -8,6 +8,9 @@ import {
   deleteR2Object,
   extractR2KeyFromCdnUrl,
   syncAllObjectsToRemoteR2,
+  testR2Connection,
+  saveStoredCredentials,
+  loadStoredCredentialsSync,
 } from '@/lib/r2-storage';
 import { getCmsState, saveCmsState } from '@/lib/text-manager';
 
@@ -102,6 +105,8 @@ async function syncCmsStateOnR2Delete(deletedKey: string) {
 export async function GET() {
   try {
     const status = getR2ConfigStatus();
+    const stored = loadStoredCredentialsSync();
+    const testResult = await testR2Connection();
     const objects = await listR2Objects();
     return NextResponse.json(
       {
@@ -111,6 +116,20 @@ export async function GET() {
         authMode: status.authMode,
         remoteConfigured: status.remoteConfigured,
         cdnBaseUrl: status.cdnBaseUrl,
+        warning: status.warning,
+        hasAccessKey: status.hasAccessKey,
+        hasSecretKey: status.hasSecretKey,
+        secretIsUrlEndpoint: status.secretIsUrlEndpoint,
+        storedConfig: {
+          accountId: stored.accountId || '',
+          bucketName: stored.bucketName || '',
+          accessKeyId: stored.accessKeyId ? `${stored.accessKeyId.slice(0, 6)}...` : '',
+          hasSecret: Boolean(stored.secretAccessKey),
+          hasApiToken: Boolean(stored.apiToken),
+          cdnBaseUrl: stored.cdnBaseUrl || '',
+          updatedAt: stored.updatedAt,
+        },
+        testResult,
         objects,
       },
       {
@@ -178,11 +197,41 @@ export async function POST(req: NextRequest) {
         cdnUrl: record.cdnUrl,
         sizeBytes: record.sizeBytes,
         mimeType: record.mimeType,
+        remotePushed: record.remotePushed,
+        remoteError: record.remoteError,
         objects,
       });
     }
 
     const body = await req.json();
+
+    if (body.action === 'test-connection') {
+      const testResult = await testR2Connection();
+      const status = getR2ConfigStatus();
+      return NextResponse.json({
+        ok: true,
+        testResult,
+        status,
+      });
+    }
+
+    if (body.action === 'save-credentials') {
+      await saveStoredCredentials({
+        accountId: body.accountId !== undefined ? String(body.accountId).trim() : undefined,
+        bucketName: body.bucketName !== undefined ? String(body.bucketName).trim() : undefined,
+        accessKeyId: body.accessKeyId !== undefined ? String(body.accessKeyId).trim() : undefined,
+        secretAccessKey: body.secretAccessKey !== undefined ? String(body.secretAccessKey).trim() : undefined,
+        apiToken: body.apiToken !== undefined ? String(body.apiToken).trim() : undefined,
+        cdnBaseUrl: body.cdnBaseUrl !== undefined ? String(body.cdnBaseUrl).trim() : undefined,
+      });
+      const status = getR2ConfigStatus();
+      const testResult = await testR2Connection();
+      return NextResponse.json({
+        ok: true,
+        status,
+        testResult,
+      });
+    }
 
     if (body.action === 'upload-data-url' && typeof body.dataUrl === 'string') {
       const record = await putR2ObjectFromDataUrl({
@@ -198,6 +247,8 @@ export async function POST(req: NextRequest) {
         object: record,
         r2Key: record.r2Key,
         cdnUrl: record.cdnUrl,
+        remotePushed: record.remotePushed,
+        remoteError: record.remoteError,
         objects,
       });
     }
@@ -239,7 +290,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (body.action === 'sync-remote-r2') {
-      const syncResult = await syncAllObjectsToRemoteR2();
+      const syncResult = await syncAllObjectsToRemoteR2({
+        limit: typeof body.limit === 'number' ? body.limit : undefined,
+        offset: typeof body.offset === 'number' ? body.offset : undefined,
+      });
       return NextResponse.json({
         ok: true,
         ...syncResult,
