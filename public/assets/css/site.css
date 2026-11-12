@@ -441,15 +441,15 @@ header.dusk-header {
   }
 }
 
-/* Hero Banner — Extra Height Viewport on Home Page & Balanced Hero on Inner Pages (Excluding Contact Page) */
+/* Hero Banner — Reduced by 10% from Bottom on Home Page & Inner Pages (Excluding Contact Page) */
 body:not(.janaka-contact) .banner-wrap,
 body:not(.janaka-contact) .banner-wrap > .wsite-elements,
 body:not(.janaka-contact) .banner-wrap .wsite-header-elements,
 body:not(.janaka-contact) .banner-wrap .wsite-section-wrap {
   position: relative;
   width: 100%;
-  min-height: 123vh;
-  height: 123vh;
+  min-height: 111vh;
+  height: 111vh;
   margin: 0;
   border-radius: 0;
   overflow: hidden !important;
@@ -461,15 +461,15 @@ body.wsite-page-index .banner-wrap,
 body.wsite-page-index .banner-wrap > .wsite-elements,
 body.wsite-page-index .banner-wrap .wsite-header-elements,
 body.wsite-page-index .banner-wrap .wsite-section-wrap {
-  min-height: 135vh !important;
-  height: 135vh !important;
+  min-height: 121.5vh !important;
+  height: 121.5vh !important;
 }
 
 body:not(.janaka-contact) .banner-wrap .wsite-header-section {
   position: absolute !important;
   inset: 0 !important;
   width: 100% !important;
-  min-height: 123vh;
+  min-height: 111vh;
   height: 100% !important;
   margin: 0 !important;
   display: flex;
@@ -484,7 +484,7 @@ body:not(.janaka-contact) .banner-wrap .wsite-header-section {
 }
 
 body.wsite-page-index .banner-wrap .wsite-header-section {
-  min-height: 135vh !important;
+  min-height: 121.5vh !important;
   transform: scale(1.22);
   filter: saturate(1.18) contrast(1.06) brightness(1.03);
 }
@@ -563,7 +563,7 @@ body:not(.janaka-contact) .banner-wrap::after {
 .hero-slideshow-dots {
   position: absolute;
   left: 50%;
-  bottom: clamp(118px, 14.5vh, 175px);
+  bottom: clamp(106px, 13vh, 158px);
   transform: translateX(-50%);
   z-index: 6;
   display: inline-flex;
@@ -578,7 +578,7 @@ body:not(.janaka-contact) .banner-wrap::after {
 }
 
 body:not(.wsite-page-index) .hero-slideshow-dots {
-  bottom: clamp(28px, 4.5vh, 52px);
+  bottom: clamp(24px, 4vh, 46px);
 }
 
 .hero-slideshow-dot {
@@ -601,22 +601,25 @@ body:not(.wsite-page-index) .hero-slideshow-dots {
   background: #f5a623;
 }
 
-body:not(.janaka-contact) .wsite-header-section .wsite-section-content {
+body:not(.janaka-contact) .wsite-header-section .wsite-section-content,
+body:not(.janaka-contact) div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) {
   position: relative;
   z-index: 4;
   width: 100%;
   flex: 1;
   display: flex;
   align-items: center;
-  min-height: 123vh;
-  padding-bottom: 40px;
+  min-height: 111vh;
+  padding-bottom: 36px;
   transform: scale(0.89285);
   transform-origin: center center;
 }
 
-body.wsite-page-index .wsite-header-section .wsite-section-content {
-  min-height: 135vh !important;
-  padding-bottom: 140px;
+body.wsite-page-index .wsite-header-section .wsite-section-content,
+body.wsite-page-index div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) {
+  min-height: 121.5vh !important;
+  height: 121.5vh !important;
+  padding-bottom: 108px;
   /* Counteract parent 1.22 zoom scale so text and buttons remain crisp at 1:1 scale */
   transform: scale(0.81967);
 }
@@ -767,7 +770,7 @@ body:not(.janaka-contact) .banner .paragraph * {
   body:not(.janaka-contact) .banner-wrap > .wsite-elements,
   body:not(.janaka-contact) .banner-wrap .wsite-header-elements,
   body:not(.janaka-contact) .banner-wrap .wsite-section-wrap {
-    min-height: 500px !important;
+    min-height: 450px !important;
     height: auto !important;
   }
 
@@ -775,7 +778,7 @@ body:not(.janaka-contact) .banner .paragraph * {
   body.wsite-page-index .banner-wrap > .wsite-elements,
   body.wsite-page-index .banner-wrap .wsite-header-elements,
   body.wsite-page-index .banner-wrap .wsite-section-wrap {
-    min-height: 620px !important;
+    min-height: 558px !important;
     height: auto !important;
   }
 
@@ -783,25 +786,29 @@ body:not(.janaka-contact) .banner .paragraph * {
   body.wsite-page-index .banner-wrap .wsite-header-section {
     position: relative !important;
     inset: auto !important;
-    min-height: 500px !important;
+    min-height: 450px !important;
     height: auto !important;
     transform: none !important;
   }
 
   body.wsite-page-index .banner-wrap .wsite-header-section {
-    min-height: 620px !important;
+    min-height: 558px !important;
   }
 
   body:not(.janaka-contact) .wsite-header-section .wsite-section-content,
-  body.wsite-page-index .wsite-header-section .wsite-section-content {
-    min-height: 500px !important;
-    padding-bottom: 32px !important;
+  body:not(.janaka-contact) div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2),
+  body.wsite-page-index .wsite-header-section .wsite-section-content,
+  body.wsite-page-index div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) {
+    min-height: 450px !important;
+    height: auto !important;
+    padding-bottom: 28px !important;
     transform: none;
   }
 
-  body.wsite-page-index .wsite-header-section .wsite-section-content {
-    min-height: 620px !important;
-    padding-bottom: 76px !important;
+  body.wsite-page-index .wsite-header-section .wsite-section-content,
+  body.wsite-page-index div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) {
+    min-height: 558px !important;
+    padding-bottom: 68px !important;
   }
 
   body:not(.janaka-contact) .wsite-header-section .container {
