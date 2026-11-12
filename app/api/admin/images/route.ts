@@ -21,6 +21,10 @@ import {
   loadR2Index,
   saveR2Index,
 } from '@/lib/r2-storage';
+import {
+  saveSiteImageInFirestore,
+  deleteSiteImageInFirestore,
+} from '@/lib/firebase';
 
 export const dynamic = 'force-dynamic';
 
@@ -196,21 +200,40 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      const slotType = (existingOverride?.type || 'img') as 'hero-bg' | 'img' | 'lightbox-img' | 'logo';
+      const slotLabel = altText || existingOverride?.label || `Slot #${slotIndex + 1}`;
+      const slotContext = existingOverride?.sectionContext || 'Updated Slot';
+      const slotAlt = altText || existingOverride?.alt || '';
+
       cmsState.imageOverrides[slotId] = {
         slotId,
         page,
         slotIndex,
-        type: existingOverride?.type || 'img',
-        label: altText || existingOverride?.label || `Slot #${slotIndex + 1}`,
-        sectionContext: existingOverride?.sectionContext || 'Updated Slot',
+        type: slotType,
+        label: slotLabel,
+        sectionContext: slotContext,
         src: updatedSrc,
         lightboxHref: updatedSrc,
         r2Key,
-        alt: altText || existingOverride?.alt || '',
+        alt: slotAlt,
         isDeleted: false,
         updatedAt: new Date().toISOString(),
       };
       await saveCmsState(cmsState);
+      if (updatedSrc) {
+        await saveSiteImageInFirestore({
+          slotId,
+          page,
+          slotIndex,
+          type: slotType,
+          label: slotLabel,
+          sectionContext: slotContext,
+          src: updatedSrc,
+          lightboxHref: updatedSrc,
+          r2Key,
+          alt: slotAlt,
+        }).catch(() => {});
+      }
 
       const data = await buildEnrichedImageInventory();
       const updatedSlot = data.slots.find((s) => s.page === page && s.slotIndex === slotIndex);
@@ -257,6 +280,7 @@ export async function POST(req: NextRequest) {
         updatedAt: new Date().toISOString(),
       };
       await saveCmsState(cmsState);
+      await deleteSiteImageInFirestore(slotId).catch(() => {});
 
       const data = await buildEnrichedImageInventory();
       return NextResponse.json({ ok: true, slotId, deletedKey: keyToDelete, ...data });
@@ -378,21 +402,40 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      const slotType = (body.type || existing?.type || 'img') as 'hero-bg' | 'img' | 'lightbox-img' | 'logo';
+      const slotLabel = body.label || existing?.label || altText || `Slot #${slotIndex + 1}`;
+      const slotContext = body.sectionContext || existing?.sectionContext || 'Page Section';
+      const slotAlt = altText !== undefined ? altText : existing?.alt || '';
+
       cmsState.imageOverrides[slotId] = {
         slotId,
         page,
         slotIndex,
-        type: body.type || existing?.type || 'img',
-        label: body.label || existing?.label || altText || `Slot #${slotIndex + 1}`,
-        sectionContext: body.sectionContext || existing?.sectionContext || 'Page Section',
+        type: slotType,
+        label: slotLabel,
+        sectionContext: slotContext,
         src: updatedSrc,
         lightboxHref: updatedSrc,
         r2Key,
-        alt: altText !== undefined ? altText : existing?.alt || '',
+        alt: slotAlt,
         isDeleted: false,
         updatedAt: new Date().toISOString(),
       };
       await saveCmsState(cmsState);
+      if (updatedSrc) {
+        await saveSiteImageInFirestore({
+          slotId,
+          page,
+          slotIndex,
+          type: slotType,
+          label: slotLabel,
+          sectionContext: slotContext,
+          src: updatedSrc,
+          lightboxHref: updatedSrc,
+          r2Key,
+          alt: slotAlt,
+        }).catch(() => {});
+      }
 
       const data = await buildEnrichedImageInventory();
       return NextResponse.json({ ok: true, updatedSrc, cdnUrl: updatedSrc, r2Key, ...data });

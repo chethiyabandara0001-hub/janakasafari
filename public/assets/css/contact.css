@@ -5,12 +5,12 @@
 
 body.janaka-contact .banner-wrap .wsite-header-section {
   background-color: var(--bg-primary) !important;
-  padding: 36px 0 56px !important;
+  padding: 104px 0 56px !important;
 }
 
 @media screen and (min-width: 768px) {
   body.janaka-contact .banner-wrap .wsite-header-section {
-    padding: 56px 0 80px !important;
+    padding: 124px 0 80px !important;
   }
 }
 

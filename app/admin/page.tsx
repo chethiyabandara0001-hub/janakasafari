@@ -179,6 +179,7 @@ export default function AdminCmsStudioPage() {
   const [firestoreImageDocs, setFirestoreImageDocs] = useState<Record<string, Partial<ImageSlot>>>({});
   const [firestoreSectionDocs, setFirestoreSectionDocs] = useState<SeedSectionGalleryItem[]>([]);
   const [firestoreTextDocs, setFirestoreTextDocs] = useState<Record<string, Partial<SiteTextSlot>>>({});
+  const [syncingSeed, setSyncingSeed] = useState<boolean>(false);
   // Cloudflare R2 Remote Configuration & Connectivity State
   const [r2ConfigStatus, setR2ConfigStatus] = useState<{
     authMode: string;
@@ -276,7 +277,7 @@ export default function AdminCmsStudioPage() {
   } | null>(null);
 
   // Status Banner
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const secFileInputRef = useRef<HTMLInputElement>(null);
@@ -284,7 +285,7 @@ export default function AdminCmsStudioPage() {
   const autoSeededRef = useRef<boolean>(false);
   const migratedLegacyDataUrlsRef = useRef<boolean>(false);
 
-  const showNotice = useCallback((message: string, type: 'success' | 'error' = 'success') => {
+  const showNotice = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToast({ message, type });
     setTimeout(() => {
       setToast((prev) => (prev?.message === message ? null : prev));
@@ -454,7 +455,7 @@ export default function AdminCmsStudioPage() {
       } else {
         showNotice(
           `Credentials saved, but R2 connection test failed: ${data.testResult?.message}`,
-          'warning'
+          'error'
         );
       }
       await fetchInventory();
@@ -616,15 +617,6 @@ export default function AdminCmsStudioPage() {
   // Sync current active R2 CDN links (and clean up any non-R2 or deleted docs) to Firebase Firestore
   const handleSeedSectionImagesToFirestore = useCallback(
     async (silent = false) => {
-      if (!auth.currentUser) {
-        if (!silent) {
-          showNotice(
-            'Please sign in with Google Admin first to sync R2 CDN links to Firestore.',
-            'error'
-          );
-        }
-        return;
-      }
       setSyncingSeed(true);
       try {
         // Trigger background sync to remote Cloudflare R2 bucket if credentials/bindings are present
@@ -692,30 +684,50 @@ export default function AdminCmsStudioPage() {
           );
         }
 
+        // 5. Push text slots to Firestore in batches
+        const allTextsToSync = [...textSlots, ...customTexts];
+        for (let i = 0; i < allTextsToSync.length; i += chunkSize) {
+          const batch = allTextsToSync.slice(i, i + chunkSize);
+          await Promise.all(
+            batch.map((txt) =>
+              saveSiteTextInFirestore({
+                textId: txt.textId,
+                page: txt.page,
+                textIndex: txt.textIndex,
+                tagName: txt.tagName,
+                sectionContext: txt.sectionContext,
+                content: txt.content,
+                isDeleted: txt.isDeleted,
+                isCustomAdded: txt.isCustomAdded,
+              })
+            )
+          );
+        }
+
         if (!silent) {
           showNotice(
-            `Synced ${activeSlots.length} R2 slot CDN links and ${sectionImages.length} R2 section CDN links to Firebase Firestore.`
+            `Synced ${activeSlots.length} R2 image slots, ${sectionImages.length} R2 section gallery photos, and ${allTextsToSync.length} text blocks to Firebase Firestore.`
           );
         }
         await fetchInventory();
       } catch (err) {
         if (!silent) {
-          showNotice(err instanceof Error ? err.message : 'Firestore CDN sync failed', 'error');
+          showNotice(err instanceof Error ? err.message : 'Firestore CDN & text sync failed', 'error');
         }
       } finally {
         setSyncingSeed(false);
       }
     },
-    [slots, sectionImages, firestoreSectionDocs, firestoreImageDocs, fetchInventory, showNotice]
+    [slots, sectionImages, textSlots, customTexts, firestoreSectionDocs, firestoreImageDocs, fetchInventory, showNotice]
   );
 
-  // One-time sync when Admin signs in and R2 inventory is loaded
+  // One-time sync when R2 & CMS inventory is loaded
   useEffect(() => {
-    if (currentUser && !loading && slots.length > 0 && !autoSeededRef.current) {
+    if (!loading && slots.length > 0 && !autoSeededRef.current) {
       autoSeededRef.current = true;
       void handleSeedSectionImagesToFirestore(true);
     }
-  }, [currentUser, loading, slots.length, handleSeedSectionImagesToFirestore]);
+  }, [loading, slots.length, handleSeedSectionImagesToFirestore]);
 
   const handleGoogleSignIn = async () => {
     try {
@@ -1026,20 +1038,18 @@ export default function AdminCmsStudioPage() {
       if (!res.ok) throw new Error(data.error || 'Failed to update slot');
 
       // 3. Save ONLY the R2 CDN URL & metadata to Firebase Firestore
-      if (auth.currentUser) {
-        await saveSiteImageInFirestore({
-          slotId: editingSlot.slotId,
-          page: editingSlot.page,
-          slotIndex: editingSlot.slotIndex,
-          type: editingSlot.type,
-          label: editingSlot.label,
-          sectionContext: editingSlot.sectionContext,
-          src: finalCdnUrl,
-          lightboxHref: finalCdnUrl,
-          r2Key: finalR2Key,
-          alt: slotAltText,
-        });
-      }
+      await saveSiteImageInFirestore({
+        slotId: editingSlot.slotId,
+        page: editingSlot.page,
+        slotIndex: editingSlot.slotIndex,
+        type: editingSlot.type,
+        label: editingSlot.label,
+        sectionContext: editingSlot.sectionContext,
+        src: finalCdnUrl,
+        lightboxHref: finalCdnUrl,
+        r2Key: finalR2Key,
+        alt: slotAltText,
+      });
 
       showNotice(
         `Uploaded to R2 bucket & linked "${editingSlot.label}" via Firebase CDN URL (${finalR2Key || finalCdnUrl}).`
@@ -1074,9 +1084,7 @@ export default function AdminCmsStudioPage() {
       });
       if (!res.ok) throw new Error('Failed to delete slot image from R2');
 
-      if (auth.currentUser) {
-        await deleteSiteImageInFirestore(slot.slotId);
-      }
+      await deleteSiteImageInFirestore(slot.slotId);
       showNotice(
         `Deleted "${slot.label}" from Cloudflare R2 bucket and removed its CDN link from Firebase.`
       );
@@ -1102,9 +1110,7 @@ export default function AdminCmsStudioPage() {
           slotIndex: slot.slotIndex,
         }),
       });
-      if (auth.currentUser) {
-        await deleteSiteImageInFirestore(slot.slotId);
-      }
+      await deleteSiteImageInFirestore(slot.slotId);
       showNotice(`Restored default R2 image for "${slot.label}".`);
       setEditingSlot(null);
       await fetchInventory();
@@ -1201,9 +1207,7 @@ export default function AdminCmsStudioPage() {
       });
 
       // Save ONLY R2 CDN URL & metadata to Firebase Firestore
-      if (auth.currentUser) {
-        await saveSectionGalleryItemInFirestore(itemToSave);
-      }
+      await saveSectionGalleryItemInFirestore(itemToSave);
 
       showNotice(
         `${isNewSectionImg ? 'Pushed new photo to R2 & added' : 'Updated R2 photo & synced'} "${
@@ -1236,9 +1240,7 @@ export default function AdminCmsStudioPage() {
           r2Key: r2KeyToDelete,
         }),
       });
-      if (auth.currentUser) {
-        await deleteSectionGalleryItemInFirestore(item.itemId);
-      }
+      await deleteSectionGalleryItemInFirestore(item.itemId);
       showNotice(`Deleted "${item.title}" from Cloudflare R2 bucket and Firebase Firestore.`);
       setEditingSectionImg(null);
       await fetchInventory();
@@ -1309,9 +1311,7 @@ export default function AdminCmsStudioPage() {
       });
       if (!res.ok) throw new Error('Failed to save text');
 
-      if (auth.currentUser) {
-        await saveSiteTextInFirestore(payload);
-      }
+      await saveSiteTextInFirestore(payload);
 
       showNotice(
         `${isNewCustomText ? 'Added new text block' : 'Updated text'} on ${payload.page} via Firebase.`
@@ -1343,21 +1343,19 @@ export default function AdminCmsStudioPage() {
         }),
       });
 
-      if (auth.currentUser) {
-        if (restoreDefault || slot.isCustomAdded) {
-          await deleteSiteTextInFirestore(slot.textId);
-        } else {
-          await saveSiteTextInFirestore({
-            textId: slot.textId,
-            page: slot.page,
-            textIndex: slot.textIndex,
-            tagName: slot.tagName,
-            sectionContext: slot.sectionContext,
-            content: slot.content,
-            isDeleted: true,
-            isCustomAdded: false,
-          });
-        }
+      if (restoreDefault || slot.isCustomAdded) {
+        await deleteSiteTextInFirestore(slot.textId);
+      } else {
+        await saveSiteTextInFirestore({
+          textId: slot.textId,
+          page: slot.page,
+          textIndex: slot.textIndex,
+          tagName: slot.tagName,
+          sectionContext: slot.sectionContext,
+          content: slot.content,
+          isDeleted: true,
+          isCustomAdded: false,
+        });
       }
 
       showNotice(
@@ -1470,20 +1468,18 @@ export default function AdminCmsStudioPage() {
                 sectionContext: targetSlot.sectionContext,
               }),
             });
-            if (auth.currentUser) {
-              await saveSiteImageInFirestore({
-                slotId: targetSlot.slotId,
-                page: targetSlot.page,
-                slotIndex: targetSlot.slotIndex,
-                type: targetSlot.type,
-                label: r2DraftTitle.trim() || targetSlot.label,
-                sectionContext: targetSlot.sectionContext,
-                src: finalCdnUrl,
-                lightboxHref: finalCdnUrl,
-                r2Key: finalR2Key,
-                alt: r2DraftAlt.trim() || targetSlot.alt || targetSlot.label,
-              });
-            }
+            await saveSiteImageInFirestore({
+              slotId: targetSlot.slotId,
+              page: targetSlot.page,
+              slotIndex: targetSlot.slotIndex,
+              type: targetSlot.type,
+              label: r2DraftTitle.trim() || targetSlot.label,
+              sectionContext: targetSlot.sectionContext,
+              src: finalCdnUrl,
+              lightboxHref: finalCdnUrl,
+              r2Key: finalR2Key,
+              alt: r2DraftAlt.trim() || targetSlot.alt || targetSlot.label,
+            });
           }
         }
 
@@ -1509,9 +1505,7 @@ export default function AdminCmsStudioPage() {
               ...newSecItem,
             }),
           });
-          if (auth.currentUser) {
-            await saveSectionGalleryItemInFirestore(newSecItem);
-          }
+          await saveSectionGalleryItemInFirestore(newSecItem);
         }
 
         showNotice(
@@ -1557,37 +1551,35 @@ export default function AdminCmsStudioPage() {
         }
 
         // Propagate updated R2 CDN URL & alt/title to any linked Firestore records
-        if (auth.currentUser) {
-          const linkedSlots = mergedSlots.filter(
-            (s) => s.r2Key === editingR2Obj.r2Key || s.src === editingR2Obj.cdnUrl
-          );
-          for (const ls of linkedSlots) {
-            await saveSiteImageInFirestore({
-              slotId: ls.slotId,
-              page: ls.page,
-              slotIndex: ls.slotIndex,
-              type: ls.type,
-              label: r2DraftTitle.trim() || ls.label,
-              sectionContext: ls.sectionContext,
-              src: finalCdnUrl,
-              lightboxHref: finalCdnUrl,
-              r2Key: finalR2Key,
-              alt: r2DraftAlt.trim() || ls.alt,
-            });
-          }
+        const linkedSlots = mergedSlots.filter(
+          (s) => s.r2Key === editingR2Obj.r2Key || s.src === editingR2Obj.cdnUrl
+        );
+        for (const ls of linkedSlots) {
+          await saveSiteImageInFirestore({
+            slotId: ls.slotId,
+            page: ls.page,
+            slotIndex: ls.slotIndex,
+            type: ls.type,
+            label: r2DraftTitle.trim() || ls.label,
+            sectionContext: ls.sectionContext,
+            src: finalCdnUrl,
+            lightboxHref: finalCdnUrl,
+            r2Key: finalR2Key,
+            alt: r2DraftAlt.trim() || ls.alt,
+          });
+        }
 
-          const linkedSections = mergedSectionImages.filter(
-            (sec) => sec.r2Key === editingR2Obj.r2Key || sec.src === editingR2Obj.cdnUrl
-          );
-          for (const lsec of linkedSections) {
-            await saveSectionGalleryItemInFirestore({
-              ...lsec,
-              title: r2DraftTitle.trim() || lsec.title,
-              alt: r2DraftAlt.trim() || lsec.alt,
-              src: finalCdnUrl,
-              r2Key: finalR2Key,
-            });
-          }
+        const linkedSections = mergedSectionImages.filter(
+          (sec) => sec.r2Key === editingR2Obj.r2Key || sec.src === editingR2Obj.cdnUrl
+        );
+        for (const lsec of linkedSections) {
+          await saveSectionGalleryItemInFirestore({
+            ...lsec,
+            title: r2DraftTitle.trim() || lsec.title,
+            alt: r2DraftAlt.trim() || lsec.alt,
+            src: finalCdnUrl,
+            r2Key: finalR2Key,
+          });
         }
 
         showNotice(`Updated R2 bucket object "${finalR2Key}" & synced Firebase CDN links.`);
@@ -1620,9 +1612,7 @@ export default function AdminCmsStudioPage() {
             itemId: sec.itemId,
           }),
         });
-        if (auth.currentUser) {
-          await deleteSectionGalleryItemInFirestore(sec.itemId);
-        }
+        await deleteSectionGalleryItemInFirestore(sec.itemId);
       }
 
       const linkedSlots = mergedSlots.filter(
@@ -1640,9 +1630,7 @@ export default function AdminCmsStudioPage() {
             r2Key: obj.r2Key,
           }),
         });
-        if (auth.currentUser) {
-          await deleteSiteImageInFirestore(s.slotId);
-        }
+        await deleteSiteImageInFirestore(s.slotId);
       }
 
       showNotice(`Deleted "${obj.r2Key}" from Cloudflare R2 bucket and cleaned up Firebase links.`);

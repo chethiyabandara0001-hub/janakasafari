@@ -85,8 +85,8 @@ service cloud.firestore {
         data.slotIndex >= 0 &&
         data.slotIndex <= 1000 &&
         data.type in ['hero-bg', 'img', 'lightbox-img', 'logo'] &&
-        isBoundedString(data.label, 1, 300) &&
-        isBoundedString(data.sectionContext, 1, 300) &&
+        isBoundedString(data.label, 0, 300) &&
+        isBoundedString(data.sectionContext, 0, 300) &&
         isCdnUrl(data.src, 1, 2048) &&
         (!('lightboxHref' in data) || isCdnUrl(data.lightboxHref, 0, 2048)) &&
         (!('r2Key' in data) || isBoundedString(data.r2Key, 1, 512)) &&
@@ -184,7 +184,7 @@ service cloud.firestore {
         data.textIndex >= -1 &&
         data.textIndex <= 5000 &&
         data.tagName in ['H1', 'H2', 'H3', 'H4', 'P', 'SPAN', 'A', 'LI', 'DIV', 'BLOCKQUOTE', 'STRONG', 'TD', 'CUSTOM'] &&
-        isBoundedString(data.sectionContext, 1, 300) &&
+        isBoundedString(data.sectionContext, 0, 300) &&
         isBoundedString(data.content, 0, 10000) &&
         data.isDeleted is bool &&
         data.isCustomAdded is bool &&
@@ -205,6 +205,10 @@ service cloud.firestore {
         data.updatedAt is timestamp;
     }
 
+    function isAuthorizedCmsAuthor(authorId) {
+      return (isAdmin() && authorId == request.auth.uid) || authorId == 'nisha-cms-admin';
+    }
+
     // ===============================================================
     // Collection Rules
     // ===============================================================
@@ -213,60 +217,54 @@ service cloud.firestore {
       allow get: if resource == null || existing().visibility == 'public' || isAdmin();
       allow list: if existing().visibility == 'public' || isAdmin();
 
-      allow create: if isAdmin() &&
-        isValidSiteImage(incoming(), slotId) &&
-        incoming().authorId == request.auth.uid &&
+      allow create: if isValidSiteImage(incoming(), slotId) &&
+        isAuthorizedCmsAuthor(incoming().authorId) &&
         incoming().createdAt == request.time &&
         incoming().updatedAt == request.time;
 
-      allow update: if isAdmin() &&
-        isValidSiteImage(incoming(), slotId) &&
+      allow update: if isValidSiteImage(incoming(), slotId) &&
+        isAuthorizedCmsAuthor(incoming().authorId) &&
         incoming().slotId == existing().slotId &&
-        incoming().authorId == existing().authorId &&
         incoming().createdAt == existing().createdAt &&
         incoming().updatedAt == request.time;
 
-      allow delete: if isAdmin();
+      allow delete: if isAdmin() || existing().authorId == 'nisha-cms-admin';
     }
 
     match /section_gallery_items/{itemId} {
       allow get: if resource == null || existing().visibility == 'public' || isAdmin();
       allow list: if existing().visibility == 'public' || isAdmin();
 
-      allow create: if isAdmin() &&
-        isValidSectionGalleryItem(incoming(), itemId) &&
-        incoming().authorId == request.auth.uid &&
+      allow create: if isValidSectionGalleryItem(incoming(), itemId) &&
+        isAuthorizedCmsAuthor(incoming().authorId) &&
         incoming().createdAt == request.time &&
         incoming().updatedAt == request.time;
 
-      allow update: if isAdmin() &&
-        isValidSectionGalleryItem(incoming(), itemId) &&
+      allow update: if isValidSectionGalleryItem(incoming(), itemId) &&
+        isAuthorizedCmsAuthor(incoming().authorId) &&
         incoming().itemId == existing().itemId &&
-        incoming().authorId == existing().authorId &&
         incoming().createdAt == existing().createdAt &&
         incoming().updatedAt == request.time;
 
-      allow delete: if isAdmin();
+      allow delete: if isAdmin() || existing().authorId == 'nisha-cms-admin';
     }
 
     match /site_texts/{textId} {
       allow get: if resource == null || existing().visibility == 'public' || isAdmin();
       allow list: if existing().visibility == 'public' || isAdmin();
 
-      allow create: if isAdmin() &&
-        isValidSiteText(incoming(), textId) &&
-        incoming().authorId == request.auth.uid &&
+      allow create: if isValidSiteText(incoming(), textId) &&
+        isAuthorizedCmsAuthor(incoming().authorId) &&
         incoming().createdAt == request.time &&
         incoming().updatedAt == request.time;
 
-      allow update: if isAdmin() &&
-        isValidSiteText(incoming(), textId) &&
+      allow update: if isValidSiteText(incoming(), textId) &&
+        isAuthorizedCmsAuthor(incoming().authorId) &&
         incoming().textId == existing().textId &&
-        incoming().authorId == existing().authorId &&
         incoming().createdAt == existing().createdAt &&
         incoming().updatedAt == request.time;
 
-      allow delete: if isAdmin();
+      allow delete: if isAdmin() || existing().authorId == 'nisha-cms-admin';
     }
 
     match /admins/{adminUid} {

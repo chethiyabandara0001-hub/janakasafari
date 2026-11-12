@@ -15,6 +15,14 @@ import {
   deleteR2Object,
   extractR2KeyFromCdnUrl,
 } from '@/lib/r2-storage';
+import {
+  saveSiteTextInFirestore,
+  deleteSiteTextInFirestore,
+  saveSectionGalleryItemInFirestore,
+  deleteSectionGalleryItemInFirestore,
+  saveSiteImageInFirestore,
+  deleteSiteImageInFirestore,
+} from '@/lib/firebase';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,11 +57,26 @@ export async function POST(req: NextRequest) {
             : makeTextSlotId(page, textIndex))
       );
 
+      const tagName = (body.tagName || (isCustomAdded ? 'CUSTOM' : 'P')) as
+        | 'H1'
+        | 'H2'
+        | 'H3'
+        | 'H4'
+        | 'P'
+        | 'SPAN'
+        | 'A'
+        | 'LI'
+        | 'DIV'
+        | 'BLOCKQUOTE'
+        | 'STRONG'
+        | 'TD'
+        | 'CUSTOM';
+
       state.textOverrides[textId] = {
         textId,
         page,
         textIndex,
-        tagName: body.tagName || (isCustomAdded ? 'CUSTOM' : 'P'),
+        tagName,
         sectionContext: String(body.sectionContext || 'Page Content'),
         content: String(body.content ?? ''),
         isDeleted: Boolean(body.isDeleted),
@@ -62,6 +85,17 @@ export async function POST(req: NextRequest) {
       };
 
       await saveCmsState(state);
+      await saveSiteTextInFirestore({
+        textId,
+        page,
+        textIndex,
+        tagName,
+        sectionContext: String(body.sectionContext || 'Page Content'),
+        content: String(body.content ?? ''),
+        isDeleted: Boolean(body.isDeleted),
+        isCustomAdded,
+      }).catch(() => {});
+
       const updated = await getAllSiteTexts();
       return NextResponse.json({ ok: true, textId, ...updated });
     }
@@ -69,25 +103,52 @@ export async function POST(req: NextRequest) {
     if (action === 'delete-text') {
       const textId = String(body.textId || '');
       const restoreDefault = Boolean(body.restoreDefault);
+      const wasCustom = Boolean(state.textOverrides[textId]?.isCustomAdded);
 
       if (restoreDefault) {
         delete state.textOverrides[textId];
-      } else if (state.textOverrides[textId]?.isCustomAdded) {
+        await deleteSiteTextInFirestore(textId).catch(() => {});
+      } else if (wasCustom) {
         delete state.textOverrides[textId];
+        await deleteSiteTextInFirestore(textId).catch(() => {});
       } else {
         const page = String(body.page || 'index.html');
         const textIndex = typeof body.textIndex === 'number' ? body.textIndex : 0;
+        const tagName = (body.tagName || 'P') as
+          | 'H1'
+          | 'H2'
+          | 'H3'
+          | 'H4'
+          | 'P'
+          | 'SPAN'
+          | 'A'
+          | 'LI'
+          | 'DIV'
+          | 'BLOCKQUOTE'
+          | 'STRONG'
+          | 'TD'
+          | 'CUSTOM';
         state.textOverrides[textId] = {
           textId,
           page,
           textIndex,
-          tagName: body.tagName || 'P',
+          tagName,
           sectionContext: String(body.sectionContext || 'Page Content'),
           content: String(body.content ?? ''),
           isDeleted: true,
           isCustomAdded: false,
           updatedAt: new Date().toISOString(),
         };
+        await saveSiteTextInFirestore({
+          textId,
+          page,
+          textIndex,
+          tagName,
+          sectionContext: String(body.sectionContext || 'Page Content'),
+          content: String(body.content ?? ''),
+          isDeleted: true,
+          isCustomAdded: false,
+        }).catch(() => {});
       }
 
       await saveCmsState(state);
@@ -145,6 +206,7 @@ export async function POST(req: NextRequest) {
       }
 
       await saveCmsState(state);
+      await saveSectionGalleryItemInFirestore(newItem).catch(() => {});
       const updated = await getAllSiteTexts();
       return NextResponse.json({ ok: true, item: newItem, ...updated });
     }
@@ -161,6 +223,7 @@ export async function POST(req: NextRequest) {
       }
       state.sectionGalleryItems = state.sectionGalleryItems.filter((i) => i.itemId !== itemId);
       await saveCmsState(state);
+      await deleteSectionGalleryItemInFirestore(itemId).catch(() => {});
       const updated = await getAllSiteTexts();
       return NextResponse.json({ ok: true, ...updated });
     }
@@ -192,11 +255,12 @@ export async function POST(req: NextRequest) {
         if (prevOv?.r2Key && prevOv.r2Key !== r2Key && !prevOv.r2Key.startsWith('media/')) {
           await deleteR2Object(prevOv.r2Key);
         }
+        const slotType = (body.type || 'img') as 'hero-bg' | 'img' | 'lightbox-img' | 'logo';
         state.imageOverrides[slotId] = {
           slotId,
           page,
           slotIndex,
-          type: body.type || 'img',
+          type: slotType,
           label: String(body.label || 'Image Slot'),
           sectionContext: String(body.sectionContext || 'Page Section'),
           src,
@@ -207,6 +271,18 @@ export async function POST(req: NextRequest) {
           updatedAt: new Date().toISOString(),
         };
         await saveCmsState(state);
+        await saveSiteImageInFirestore({
+          slotId,
+          page,
+          slotIndex,
+          type: slotType,
+          label: String(body.label || 'Image Slot'),
+          sectionContext: String(body.sectionContext || 'Page Section'),
+          src,
+          lightboxHref: body.lightboxHref ? String(body.lightboxHref) : src,
+          r2Key,
+          alt,
+        }).catch(() => {});
 
         if (!src.startsWith('data:')) {
           try {
@@ -252,6 +328,7 @@ export async function POST(req: NextRequest) {
           updatedAt: new Date().toISOString(),
         };
         await saveCmsState(state);
+        await deleteSiteImageInFirestore(slotId).catch(() => {});
       }
       const updated = await getAllSiteTexts();
       return NextResponse.json({ ok: true, ...updated });

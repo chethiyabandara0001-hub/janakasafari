@@ -121,6 +121,7 @@ a {
 .wrapper,
 .site-canvas,
 .main-wrap {
+  position: relative;
   width: 100%;
   max-width: 100%;
   overflow-x: clip;
@@ -146,23 +147,29 @@ a {
 }
 
 /* ==========================================================================
-   Sticky Header & Navigation (Mobile-First)
+   Hero Overlay Header & Navigation (Mobile-First, Transparent Background)
    ========================================================================== */
 
 .dusk-header {
-  position: sticky;
+  position: absolute;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 1000;
   width: 100%;
-  background: var(--bg-glass);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(18, 18, 17, 0.08);
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
   transition: background 0.25s ease, box-shadow 0.25s ease;
 }
 
 .dusk-header .nav-wrap {
   width: 100%;
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 /* Mobile-first header grid (< 961px) */
@@ -208,15 +215,24 @@ a {
   height: 44px;
   padding: 0;
   background: transparent;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: var(--radius-sm);
-  color: var(--text-primary);
+  color: #FFFFFF;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+body.janaka-contact .hamburger {
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
 }
 
 .hamburger:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+body.janaka-contact .hamburger:hover {
   background: var(--bg-elevated);
 }
 
@@ -248,8 +264,14 @@ a {
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text-primary);
+  color: #FFFFFF;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.65);
   position: relative;
+}
+
+body.janaka-contact .desktop-nav .wsite-menu-item {
+  color: var(--text-primary);
+  text-shadow: none;
 }
 
 .wsite-menu-item::after {
@@ -258,11 +280,16 @@ a {
   bottom: 4px;
   left: 0;
   right: 0;
-  height: 1.5px;
-  background-color: var(--accent-primary);
+  height: 2px;
+  background-color: #f5a623;
   transform: scaleX(0);
   transform-origin: right center;
   transition: transform 0.25s ease;
+}
+
+.wsite-menu-item:hover,
+.nav-current > .wsite-menu-item {
+  color: #f5a623;
 }
 
 .wsite-menu-item:hover::after,
@@ -271,37 +298,12 @@ a {
   transform-origin: left center;
 }
 
-.nav-current > .wsite-menu-item {
-  color: var(--accent-primary);
-}
-
-/* Last top-level nav item styled as primary CTA button on desktop */
-.desktop-nav .wsite-menu-default > .wsite-menu-item-wrap:last-child > .wsite-menu-item {
-  padding: 11px 20px;
-  background-color: var(--text-primary);
-  color: var(--bg-primary);
-  border-radius: var(--radius-sm);
-  letter-spacing: 0.09em;
-  font-size: 12px;
-  transition: background-color 0.2s ease, transform 0.2s ease;
-}
-
-.desktop-nav .wsite-menu-default > .wsite-menu-item-wrap:last-child > .wsite-menu-item::after {
-  display: none;
-}
-
-.desktop-nav .wsite-menu-default > .wsite-menu-item-wrap:last-child > .wsite-menu-item:hover {
-  background-color: var(--accent-primary);
-  color: #FFFFFF;
-  transform: translateY(-1px);
-}
-
 /* Submenu Dropdown (Safari Parks) */
 .wsite-menu-item-wrap.has-submenu > .wsite-menu-item::before {
   content: '▾';
   order: 2;
   font-size: 11px;
-  opacity: 0.7;
+  opacity: 0.85;
 }
 
 #desktop-parks.wsite-menu-wrap {

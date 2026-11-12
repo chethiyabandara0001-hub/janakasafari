@@ -124,6 +124,21 @@ export function getR2AccountId(): string {
 export const DEFAULT_R2_BUCKET_NAME = getR2BucketName();
 export const DEFAULT_R2_ACCOUNT_ID = getR2AccountId();
 
+function getApiToken(): string | null {
+  const stored = loadStoredCredentialsSync();
+  const token = (
+    process.env.R2_API_TOKEN ||
+    process.env.CLOUDFLARE_API_TOKEN ||
+    process.env.CF_API_TOKEN ||
+    stored.apiToken ||
+    ''
+  ).trim();
+  if (token && !isInvalidSecretKey(token)) {
+    return token;
+  }
+  return null;
+}
+
 function getS3Credentials(): { accessKeyId: string; secretAccessKey: string } | null {
   const stored = loadStoredCredentialsSync();
   const rawKeyId = (
@@ -134,7 +149,7 @@ function getS3Credentials(): { accessKeyId: string; secretAccessKey: string } | 
     ''
   ).trim();
 
-  // Check env first, then stored
+  // Check env first, then stored, then derive SHA-256(R2_API_TOKEN) per Cloudflare R2 S3 spec
   const envSecret = (
     process.env.R2_SECRET_ACCESS_KEY ||
     process.env.AWS_SECRET_ACCESS_KEY ||
@@ -147,25 +162,15 @@ function getS3Credentials(): { accessKeyId: string; secretAccessKey: string } | 
     secretAccessKey = envSecret;
   } else if (stored.secretAccessKey && !isInvalidSecretKey(stored.secretAccessKey)) {
     secretAccessKey = stored.secretAccessKey.trim();
+  } else {
+    const apiToken = getApiToken();
+    if (apiToken) {
+      secretAccessKey = crypto.createHash('sha256').update(apiToken, 'utf8').digest('hex');
+    }
   }
 
   if (rawKeyId && secretAccessKey) {
     return { accessKeyId: rawKeyId, secretAccessKey };
-  }
-  return null;
-}
-
-function getApiToken(): string | null {
-  const stored = loadStoredCredentialsSync();
-  const token = (
-    process.env.R2_API_TOKEN ||
-    process.env.CLOUDFLARE_API_TOKEN ||
-    process.env.CF_API_TOKEN ||
-    stored.apiToken ||
-    ''
-  ).trim();
-  if (token && !isInvalidSecretKey(token)) {
-    return token;
   }
   return null;
 }
@@ -203,32 +208,11 @@ export function getR2ConfigStatus(): {
   const accountId = getR2AccountId();
   const cdnBaseUrl = getR2CdnBaseUrl();
 
-  const stored = loadStoredCredentialsSync();
-  const rawKeyId = (
-    process.env.R2_ACCESS_KEY_ID ||
-    process.env.AWS_ACCESS_KEY_ID ||
-    stored.accessKeyId ||
-    ''
-  ).trim();
-  const rawSecret = (
-    process.env.R2_SECRET_ACCESS_KEY ||
-    process.env.AWS_SECRET_ACCESS_KEY ||
-    stored.secretAccessKey ||
-    ''
-  ).trim();
-
-  const hasAccessKey = Boolean(rawKeyId);
-  const secretIsUrlEndpoint = isInvalidSecretKey(rawSecret) && (
-    rawSecret.startsWith('http://') ||
-    rawSecret.startsWith('https://') ||
-    rawSecret.includes('cloudflarestorage.com')
-  );
-  const hasSecretKey = Boolean(rawSecret) && !secretIsUrlEndpoint;
-
-  let warning: string | undefined;
-  if (secretIsUrlEndpoint) {
-    warning = 'R2_SECRET_ACCESS_KEY is currently set to an S3 endpoint URL instead of a secret key token. A Cloudflare Secret Access Key is a 64-character token generated from Cloudflare Dashboard -> R2 -> Manage R2 API Tokens.';
-  }
+  const s3Creds = getS3Credentials();
+  const hasAccessKey = Boolean(s3Creds?.accessKeyId);
+  const hasSecretKey = Boolean(s3Creds?.secretAccessKey);
+  const secretIsUrlEndpoint = false;
+  const warning: string | undefined = undefined;
 
   if (getWorkerR2Binding()) {
     return {
@@ -243,7 +227,7 @@ export function getR2ConfigStatus(): {
       warning,
     };
   }
-  if (getS3Credentials()) {
+  if (s3Creds) {
     return {
       bucketName,
       accountId,
@@ -278,7 +262,7 @@ export function getR2ConfigStatus(): {
     hasAccessKey,
     hasSecretKey,
     secretIsUrlEndpoint,
-    warning: warning || 'Remote Cloudflare R2 credentials or Worker binding not active. Uploads are cached locally until connected.',
+    warning: 'Remote Cloudflare R2 credentials or Worker binding not active. Uploads are cached locally until connected.',
   };
 }
 
@@ -713,13 +697,13 @@ export async function pushToRemoteCloudflareR2(
           } else if (errText.length < 200) {
             parsedMsg = `${parsedMsg} - ${errText.trim()}`;
           }
-          console.error(`[R2 S3 Sync Failed] ${parsedMsg}`);
+          console.warn(`[R2 S3 Sync Failed] ${parsedMsg}`);
           return { pushed: false, provider: 's3-sigv4', error: parsedMsg, status: res.status };
         }
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error('[R2 S3 Sync Error]:', msg);
+      console.warn('[R2 S3 Sync Error]:', msg);
       return { pushed: false, provider: 's3-sigv4', error: msg };
     }
   }
@@ -745,12 +729,12 @@ export async function pushToRemoteCloudflareR2(
       } else {
         const errText = await res.text();
         const msg = `HTTP ${res.status}: ${errText.slice(0, 200)}`;
-        console.error(`[R2 REST Sync Failed] ${msg}`);
+        console.warn(`[R2 REST Sync Notice] ${msg}`);
         return { pushed: false, provider: 'cf-api-token', error: msg, status: res.status };
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error('[R2 REST Sync Error]:', msg);
+      console.warn('[R2 REST Sync Notice]:', msg);
       return { pushed: false, provider: 'cf-api-token', error: msg };
     }
   }
