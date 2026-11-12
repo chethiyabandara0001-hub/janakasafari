@@ -1,116 +1,79 @@
 {
   "entities": {
-    "AdminProfile": {
-      "title": "AdminProfile",
-      "description": "Trusted administrator account record for role-based access control.",
-      "type": "object",
-      "properties": {
-        "uid": {
-          "type": "string",
-          "description": "Firebase Auth UID of the administrator.",
-          "minLength": 1,
-          "maxLength": 128,
-          "pattern": "^[a-zA-Z0-9_\\-]+$"
-        },
-        "email": {
-          "type": "string",
-          "format": "email",
-          "description": "Verified email address of the administrator.",
-          "minLength": 3,
-          "maxLength": 254
-        },
-        "role": {
-          "type": "string",
-          "description": "Administrator role designation.",
-          "enum": ["admin"]
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Server timestamp when the admin record was created."
-        }
-      },
-      "required": ["uid", "email", "role", "createdAt"]
-    },
     "SiteImage": {
       "title": "SiteImage",
-      "description": "Stores image slot overrides, transferred image data/URLs, and alt text across all 12 website pages.",
+      "description": "Represents an image slot on one of the 12 Nisha Safari pages, storing strictly the Cloudflare R2 CDN URL (never raw image data) and metadata.",
       "type": "object",
       "properties": {
         "slotId": {
           "type": "string",
-          "description": "Deterministic identifier for the page image slot.",
-          "minLength": 1,
-          "maxLength": 128,
-          "pattern": "^[a-zA-Z0-9_\\-]+$"
+          "description": "Unique deterministic ID for the slot, e.g. index_html__slot_0",
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "maxLength": 120
         },
         "page": {
           "type": "string",
-          "description": "HTML page filename where the slot resides.",
-          "minLength": 1,
-          "maxLength": 64,
-          "pattern": "^[a-zA-Z0-9_.\\-]+$"
+          "description": "HTML filename, e.g. index.html or yala-safari.html",
+          "maxLength": 80
         },
         "slotIndex": {
           "type": "number",
-          "description": "Zero-based index of the image slot on the page."
+          "description": "0-based slot index on the page"
         },
         "type": {
           "type": "string",
-          "description": "Category of the image slot.",
-          "enum": ["hero-bg", "img", "lightbox-img", "logo"]
+          "enum": ["hero-bg", "img", "lightbox-img", "logo"],
+          "description": "Kind of image slot"
         },
         "label": {
           "type": "string",
-          "description": "Human-readable label of the image slot.",
-          "minLength": 1,
-          "maxLength": 200
+          "description": "Human-readable label for the slot",
+          "maxLength": 300
         },
         "sectionContext": {
           "type": "string",
-          "description": "Heading or section context where the image appears.",
-          "minLength": 1,
-          "maxLength": 200
+          "description": "Section heading context on the page",
+          "maxLength": 300
         },
         "src": {
           "type": "string",
-          "description": "Image source URL or transferred data URL.",
-          "minLength": 1,
-          "maxLength": 750000
+          "description": "Cloudflare R2 CDN URL or web URL for the image (never raw data: URI)",
+          "maxLength": 2048
         },
         "lightboxHref": {
           "type": "string",
-          "description": "Optional full-size lightbox image URL.",
-          "minLength": 0,
-          "maxLength": 750000
+          "description": "Optional full-size lightbox R2 CDN URL",
+          "maxLength": 2048
+        },
+        "r2Key": {
+          "type": "string",
+          "description": "Optional Cloudflare R2 storage bucket object key",
+          "maxLength": 512
         },
         "alt": {
           "type": "string",
-          "description": "Accessible alt text for the image.",
-          "minLength": 0,
+          "description": "Accessible alt text for the image",
           "maxLength": 500
         },
         "visibility": {
           "type": "string",
-          "description": "Query enforcement visibility flag.",
-          "enum": ["public"]
+          "enum": ["public"],
+          "description": "Public visibility flag for query rules"
         },
         "authorId": {
           "type": "string",
-          "description": "UID of the administrator who created or modified this image.",
-          "minLength": 1,
-          "maxLength": 128,
-          "pattern": "^[a-zA-Z0-9_\\-]+$"
+          "description": "UID of the admin who created/updated the image slot",
+          "maxLength": 128
         },
         "createdAt": {
           "type": "string",
           "format": "date-time",
-          "description": "Server creation timestamp."
+          "description": "Creation timestamp"
         },
         "updatedAt": {
           "type": "string",
           "format": "date-time",
-          "description": "Server update timestamp."
+          "description": "Last update timestamp"
         }
       },
       "required": [
@@ -130,85 +93,78 @@
     },
     "SectionGalleryItem": {
       "title": "SectionGalleryItem",
-      "description": "Stores section-specific wildlife and safari photography added to page sections through Firebase.",
+      "description": "A wildlife or safari showcase photo added to a specific page section, storing strictly the Cloudflare R2 CDN link and metadata.",
       "type": "object",
       "properties": {
         "itemId": {
           "type": "string",
-          "description": "Unique identifier for the section gallery image.",
-          "minLength": 1,
-          "maxLength": 128,
-          "pattern": "^[a-zA-Z0-9_\\-]+$"
+          "description": "Unique identifier for the section gallery photo",
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "maxLength": 120
         },
         "page": {
           "type": "string",
-          "description": "Target HTML page filename.",
-          "minLength": 1,
-          "maxLength": 64,
-          "pattern": "^[a-zA-Z0-9_.\\-]+$"
+          "description": "HTML page filename, e.g. index.html or yala-safari.html",
+          "maxLength": 80
         },
         "sectionKey": {
           "type": "string",
-          "description": "Identifier for the section on the page.",
-          "minLength": 1,
-          "maxLength": 128,
-          "pattern": "^[a-zA-Z0-9_\\-]+$"
+          "description": "Identifier of the section on the page",
+          "maxLength": 120
         },
         "sectionTitle": {
           "type": "string",
-          "description": "Display title of the page section.",
-          "minLength": 1,
+          "description": "Display heading of the section",
           "maxLength": 200
         },
         "title": {
           "type": "string",
-          "description": "Title of the wildlife or safari photo.",
-          "minLength": 1,
+          "description": "Photo title",
           "maxLength": 200
         },
         "caption": {
           "type": "string",
-          "description": "Detailed caption describing the safari moment or park section.",
-          "minLength": 0,
-          "maxLength": 600
+          "description": "Photo caption or description",
+          "maxLength": 1000
         },
         "src": {
           "type": "string",
-          "description": "Image URL or transferred data URI.",
-          "minLength": 1,
-          "maxLength": 750000
+          "description": "Cloudflare R2 CDN URL for the photo (never raw data: URI)",
+          "maxLength": 2048
+        },
+        "r2Key": {
+          "type": "string",
+          "description": "Optional Cloudflare R2 storage bucket object key",
+          "maxLength": 512
         },
         "alt": {
           "type": "string",
-          "description": "Alt text for screen readers and SEO.",
-          "minLength": 1,
-          "maxLength": 300
+          "description": "Accessible alt text",
+          "maxLength": 500
         },
         "order": {
           "type": "number",
-          "description": "Display sort order within the section."
+          "description": "Display sort order within the section"
         },
         "visibility": {
           "type": "string",
-          "description": "Visibility state for query enforcement.",
-          "enum": ["public"]
+          "enum": ["public"],
+          "description": "Public visibility flag"
         },
         "authorId": {
           "type": "string",
-          "description": "UID of the admin who added the section image.",
-          "minLength": 1,
-          "maxLength": 128,
-          "pattern": "^[a-zA-Z0-9_\\-]+$"
+          "description": "Admin UID",
+          "maxLength": 128
         },
         "createdAt": {
           "type": "string",
           "format": "date-time",
-          "description": "Server creation timestamp."
+          "description": "Creation timestamp"
         },
         "updatedAt": {
           "type": "string",
           "format": "date-time",
-          "description": "Server update timestamp."
+          "description": "Last update timestamp"
         }
       },
       "required": [
@@ -229,87 +185,66 @@
     },
     "SiteText": {
       "title": "SiteText",
-      "description": "Stores text overrides, deletions, and newly added custom text blocks across all 12 website pages.",
+      "description": "Represents an editable or newly added text element on any of the 12 website pages.",
       "type": "object",
       "properties": {
         "textId": {
           "type": "string",
-          "description": "Unique identifier for the text slot or custom text block.",
-          "minLength": 1,
-          "maxLength": 128,
-          "pattern": "^[a-zA-Z0-9_\\-]+$"
+          "description": "Unique deterministic ID for the text element, e.g. index_html__text_0",
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "maxLength": 120
         },
         "page": {
           "type": "string",
-          "description": "HTML page filename where the text appears.",
-          "minLength": 1,
-          "maxLength": 64,
-          "pattern": "^[a-zA-Z0-9_.\\-]+$"
+          "description": "HTML page filename, e.g. index.html",
+          "maxLength": 80
         },
         "textIndex": {
           "type": "number",
-          "description": "Zero-based index of the text node on the page (-1 for newly added custom text blocks)."
+          "description": "0-based index of the text node on the page, or -1 for custom added text blocks"
         },
         "tagName": {
           "type": "string",
-          "description": "HTML element tag type.",
-          "enum": [
-            "H1",
-            "H2",
-            "H3",
-            "H4",
-            "P",
-            "SPAN",
-            "A",
-            "LI",
-            "DIV",
-            "BLOCKQUOTE",
-            "STRONG",
-            "TD",
-            "CUSTOM"
-          ]
+          "enum": ["H1", "H2", "H3", "H4", "P", "SPAN", "A", "LI", "DIV", "BLOCKQUOTE", "STRONG", "TD", "CUSTOM"],
+          "description": "HTML tag type of the text element"
         },
         "sectionContext": {
           "type": "string",
-          "description": "Section heading or location context on the page.",
-          "minLength": 1,
-          "maxLength": 200
+          "description": "Section heading context on the page",
+          "maxLength": 300
         },
         "content": {
           "type": "string",
-          "description": "Text content for the element or block.",
-          "minLength": 0,
-          "maxLength": 20000
+          "description": "The text content to display",
+          "maxLength": 10000
         },
         "isDeleted": {
           "type": "boolean",
-          "description": "Whether the text element has been hidden/deleted on the live page."
+          "description": "Whether this text element has been deleted/hidden by the admin"
         },
         "isCustomAdded": {
           "type": "boolean",
-          "description": "True if this is a newly added text block appended to a section."
+          "description": "Whether this text block was newly added by the admin"
         },
         "visibility": {
           "type": "string",
-          "description": "Query enforcement visibility flag.",
-          "enum": ["public"]
+          "enum": ["public"],
+          "description": "Public visibility flag"
         },
         "authorId": {
           "type": "string",
-          "description": "UID of the administrator who created or modified this text.",
-          "minLength": 1,
-          "maxLength": 128,
-          "pattern": "^[a-zA-Z0-9_\\-]+$"
+          "description": "Admin UID",
+          "maxLength": 128
         },
         "createdAt": {
           "type": "string",
           "format": "date-time",
-          "description": "Server creation timestamp."
+          "description": "Creation timestamp"
         },
         "updatedAt": {
           "type": "string",
           "format": "date-time",
-          "description": "Server update timestamp."
+          "description": "Last update timestamp"
         }
       },
       "required": [
@@ -326,24 +261,60 @@
         "createdAt",
         "updatedAt"
       ]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Authorized CMS administrator record.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "email", "role", "createdAt", "updatedAt"]
     }
   },
   "firestore": {
-    "/admins/{adminUid}": {
-      "schema": { "$ref": "#/entities/AdminProfile" },
-      "description": "Administrator registry for RBAC verification."
-    },
-    "/site_images/{imageId}": {
-      "schema": { "$ref": "#/entities/SiteImage" },
-      "description": "All page image slot overrides and transferred image records."
+    "/site_images/{slotId}": {
+      "schema": {
+        "$ref": "#/entities/SiteImage"
+      },
+      "description": "Stores Cloudflare R2 CDN links and metadata for all page image slots"
     },
     "/section_gallery_items/{itemId}": {
-      "schema": { "$ref": "#/entities/SectionGalleryItem" },
-      "description": "Section-specific wildlife and safari gallery images added through Firebase."
+      "schema": {
+        "$ref": "#/entities/SectionGalleryItem"
+      },
+      "description": "Stores Cloudflare R2 CDN links and metadata for section wildlife gallery photos"
     },
     "/site_texts/{textId}": {
-      "schema": { "$ref": "#/entities/SiteText" },
-      "description": "All editable text elements, deletions, and newly added custom text blocks across the site."
+      "schema": {
+        "$ref": "#/entities/SiteText"
+      },
+      "description": "Stores live overrides, additions, and deletions for all site text elements"
+    },
+    "/admins/{adminUid}": {
+      "schema": {
+        "$ref": "#/entities/AdminUser"
+      },
+      "description": "Stores authorized admin UIDs"
     }
   }
 }

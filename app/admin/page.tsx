@@ -23,6 +23,8 @@ import {
   LogIn,
   LogOut,
   Grid,
+  Copy,
+  Link2,
 } from 'lucide-react';
 import {
   auth,
@@ -37,7 +39,11 @@ import {
   saveSiteTextInFirestore,
   deleteSiteTextInFirestore,
   subscribePublicCollection,
-  fileToFirestoreDataUrl,
+  uploadImageToR2Bucket,
+  migrateDataUrlToR2Bucket,
+  updateR2BucketObjectMeta,
+  deleteImageFromR2Bucket,
+  extractR2KeyFromUrl,
   type User,
 } from '@/lib/firebase';
 import {
@@ -57,14 +63,19 @@ interface ImageSlot {
   sectionContext: string;
   src: string;
   lightboxHref?: string;
+  r2Key?: string;
   alt: string;
   assetFilename: string;
   isSharedAsset: boolean;
   sharedCount: number;
   isModified?: boolean;
+  isDeleted?: boolean;
+  updatedAt?: string;
 }
 
 interface MediaAssetInfo {
+  r2Key?: string;
+  cdnUrl?: string;
   filename: string;
   url: string;
   sizeBytes: number;
@@ -72,6 +83,19 @@ interface MediaAssetInfo {
   usedInPages: string[];
   usageCount: number;
   hasDefaultBackup: boolean;
+}
+
+interface R2BucketObject {
+  r2Key: string;
+  filename: string;
+  cdnUrl: string;
+  mimeType: string;
+  sizeBytes: number;
+  alt: string;
+  title: string;
+  page?: string;
+  updatedAt: string;
+  bucketName: string;
 }
 
 interface SiteTextSlot {
@@ -111,7 +135,7 @@ type SlotTypeFilter = 'all' | 'hero-bg' | 'img' | 'lightbox-img' | 'logo';
 type TextTypeFilter = 'all' | 'headings' | 'paragraphs' | 'buttons' | 'lists' | 'custom';
 
 function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
+  if (!bytes || bytes <= 0) return '0 B';
   const k = 1024;
   const sizes = ['B', 'KB', 'MB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -133,8 +157,10 @@ function getSlotTypeLabel(type: ImageSlot['type']): string {
 }
 
 export default function AdminCmsStudioPage() {
+  const [bucketName, setBucketName] = useState<string>('ai-studio-applet-opennext-cache');
   const [slots, setSlots] = useState<ImageSlot[]>([]);
   const [mediaAssets, setMediaAssets] = useState<MediaAssetInfo[]>([]);
+  const [r2Objects, setR2Objects] = useState<R2BucketObject[]>([]);
   const [textSlots, setTextSlots] = useState<SiteTextSlot[]>([]);
   const [customTexts, setCustomTexts] = useState<SiteTextSlot[]>([]);
   const [sectionImages, setSectionImages] = useState<SeedSectionGalleryItem[]>([]);
@@ -156,16 +182,17 @@ export default function AdminCmsStudioPage() {
   const [selectedTextType, setSelectedTextType] = useState<TextTypeFilter>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Modal 1: Active Slot Editing
+  // Modal 1: Active Slot Editing (Pushes image to R2 -> saves R2 CDN link to Firebase Firestore)
   const [editingSlot, setEditingSlot] = useState<ImageSlot | null>(null);
   const [slotScope, setSlotScope] = useState<'slot' | 'global'>('slot');
   const [slotAltText, setSlotAltText] = useState<string>('');
   const [slotExternalUrl, setSlotExternalUrl] = useState<string>('');
+  const [slotSelectedR2Key, setSlotSelectedR2Key] = useState<string>('');
   const [slotUploadFile, setSlotUploadFile] = useState<File | null>(null);
   const [slotPreviewUrl, setSlotPreviewUrl] = useState<string | null>(null);
   const [slotSaving, setSlotSaving] = useState<boolean>(false);
 
-  // Modal 2: Add / Edit Section Wildlife Gallery Image
+  // Modal 2: Add / Edit Section Wildlife Gallery Image (Pushes image to R2 -> saves R2 CDN link to Firebase Firestore)
   const [editingSectionImg, setEditingSectionImg] = useState<SeedSectionGalleryItem | null>(null);
   const [isNewSectionImg, setIsNewSectionImg] = useState<boolean>(false);
   const [secImgUploadFile, setSecImgUploadFile] = useState<File | null>(null);
@@ -181,11 +208,18 @@ export default function AdminCmsStudioPage() {
   const [textDraftTag, setTextDraftTag] = useState<SiteTextSlot['tagName']>('P');
   const [textSaving, setTextSaving] = useState<boolean>(false);
 
-  // Modal 4: Global Media Library Replacement
-  const [editingAsset, setEditingAsset] = useState<MediaAssetInfo | null>(null);
-  const [assetUploadFile, setAssetUploadFile] = useState<File | null>(null);
-  const [assetPreviewUrl, setAssetPreviewUrl] = useState<string | null>(null);
-  const [assetSaving, setAssetSaving] = useState<boolean>(false);
+  // Modal 4: Direct Cloudflare R2 Bucket Add / Edit / Replace / Delete Modal
+  const [editingR2Obj, setEditingR2Obj] = useState<R2BucketObject | null>(null);
+  const [isNewR2Upload, setIsNewR2Upload] = useState<boolean>(false);
+  const [r2DraftKey, setR2DraftKey] = useState<string>('');
+  const [r2DraftTitle, setR2DraftTitle] = useState<string>('');
+  const [r2DraftAlt, setR2DraftAlt] = useState<string>('');
+  const [r2DraftPage, setR2DraftPage] = useState<string>('index.html');
+  const [r2UploadFile, setR2UploadFile] = useState<File | null>(null);
+  const [r2PreviewUrl, setR2PreviewUrl] = useState<string | null>(null);
+  const [r2AssignSectionGallery, setR2AssignSectionGallery] = useState<boolean>(false);
+  const [r2AssignSlotId, setR2AssignSlotId] = useState<string>('');
+  const [r2Saving, setR2Saving] = useState<boolean>(false);
 
   // Confirmation Modal for Reset All
   const [confirmResetModal, setConfirmResetModal] = useState<{
@@ -200,8 +234,9 @@ export default function AdminCmsStudioPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const secFileInputRef = useRef<HTMLInputElement>(null);
-  const assetFileInputRef = useRef<HTMLInputElement>(null);
+  const r2FileInputRef = useRef<HTMLInputElement>(null);
   const autoSeededRef = useRef<boolean>(false);
+  const migratedLegacyDataUrlsRef = useRef<boolean>(false);
 
   const showNotice = useCallback((message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -212,15 +247,24 @@ export default function AdminCmsStudioPage() {
 
   const fetchInventory = useCallback(async () => {
     try {
-      const [imgRes, cmsRes] = await Promise.all([
+      const [imgRes, cmsRes, r2Res] = await Promise.all([
         fetch(`/api/admin/images?t=${Date.now()}`, { cache: 'no-store' }),
         fetch(`/api/admin/cms?t=${Date.now()}`, { cache: 'no-store' }),
+        fetch(`/api/r2?t=${Date.now()}`, { cache: 'no-store' }),
       ]);
-      if (!imgRes.ok || !cmsRes.ok) throw new Error('Failed to load site CMS inventory');
-      const [imgData, cmsData] = await Promise.all([imgRes.json(), cmsRes.json()]);
+      if (!imgRes.ok || !cmsRes.ok) throw new Error('Failed to load site CMS & R2 inventory');
+      const [imgData, cmsData, r2Data] = await Promise.all([
+        imgRes.json(),
+        cmsRes.json(),
+        r2Res.ok ? r2Res.json() : Promise.resolve({ objects: [] }),
+      ]);
 
+      if (r2Data.bucketName || imgData.bucketName) {
+        setBucketName(r2Data.bucketName || imgData.bucketName);
+      }
       setSlots(imgData.slots || []);
       setMediaAssets(imgData.mediaAssets || []);
+      setR2Objects(r2Data.objects || imgData.r2Objects || []);
       setPages(imgData.pages || []);
       setTextSlots(cmsData.textSlots || []);
       setCustomTexts(cmsData.customTexts || []);
@@ -238,17 +282,24 @@ export default function AdminCmsStudioPage() {
     await fetchInventory();
   }, [fetchInventory]);
 
-  // Initial load of inventory from server
+  // Initial load of inventory from server + R2 bucket
   useEffect(() => {
     let cancelled = false;
     Promise.all([
       fetch(`/api/admin/images?t=${Date.now()}`, { cache: 'no-store' }).then((r) => r.json()),
       fetch(`/api/admin/cms?t=${Date.now()}`, { cache: 'no-store' }).then((r) => r.json()),
+      fetch(`/api/r2?t=${Date.now()}`, { cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : { objects: [] }))
+        .catch(() => ({ objects: [] })),
     ])
-      .then(([imgData, cmsData]) => {
+      .then(([imgData, cmsData, r2Data]) => {
         if (cancelled) return;
+        if (r2Data.bucketName || imgData.bucketName) {
+          setBucketName(r2Data.bucketName || imgData.bucketName);
+        }
         setSlots(imgData.slots || []);
         setMediaAssets(imgData.mediaAssets || []);
+        setR2Objects(r2Data.objects || imgData.r2Objects || []);
         setPages(imgData.pages || []);
         setTextSlots(cmsData.textSlots || []);
         setCustomTexts(cmsData.customTexts || []);
@@ -267,7 +318,7 @@ export default function AdminCmsStudioPage() {
     };
   }, [showNotice]);
 
-  // Listen to Firebase Auth state & Firestore public collections
+  // Listen to Firebase Auth state & Firestore public collections (which store ONLY R2 CDN URLs + metadata)
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
@@ -277,6 +328,7 @@ export default function AdminCmsStudioPage() {
       slotId: string;
       src: string;
       lightboxHref?: string;
+      r2Key?: string;
       alt: string;
       label: string;
       sectionContext: string;
@@ -315,71 +367,165 @@ export default function AdminCmsStudioPage() {
     };
   }, []);
 
-  // Sync all 160 image slots and 23 curated section wildlife images to Firebase Firestore when Admin signs in
+  // Automatically migrate any legacy data:image/... records in Firestore to Cloudflare R2 CDN links
+  useEffect(() => {
+    if (!currentUser || migratedLegacyDataUrlsRef.current) return;
+    const slotEntriesWithDataUrl = Object.values(firestoreImageDocs).filter(
+      (d) => d && typeof d.src === 'string' && d.src.startsWith('data:')
+    );
+    const sectionEntriesWithDataUrl = firestoreSectionDocs.filter(
+      (d) => d && typeof d.src === 'string' && d.src.startsWith('data:')
+    );
+
+    if (slotEntriesWithDataUrl.length === 0 && sectionEntriesWithDataUrl.length === 0) {
+      return;
+    }
+
+    migratedLegacyDataUrlsRef.current = true;
+    (async () => {
+      try {
+        for (const docItem of slotEntriesWithDataUrl) {
+          if (!docItem.slotId || !docItem.src) continue;
+          const r2Res = await migrateDataUrlToR2Bucket(docItem.src, {
+            filenameHint: docItem.slotId,
+            alt: docItem.alt || docItem.label || docItem.slotId,
+            title: docItem.label || docItem.slotId,
+          });
+          const baseSlot = slots.find((s) => s.slotId === docItem.slotId);
+          await saveSiteImageInFirestore({
+            slotId: docItem.slotId,
+            page: baseSlot?.page || 'index.html',
+            slotIndex: baseSlot?.slotIndex || 0,
+            type: baseSlot?.type || 'img',
+            label: docItem.label || baseSlot?.label || 'Safari Image',
+            sectionContext: docItem.sectionContext || baseSlot?.sectionContext || 'Page Section',
+            src: r2Res.cdnUrl,
+            lightboxHref: r2Res.cdnUrl,
+            r2Key: r2Res.r2Key,
+            alt: docItem.alt || '',
+          });
+        }
+
+        for (const secItem of sectionEntriesWithDataUrl) {
+          const r2Res = await migrateDataUrlToR2Bucket(secItem.src, {
+            filenameHint: secItem.itemId,
+            alt: secItem.alt || secItem.title,
+            title: secItem.title,
+            page: secItem.page,
+          });
+          await saveSectionGalleryItemInFirestore({
+            ...secItem,
+            src: r2Res.cdnUrl,
+            r2Key: r2Res.r2Key,
+          });
+        }
+
+        await fetchInventory();
+        showNotice('Migrated legacy Firestore image data to Cloudflare R2 CDN links.');
+      } catch (err) {
+        console.warn('Legacy data URL migration warning:', err);
+      }
+    })();
+  }, [
+    currentUser,
+    firestoreImageDocs,
+    firestoreSectionDocs,
+    slots,
+    fetchInventory,
+    showNotice,
+  ]);
+
+  // Sync current active R2 CDN links (and clean up any non-R2 or deleted docs) to Firebase Firestore
   const handleSeedSectionImagesToFirestore = useCallback(
     async (silent = false) => {
       if (!auth.currentUser) {
         if (!silent) {
-          showNotice('Please sign in with Google Admin first to push records to Firestore.', 'error');
+          showNotice(
+            'Please sign in with Google Admin first to sync R2 CDN links to Firestore.',
+            'error'
+          );
         }
         return;
       }
       setSyncingSeed(true);
       try {
-        await Promise.all(
-          INITIAL_FIREBASE_SECTION_IMAGES.map((item) => saveSectionGalleryItemInFirestore(item))
-        );
-
-        const chunkSize = 20;
-        for (let i = 0; i < INITIAL_FIREBASE_SLOT_UPGRADES.length; i += chunkSize) {
-          const batch = INITIAL_FIREBASE_SLOT_UPGRADES.slice(i, i + chunkSize);
-          await Promise.all(batch.map((slot) => saveSiteImageInFirestore(slot)));
+        // 1. Remove any Firestore section docs that were deleted or don't use R2 CDN links
+        const activeSectionIds = new Set(sectionImages.map((s) => s.itemId));
+        for (const fbSec of firestoreSectionDocs) {
+          if (!activeSectionIds.has(fbSec.itemId) || !fbSec.src?.includes('/api/r2/file/')) {
+            await deleteSectionGalleryItemInFirestore(fbSec.itemId);
+          }
         }
 
-        await fetch('/api/admin/cms', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'seed-defaults' }),
-        });
+        // 2. Push active section gallery R2 CDN links to Firestore
+        await Promise.all(
+          sectionImages.map((item) => saveSectionGalleryItemInFirestore(item))
+        );
+
+        // 3. Remove any Firestore slot docs that are marked deleted or don't use R2 CDN links
+        const activeSlots = slots.filter((s) => !s.isDeleted && s.src);
+        const deletedSlotIds = new Set(slots.filter((s) => s.isDeleted).map((s) => s.slotId));
+        for (const slotId of Object.keys(firestoreImageDocs)) {
+          const fbDoc = firestoreImageDocs[slotId];
+          if (
+            deletedSlotIds.has(slotId) ||
+            (fbDoc?.src && !fbDoc.src.includes('/api/r2/file/') && !fbDoc.r2Key)
+          ) {
+            await deleteSiteImageInFirestore(slotId);
+          }
+        }
+
+        // 4. Push active slot R2 CDN links to Firestore in batches
+        const chunkSize = 25;
+        for (let i = 0; i < activeSlots.length; i += chunkSize) {
+          const batch = activeSlots.slice(i, i + chunkSize);
+          await Promise.all(
+            batch.map((slot) =>
+              saveSiteImageInFirestore({
+                slotId: slot.slotId,
+                page: slot.page,
+                slotIndex: slot.slotIndex,
+                type: slot.type,
+                label: slot.label,
+                sectionContext: slot.sectionContext,
+                src: slot.src,
+                lightboxHref: slot.lightboxHref || slot.src,
+                r2Key: slot.r2Key || extractR2KeyFromUrl(slot.src) || `slots/${slot.slotId}.jpg`,
+                alt: slot.alt || slot.label,
+              })
+            )
+          );
+        }
+
         if (!silent) {
           showNotice(
-            `Synced all ${INITIAL_FIREBASE_SLOT_UPGRADES.length} image slots and ${INITIAL_FIREBASE_SECTION_IMAGES.length} section wildlife photos to Firebase Firestore.`
+            `Synced ${activeSlots.length} R2 slot CDN links and ${sectionImages.length} R2 section CDN links to Firebase Firestore.`
           );
         }
         await fetchInventory();
       } catch (err) {
         if (!silent) {
-          showNotice(err instanceof Error ? err.message : 'Firestore sync failed', 'error');
+          showNotice(err instanceof Error ? err.message : 'Firestore CDN sync failed', 'error');
         }
       } finally {
         setSyncingSeed(false);
       }
     },
-    [fetchInventory, showNotice]
+    [slots, sectionImages, firestoreSectionDocs, firestoreImageDocs, fetchInventory, showNotice]
   );
 
+  // One-time sync when Admin signs in and R2 inventory is loaded
   useEffect(() => {
-    const knownSlotsCount = Object.keys(firestoreImageDocs).length;
-    if (
-      currentUser &&
-      !autoSeededRef.current &&
-      (firestoreSectionDocs.length === 0 ||
-        knownSlotsCount < INITIAL_FIREBASE_SLOT_UPGRADES.length)
-    ) {
+    if (currentUser && !loading && slots.length > 0 && !autoSeededRef.current) {
       autoSeededRef.current = true;
       void handleSeedSectionImagesToFirestore(true);
     }
-  }, [
-    currentUser,
-    firestoreSectionDocs.length,
-    firestoreImageDocs,
-    handleSeedSectionImagesToFirestore,
-  ]);
+  }, [currentUser, loading, slots.length, handleSeedSectionImagesToFirestore]);
 
   const handleGoogleSignIn = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
-      showNotice('Connected to Firebase Admin as ' + (auth.currentUser?.email || 'Admin'));
+      showNotice('Connected to Firebase + R2 Admin as ' + (auth.currentUser?.email || 'Admin'));
     } catch (err) {
       showNotice(err instanceof Error ? err.message : 'Google Sign-In failed', 'error');
     }
@@ -387,37 +533,37 @@ export default function AdminCmsStudioPage() {
 
   const handleGoogleSignOut = async () => {
     await firebaseSignOut(auth);
-    showNotice('Signed out of Firebase Admin.');
+    showNotice('Signed out of Admin.');
   };
 
-  // Merge server slots with live Firestore overrides
+  // Authoritative R2 & server slots (never let stale non-R2 Firestore docs overwrite R2 edits/deletions)
   const mergedSlots = useMemo(() => {
     return slots.map((slot) => {
+      if (slot.isDeleted) return slot;
       const fbDoc = firestoreImageDocs[slot.slotId];
-      if (!fbDoc) return slot;
+      if (!fbDoc || !fbDoc.src || fbDoc.src.startsWith('data:')) return slot;
+      const isR2Cdn = fbDoc.src.includes('/api/r2/file/') || Boolean(fbDoc.r2Key);
+      if (!isR2Cdn) return slot;
+      // Only prefer fbDoc if slot wasn't more recently modified in server R2 state
+      if (slot.isModified) return slot;
       return {
         ...slot,
-        src: fbDoc.src || slot.src,
-        lightboxHref: fbDoc.lightboxHref || slot.lightboxHref,
+        src: fbDoc.src,
+        lightboxHref:
+          fbDoc.lightboxHref && fbDoc.lightboxHref.includes('/api/r2/file/')
+            ? fbDoc.lightboxHref
+            : fbDoc.src,
+        r2Key: fbDoc.r2Key || extractR2KeyFromUrl(fbDoc.src) || slot.r2Key,
         alt: fbDoc.alt !== undefined ? fbDoc.alt : slot.alt,
         label: fbDoc.label || slot.label,
-        isModified: true,
       };
     });
   }, [slots, firestoreImageDocs]);
 
-  // Merge section gallery items with live Firestore section docs
+  // Authoritative R2 & server section gallery items
   const mergedSectionImages = useMemo(() => {
-    if (firestoreSectionDocs.length === 0) return sectionImages;
-    const byId = new Map<string, SeedSectionGalleryItem>();
-    for (const item of sectionImages) {
-      byId.set(item.itemId, item);
-    }
-    for (const fbItem of firestoreSectionDocs) {
-      byId.set(fbItem.itemId, fbItem);
-    }
-    return Array.from(byId.values()).sort((a, b) => a.order - b.order);
-  }, [sectionImages, firestoreSectionDocs]);
+    return [...sectionImages].sort((a, b) => a.order - b.order);
+  }, [sectionImages]);
 
   // Merge text slots + custom texts with live Firestore text docs
   const mergedTexts = useMemo(() => {
@@ -433,7 +579,6 @@ export default function AdminCmsStudioPage() {
       };
     });
 
-    // Also include any custom texts present only in Firestore
     const existingIds = new Set(baseList.map((b) => b.textId));
     for (const [id, fbDoc] of Object.entries(firestoreTextDocs)) {
       if (!existingIds.has(id) && fbDoc.isCustomAdded && fbDoc.page) {
@@ -456,6 +601,37 @@ export default function AdminCmsStudioPage() {
     return baseList;
   }, [textSlots, customTexts, firestoreTextDocs, pages]);
 
+  // Enrich R2 bucket objects with usage info across pages
+  const enrichedR2Objects = useMemo(() => {
+    return r2Objects.map((obj) => {
+      const mediaInfo = mediaAssets.find(
+        (m) => m.r2Key === obj.r2Key || m.filename === obj.filename
+      );
+      const usedInSlots = mergedSlots.filter(
+        (s) =>
+          s.r2Key === obj.r2Key ||
+          s.src.includes(obj.r2Key) ||
+          (obj.r2Key.startsWith('media/') && s.assetFilename === obj.filename)
+      );
+      const usedInSections = mergedSectionImages.filter(
+        (sec) => sec.r2Key === obj.r2Key || sec.src.includes(obj.r2Key)
+      );
+      const pageTitles = new Set<string>(mediaInfo?.usedInPages || []);
+      for (const s of usedInSlots) pageTitles.add(s.pageTitle);
+      for (const sec of usedInSections) {
+        const pMeta = pages.find((p) => p.file === sec.page);
+        pageTitles.add(pMeta ? pMeta.title : sec.page);
+      }
+
+      return {
+        ...obj,
+        usedInPages: Array.from(pageTitles),
+        usageCount:
+          usedInSlots.length + usedInSections.length || mediaInfo?.usageCount || 0,
+      };
+    });
+  }, [r2Objects, mediaAssets, mergedSlots, mergedSectionImages, pages]);
+
   // Filtered slots
   const filteredSlots = useMemo(() => {
     return mergedSlots.filter((slot) => {
@@ -468,6 +644,7 @@ export default function AdminCmsStudioPage() {
           slot.sectionContext.toLowerCase().includes(q) ||
           slot.alt.toLowerCase().includes(q) ||
           slot.src.toLowerCase().includes(q) ||
+          (slot.r2Key && slot.r2Key.toLowerCase().includes(q)) ||
           slot.pageTitle.toLowerCase().includes(q)
         );
       }
@@ -485,6 +662,7 @@ export default function AdminCmsStudioPage() {
           item.title.toLowerCase().includes(q) ||
           item.sectionTitle.toLowerCase().includes(q) ||
           item.caption.toLowerCase().includes(q) ||
+          (item.r2Key && item.r2Key.toLowerCase().includes(q)) ||
           item.page.toLowerCase().includes(q)
         );
       }
@@ -529,21 +707,31 @@ export default function AdminCmsStudioPage() {
     });
   }, [mergedTexts, selectedPage, selectedTextType, searchQuery]);
 
-  // Filtered media assets
-  const filteredAssets = useMemo(() => {
-    return mediaAssets.filter((asset) => {
-      if (selectedPage !== 'all' && !asset.usedInPages.includes(selectedPage)) return false;
+  // Filtered R2 bucket objects
+  const filteredR2Objects = useMemo(() => {
+    return enrichedR2Objects.filter((obj) => {
+      if (selectedPage !== 'all') {
+        const pMeta = pages.find((p) => p.file === selectedPage);
+        const matchesPage =
+          obj.page === selectedPage ||
+          (pMeta && obj.usedInPages.includes(pMeta.title)) ||
+          obj.usedInPages.includes(selectedPage);
+        if (!matchesPage) return false;
+      }
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         return (
-          asset.filename.toLowerCase().includes(q) ||
-          asset.mimeType.toLowerCase().includes(q) ||
-          asset.usedInPages.some((p) => p.toLowerCase().includes(q))
+          obj.r2Key.toLowerCase().includes(q) ||
+          obj.filename.toLowerCase().includes(q) ||
+          obj.title.toLowerCase().includes(q) ||
+          obj.alt.toLowerCase().includes(q) ||
+          obj.cdnUrl.toLowerCase().includes(q) ||
+          obj.usedInPages.some((p) => p.toLowerCase().includes(q))
         );
       }
       return true;
     });
-  }, [mediaAssets, selectedPage, searchQuery]);
+  }, [enrichedR2Objects, selectedPage, pages, searchQuery]);
 
   // Page item counts depending on active viewMode
   const pageCounts = useMemo(() => {
@@ -558,20 +746,23 @@ export default function AdminCmsStudioPage() {
       counts.all = mergedTexts.length;
       for (const t of mergedTexts) counts[t.page] = (counts[t.page] || 0) + 1;
     } else {
-      counts.all = mediaAssets.length;
+      counts.all = enrichedR2Objects.length;
       for (const p of pages) {
-        counts[p.file] = mediaAssets.filter((a) => a.usedInPages.includes(p.title)).length;
+        counts[p.file] = enrichedR2Objects.filter(
+          (o) => o.page === p.file || o.usedInPages.includes(p.title)
+        ).length;
       }
     }
     return counts;
-  }, [viewMode, mergedSlots, mergedSectionImages, mergedTexts, mediaAssets, pages]);
+  }, [viewMode, mergedSlots, mergedSectionImages, mergedTexts, enrichedR2Objects, pages]);
 
-  // --- Slot Image Editor Handlers (Firebase Firestore + Server Sync) ---
+  // --- Slot Image Editor Handlers (Pushes binary to R2 -> saves R2 CDN link in Firestore) ---
   const openSlotEditor = (slot: ImageSlot) => {
     setEditingSlot(slot);
     setSlotScope(slot.type === 'logo' ? 'global' : 'slot');
     setSlotAltText(slot.alt || '');
-    setSlotExternalUrl(slot.src.startsWith('http') ? slot.src : '');
+    setSlotExternalUrl(slot.src.startsWith('http') || slot.src.startsWith('/api/r2/file/') ? slot.src : '');
+    setSlotSelectedR2Key(slot.r2Key || extractR2KeyFromUrl(slot.src) || '');
     setSlotUploadFile(null);
     setSlotPreviewUrl(null);
   };
@@ -589,43 +780,50 @@ export default function AdminCmsStudioPage() {
     if (!editingSlot) return;
     setSlotSaving(true);
     try {
-      let finalSrc = slotExternalUrl.trim() || editingSlot.src;
+      let finalCdnUrl = slotExternalUrl.trim() || editingSlot.src;
+      let finalR2Key =
+        slotSelectedR2Key || editingSlot.r2Key || extractR2KeyFromUrl(finalCdnUrl);
 
       if (slotUploadFile) {
-        // 1. Upload binary file to server media endpoint AND compress for Firestore transfer
-        const formData = new FormData();
-        formData.append('mode', 'update-slot');
-        formData.append('page', editingSlot.page);
-        formData.append('slotIndex', String(editingSlot.slotIndex));
-        formData.append('scope', slotScope);
-        formData.append('altText', slotAltText);
-        formData.append('file', slotUploadFile);
-
-        const [res, transferredDataUrl] = await Promise.all([
-          fetch('/api/admin/images', { method: 'POST', body: formData }),
-          fileToFirestoreDataUrl(slotUploadFile),
-        ]);
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to upload image');
-        finalSrc = data.updatedSrc ? `/${data.updatedSrc.replace(/^\/+/, '')}` : transferredDataUrl;
-      } else {
-        const res = await fetch('/api/admin/images', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'update-slot-meta',
-            page: editingSlot.page,
-            slotIndex: editingSlot.slotIndex,
-            altText: slotAltText,
-            externalUrl: slotExternalUrl.trim() || undefined,
-          }),
+        // 1. Push binary file from device storage directly to Cloudflare R2 bucket
+        const r2Uploaded = await uploadImageToR2Bucket(slotUploadFile, {
+          replaceKey:
+            editingSlot.r2Key && !editingSlot.r2Key.startsWith('media/')
+              ? editingSlot.r2Key
+              : undefined,
+          alt: slotAltText || editingSlot.label,
+          title: editingSlot.label,
+          page: editingSlot.page,
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to update slot');
-        if (slotExternalUrl.trim()) finalSrc = slotExternalUrl.trim();
+        finalCdnUrl = r2Uploaded.cdnUrl;
+        finalR2Key = r2Uploaded.r2Key;
       }
 
-      // 2. Save directly to Firebase Firestore if Admin is signed in
+      if (finalCdnUrl.startsWith('data:')) {
+        throw new Error('Base64 data URLs are disabled. Please select a file to upload to R2 or provide a CDN URL.');
+      }
+
+      // 2. Sync slot CDN link with server CMS state
+      const res = await fetch('/api/admin/images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update-slot-meta',
+          page: editingSlot.page,
+          slotIndex: editingSlot.slotIndex,
+          scope: slotScope,
+          altText: slotAltText,
+          externalUrl: finalCdnUrl,
+          r2Key: finalR2Key,
+          type: editingSlot.type,
+          label: editingSlot.label,
+          sectionContext: editingSlot.sectionContext,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update slot');
+
+      // 3. Save ONLY the R2 CDN URL & metadata to Firebase Firestore
       if (auth.currentUser) {
         await saveSiteImageInFirestore({
           slotId: editingSlot.slotId,
@@ -634,21 +832,56 @@ export default function AdminCmsStudioPage() {
           type: editingSlot.type,
           label: editingSlot.label,
           sectionContext: editingSlot.sectionContext,
-          src: finalSrc,
-          lightboxHref: finalSrc,
+          src: finalCdnUrl,
+          lightboxHref: finalCdnUrl,
+          r2Key: finalR2Key,
           alt: slotAltText,
         });
       }
 
       showNotice(
-        `Saved "${editingSlot.label}" on ${editingSlot.pageTitle} (${
-          auth.currentUser ? 'Synced to Firebase Firestore' : 'Saved & ready for Firestore sync'
-        }).`
+        `Uploaded to R2 bucket & linked "${editingSlot.label}" via Firebase CDN URL (${finalR2Key || finalCdnUrl}).`
       );
       setEditingSlot(null);
       await fetchInventory();
     } catch (err) {
       showNotice(err instanceof Error ? err.message : 'Update failed', 'error');
+    } finally {
+      setSlotSaving(false);
+    }
+  };
+
+  const handleDeleteSingleSlot = async (slot: ImageSlot) => {
+    setSlotSaving(true);
+    try {
+      const r2KeyToDelete = slot.r2Key || extractR2KeyFromUrl(slot.src);
+      if (r2KeyToDelete) {
+        await deleteImageFromR2Bucket(r2KeyToDelete);
+      }
+
+      const res = await fetch('/api/admin/images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete-slot',
+          page: slot.page,
+          slotIndex: slot.slotIndex,
+          slotId: slot.slotId,
+          r2Key: r2KeyToDelete,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to delete slot image from R2');
+
+      if (auth.currentUser) {
+        await deleteSiteImageInFirestore(slot.slotId);
+      }
+      showNotice(
+        `Deleted "${slot.label}" from Cloudflare R2 bucket and removed its CDN link from Firebase.`
+      );
+      setEditingSlot(null);
+      await fetchInventory();
+    } catch (err) {
+      showNotice(err instanceof Error ? err.message : 'Delete failed', 'error');
     } finally {
       setSlotSaving(false);
     }
@@ -670,7 +903,7 @@ export default function AdminCmsStudioPage() {
       if (auth.currentUser) {
         await deleteSiteImageInFirestore(slot.slotId);
       }
-      showNotice(`Deleted custom override and restored default for "${slot.label}".`);
+      showNotice(`Restored default R2 image for "${slot.label}".`);
       setEditingSlot(null);
       await fetchInventory();
     } catch (err) {
@@ -680,7 +913,7 @@ export default function AdminCmsStudioPage() {
     }
   };
 
-  // --- Section Wildlife Gallery Handlers (Add, Edit, Delete through Firebase Firestore) ---
+  // --- Section Wildlife Gallery Handlers (Pushes to R2 -> stores R2 CDN URL in Firebase Firestore) ---
   const openNewSectionImageModal = () => {
     const defaultPage = selectedPage === 'all' ? 'index.html' : selectedPage;
     setIsNewSectionImg(true);
@@ -694,6 +927,7 @@ export default function AdminCmsStudioPage() {
       title: '',
       caption: '',
       src: '',
+      r2Key: undefined,
       alt: '',
       order: mergedSectionImages.length + 1,
     });
@@ -718,22 +952,43 @@ export default function AdminCmsStudioPage() {
     if (!editingSectionImg) return;
     setSecImgSaving(true);
     try {
-      let finalSrc = editingSectionImg.src.trim();
+      let finalCdnUrl = editingSectionImg.src.trim();
+      let finalR2Key =
+        editingSectionImg.r2Key || extractR2KeyFromUrl(finalCdnUrl) || undefined;
+
       if (secImgUploadFile) {
-        finalSrc = await fileToFirestoreDataUrl(secImgUploadFile);
+        // Push image file from device storage directly to Cloudflare R2 bucket
+        const uploaded = await uploadImageToR2Bucket(secImgUploadFile, {
+          replaceKey:
+            !isNewSectionImg &&
+            editingSectionImg.r2Key &&
+            !editingSectionImg.r2Key.startsWith('media/')
+              ? editingSectionImg.r2Key
+              : undefined,
+          alt: editingSectionImg.alt.trim() || editingSectionImg.title.trim() || 'Safari photo',
+          title: editingSectionImg.title.trim() || secImgUploadFile.name,
+          page: editingSectionImg.page,
+        });
+        finalCdnUrl = uploaded.cdnUrl;
+        finalR2Key = uploaded.r2Key;
       }
-      if (!finalSrc) {
-        throw new Error('Please upload an image file or enter an image URL.');
+
+      if (!finalCdnUrl) {
+        throw new Error('Please choose an image from device storage to push to R2 or enter an R2 CDN URL.');
+      }
+      if (finalCdnUrl.startsWith('data:')) {
+        throw new Error('Base64 data URLs are not permitted. Upload the image file to Cloudflare R2 instead.');
       }
 
       const itemToSave: SeedSectionGalleryItem = {
         ...editingSectionImg,
         title: editingSectionImg.title.trim() || 'Safari Wildlife Photo',
         alt: editingSectionImg.alt.trim() || editingSectionImg.title.trim() || 'Safari photo',
-        src: finalSrc,
+        src: finalCdnUrl,
+        r2Key: finalR2Key,
       };
 
-      // Save to server CMS state
+      // Save R2 CDN link to server CMS state
       await fetch('/api/admin/cms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -743,13 +998,15 @@ export default function AdminCmsStudioPage() {
         }),
       });
 
-      // Save to Firebase Firestore
+      // Save ONLY R2 CDN URL & metadata to Firebase Firestore
       if (auth.currentUser) {
         await saveSectionGalleryItemInFirestore(itemToSave);
       }
 
       showNotice(
-        `${isNewSectionImg ? 'Added' : 'Updated'} section image "${itemToSave.title}" via Firebase.`
+        `${isNewSectionImg ? 'Pushed new photo to R2 & added' : 'Updated R2 photo & synced'} "${
+          itemToSave.title
+        }" via Firebase CDN link.`
       );
       setEditingSectionImg(null);
       await fetchInventory();
@@ -763,18 +1020,24 @@ export default function AdminCmsStudioPage() {
   const handleDeleteSectionImage = async (item: SeedSectionGalleryItem) => {
     setSecImgSaving(true);
     try {
+      const r2KeyToDelete = item.r2Key || extractR2KeyFromUrl(item.src);
+      if (r2KeyToDelete && !r2KeyToDelete.startsWith('media/')) {
+        await deleteImageFromR2Bucket(r2KeyToDelete);
+      }
+
       await fetch('/api/admin/cms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'delete-section-image',
           itemId: item.itemId,
+          r2Key: r2KeyToDelete,
         }),
       });
       if (auth.currentUser) {
         await deleteSectionGalleryItemInFirestore(item.itemId);
       }
-      showNotice(`Deleted section image "${item.title}" from Firebase.`);
+      showNotice(`Deleted "${item.title}" from Cloudflare R2 bucket and Firebase Firestore.`);
       setEditingSectionImg(null);
       await fetchInventory();
     } catch (err) {
@@ -911,67 +1174,295 @@ export default function AdminCmsStudioPage() {
     }
   };
 
-  // --- Global Media Library Handlers ---
-  const openAssetEditor = (asset: MediaAssetInfo) => {
-    setEditingAsset(asset);
-    setAssetUploadFile(null);
-    setAssetPreviewUrl(null);
+  // --- Direct Cloudflare R2 Bucket Manager Handlers (Add, Replace, Edit, Delete) ---
+  const openNewR2UploadModal = () => {
+    const defaultPage = selectedPage === 'all' ? 'index.html' : selectedPage;
+    setIsNewR2Upload(true);
+    setEditingR2Obj({
+      r2Key: '',
+      filename: '',
+      cdnUrl: '',
+      mimeType: 'image/jpeg',
+      sizeBytes: 0,
+      alt: '',
+      title: '',
+      page: defaultPage,
+      updatedAt: new Date().toISOString(),
+      bucketName,
+    });
+    setR2DraftKey('');
+    setR2DraftTitle('');
+    setR2DraftAlt('');
+    setR2DraftPage(defaultPage);
+    setR2UploadFile(null);
+    setR2PreviewUrl(null);
+    setR2AssignSectionGallery(false);
+    setR2AssignSlotId('');
   };
 
-  const handleAssetFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const openEditR2ObjectModal = (obj: R2BucketObject) => {
+    setIsNewR2Upload(false);
+    setEditingR2Obj(obj);
+    setR2DraftKey(obj.r2Key);
+    setR2DraftTitle(obj.title || obj.filename);
+    setR2DraftAlt(obj.alt || '');
+    setR2DraftPage(obj.page || (selectedPage === 'all' ? 'index.html' : selectedPage));
+    setR2UploadFile(null);
+    setR2PreviewUrl(null);
+    setR2AssignSectionGallery(false);
+  };
+
+  const handleR2FileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setAssetUploadFile(file);
-    setAssetPreviewUrl(URL.createObjectURL(file));
-  };
-
-  const handleSaveAsset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingAsset || !assetUploadFile) return;
-    setAssetSaving(true);
-    try {
-      const formData = new FormData();
-      formData.append('mode', 'replace-media');
-      formData.append('assetFilename', editingAsset.filename);
-      formData.append('file', assetUploadFile);
-
-      const res = await fetch('/api/admin/images', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to replace media file');
-
-      showNotice(`Replaced "${editingAsset.filename}" globally.`);
-      setEditingAsset(null);
-      await fetchInventory();
-    } catch (err) {
-      showNotice(err instanceof Error ? err.message : 'Failed to replace file', 'error');
-    } finally {
-      setAssetSaving(false);
+    setR2UploadFile(file);
+    setR2PreviewUrl(URL.createObjectURL(file));
+    if (!r2DraftTitle) {
+      const cleanName = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ');
+      setR2DraftTitle(cleanName);
+    }
+    if (!r2DraftAlt) {
+      const cleanName = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ');
+      setR2DraftAlt(cleanName);
     }
   };
 
-  const handleResetSingleAsset = async (asset: MediaAssetInfo) => {
-    setAssetSaving(true);
+  const handleSaveR2Object = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingR2Obj) return;
+    setR2Saving(true);
     try {
-      const res = await fetch('/api/admin/images', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'reset',
-          target: 'asset',
-          assetFilename: asset.filename,
-        }),
-      });
-      if (!res.ok) throw new Error('Failed to restore original file');
-      showNotice(`Restored "${asset.filename}" to original default.`);
-      setEditingAsset(null);
+      let finalR2Key = editingR2Obj.r2Key;
+      let finalCdnUrl = editingR2Obj.cdnUrl;
+
+      if (isNewR2Upload) {
+        if (!r2UploadFile) {
+          throw new Error('Please choose an image file from your device to upload to Cloudflare R2.');
+        }
+        const uploaded = await uploadImageToR2Bucket(r2UploadFile, {
+          customKey: r2DraftKey.trim() || undefined,
+          alt: r2DraftAlt.trim() || r2DraftTitle.trim() || r2UploadFile.name,
+          title: r2DraftTitle.trim() || r2UploadFile.name,
+          page: r2DraftPage,
+        });
+        finalR2Key = uploaded.r2Key;
+        finalCdnUrl = uploaded.cdnUrl;
+
+        // If a target Page Image Slot was chosen, link this newly uploaded R2 image directly to that slot
+        if (r2AssignSlotId) {
+          const targetSlot = mergedSlots.find((s) => s.slotId === r2AssignSlotId);
+          if (targetSlot) {
+            await fetch('/api/admin/images', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'update-slot-meta',
+                page: targetSlot.page,
+                slotIndex: targetSlot.slotIndex,
+                scope: targetSlot.type === 'logo' ? 'global' : 'slot',
+                altText: r2DraftAlt.trim() || targetSlot.alt || targetSlot.label,
+                externalUrl: finalCdnUrl,
+                r2Key: finalR2Key,
+                type: targetSlot.type,
+                label: r2DraftTitle.trim() || targetSlot.label,
+                sectionContext: targetSlot.sectionContext,
+              }),
+            });
+            if (auth.currentUser) {
+              await saveSiteImageInFirestore({
+                slotId: targetSlot.slotId,
+                page: targetSlot.page,
+                slotIndex: targetSlot.slotIndex,
+                type: targetSlot.type,
+                label: r2DraftTitle.trim() || targetSlot.label,
+                sectionContext: targetSlot.sectionContext,
+                src: finalCdnUrl,
+                lightboxHref: finalCdnUrl,
+                r2Key: finalR2Key,
+                alt: r2DraftAlt.trim() || targetSlot.alt || targetSlot.label,
+              });
+            }
+          }
+        }
+
+        // If checked, also add this R2 image directly to the page's Section Wildlife Gallery in Firebase via its R2 CDN link
+        if (r2AssignSectionGallery) {
+          const newSecItem: SeedSectionGalleryItem = {
+            itemId: `sec_r2_${Date.now()}`,
+            page: r2DraftPage,
+            sectionKey: 'r2_section_gallery',
+            sectionTitle: 'Featured Safari Moments',
+            title: r2DraftTitle.trim() || 'Safari Wildlife Photo',
+            caption: r2DraftAlt.trim() || '',
+            src: finalCdnUrl,
+            r2Key: finalR2Key,
+            alt: r2DraftAlt.trim() || r2DraftTitle.trim() || 'Safari photo',
+            order: mergedSectionImages.length + 1,
+          };
+          await fetch('/api/admin/cms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'save-section-image',
+              ...newSecItem,
+            }),
+          });
+          if (auth.currentUser) {
+            await saveSectionGalleryItemInFirestore(newSecItem);
+          }
+        }
+
+        showNotice(
+          `Pushed "${r2UploadFile.name}" directly to Cloudflare R2 bucket (${finalR2Key}).`
+        );
+      } else {
+        // Updating existing R2 object (either replacing binary file or updating metadata/key)
+        if (r2UploadFile) {
+          if (editingR2Obj.r2Key.startsWith('media/')) {
+            const fd = new FormData();
+            fd.append('mode', 'replace-media');
+            fd.append('assetFilename', editingR2Obj.filename);
+            fd.append('file', r2UploadFile);
+            const res = await fetch('/api/admin/images', { method: 'POST', body: fd });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to replace R2 media object');
+            finalR2Key = data.r2Key || editingR2Obj.r2Key;
+            finalCdnUrl = data.cdnUrl || editingR2Obj.cdnUrl;
+          } else {
+            const uploaded = await uploadImageToR2Bucket(r2UploadFile, {
+              customKey: r2DraftKey.trim() || editingR2Obj.r2Key,
+              replaceKey: editingR2Obj.r2Key,
+              alt: r2DraftAlt.trim(),
+              title: r2DraftTitle.trim(),
+              page: r2DraftPage,
+            });
+            finalR2Key = uploaded.r2Key;
+            finalCdnUrl = uploaded.cdnUrl;
+          }
+        } else {
+          const updatedMeta = await updateR2BucketObjectMeta({
+            r2Key: editingR2Obj.r2Key,
+            newKey:
+              r2DraftKey.trim() && r2DraftKey.trim() !== editingR2Obj.r2Key
+                ? r2DraftKey.trim()
+                : undefined,
+            alt: r2DraftAlt.trim(),
+            title: r2DraftTitle.trim(),
+            page: r2DraftPage,
+          });
+          finalR2Key = updatedMeta.r2Key;
+          finalCdnUrl = updatedMeta.cdnUrl;
+        }
+
+        // Propagate updated R2 CDN URL & alt/title to any linked Firestore records
+        if (auth.currentUser) {
+          const linkedSlots = mergedSlots.filter(
+            (s) => s.r2Key === editingR2Obj.r2Key || s.src === editingR2Obj.cdnUrl
+          );
+          for (const ls of linkedSlots) {
+            await saveSiteImageInFirestore({
+              slotId: ls.slotId,
+              page: ls.page,
+              slotIndex: ls.slotIndex,
+              type: ls.type,
+              label: r2DraftTitle.trim() || ls.label,
+              sectionContext: ls.sectionContext,
+              src: finalCdnUrl,
+              lightboxHref: finalCdnUrl,
+              r2Key: finalR2Key,
+              alt: r2DraftAlt.trim() || ls.alt,
+            });
+          }
+
+          const linkedSections = mergedSectionImages.filter(
+            (sec) => sec.r2Key === editingR2Obj.r2Key || sec.src === editingR2Obj.cdnUrl
+          );
+          for (const lsec of linkedSections) {
+            await saveSectionGalleryItemInFirestore({
+              ...lsec,
+              title: r2DraftTitle.trim() || lsec.title,
+              alt: r2DraftAlt.trim() || lsec.alt,
+              src: finalCdnUrl,
+              r2Key: finalR2Key,
+            });
+          }
+        }
+
+        showNotice(`Updated R2 bucket object "${finalR2Key}" & synced Firebase CDN links.`);
+      }
+
+      setEditingR2Obj(null);
       await fetchInventory();
     } catch (err) {
-      showNotice(err instanceof Error ? err.message : 'Restore failed', 'error');
+      showNotice(err instanceof Error ? err.message : 'R2 bucket operation failed', 'error');
     } finally {
-      setAssetSaving(false);
+      setR2Saving(false);
+    }
+  };
+
+  const handleDeleteR2Object = async (obj: R2BucketObject) => {
+    setR2Saving(true);
+    try {
+      await deleteImageFromR2Bucket(obj.r2Key);
+
+      // Also clean up any section gallery item or slot override referencing this deleted R2 object
+      const linkedSections = mergedSectionImages.filter(
+        (sec) => sec.r2Key === obj.r2Key || sec.src === obj.cdnUrl
+      );
+      for (const sec of linkedSections) {
+        await fetch('/api/admin/cms', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'delete-section-image',
+            itemId: sec.itemId,
+          }),
+        });
+        if (auth.currentUser) {
+          await deleteSectionGalleryItemInFirestore(sec.itemId);
+        }
+      }
+
+      const linkedSlots = mergedSlots.filter(
+        (s) => s.r2Key === obj.r2Key || s.src === obj.cdnUrl || s.src.startsWith(`${obj.cdnUrl}?`)
+      );
+      for (const s of linkedSlots) {
+        await fetch('/api/admin/images', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'delete-slot',
+            page: s.page,
+            slotIndex: s.slotIndex,
+            slotId: s.slotId,
+            r2Key: obj.r2Key,
+          }),
+        });
+        if (auth.currentUser) {
+          await deleteSiteImageInFirestore(s.slotId);
+        }
+      }
+
+      showNotice(`Deleted "${obj.r2Key}" from Cloudflare R2 bucket and cleaned up Firebase links.`);
+      setEditingR2Obj(null);
+      await fetchInventory();
+    } catch (err) {
+      showNotice(err instanceof Error ? err.message : 'Failed to delete from R2 bucket', 'error');
+    } finally {
+      setR2Saving(false);
+    }
+  };
+
+  const copyCdnLink = async (cdnUrl: string) => {
+    try {
+      const fullUrl =
+        cdnUrl.startsWith('http://') || cdnUrl.startsWith('https://')
+          ? cdnUrl
+          : `${window.location.origin}${cdnUrl.startsWith('/') ? '' : '/'}${cdnUrl}`;
+      await navigator.clipboard.writeText(fullUrl);
+      showNotice(`Copied R2 CDN link: ${fullUrl}`);
+    } catch {
+      showNotice(`R2 CDN URL: ${cdnUrl}`);
     }
   };
 
@@ -988,10 +1479,29 @@ export default function AdminCmsStudioPage() {
         ),
       });
       if (!res.ok) throw new Error('Reset failed');
+
+      if (confirmResetModal.scope === 'all') {
+        await fetch('/api/admin/cms', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'seed-defaults' }),
+        });
+        if (auth.currentUser) {
+          await Promise.all(
+            INITIAL_FIREBASE_SECTION_IMAGES.map((item) => saveSectionGalleryItemInFirestore(item))
+          );
+          const chunkSize = 25;
+          for (let i = 0; i < INITIAL_FIREBASE_SLOT_UPGRADES.length; i += chunkSize) {
+            const batch = INITIAL_FIREBASE_SLOT_UPGRADES.slice(i, i + chunkSize);
+            await Promise.all(batch.map((slot) => saveSiteImageInFirestore(slot)));
+          }
+        }
+      }
+
       showNotice(
         confirmResetModal.scope === 'all'
-          ? 'All 12 pages and 118 media files restored to factory defaults.'
-          : `Restored ${confirmResetModal.title} to default images.`
+          ? 'All 12 pages restored to default Cloudflare R2 CDN links.'
+          : `Restored ${confirmResetModal.title} to default R2 images.`
       );
       setConfirmResetModal(null);
       await fetchInventory();
@@ -1024,7 +1534,7 @@ export default function AdminCmsStudioPage() {
                 Nisha Safari Tours
               </div>
               <h1 className="text-base font-semibold text-[#F1F5F2] tracking-tight mt-0.5">
-                Firebase CMS Studio
+                R2 + Firebase Studio
               </h1>
             </div>
             <a
@@ -1037,17 +1547,23 @@ export default function AdminCmsStudioPage() {
             </a>
           </div>
 
-          {/* Firebase Admin Auth Box */}
+          {/* Cloudflare R2 + Firebase Admin Status Box */}
           <div className="p-3 rounded-md bg-[#151D19] border border-[#233029] space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="font-medium text-[#D5E0D9] flex items-center gap-1.5">
                 <Database className="w-3.5 h-3.5 text-[#E59819]" />
-                <span>Firebase Firestore</span>
+                <span>Cloudflare R2 + Firebase</span>
               </span>
-              <span className="text-[11px] font-mono text-[#86EFAC]">Connected</span>
+              <span className="text-[11px] font-mono text-[#86EFAC]">Active</span>
+            </div>
+            <div className="text-[11px] font-mono text-[#9CA9A1] truncate" title={bucketName}>
+              Bucket: <span className="text-[#E59819]">{bucketName}</span>
+            </div>
+            <div className="text-[10px] text-[#86EFAC]/90 leading-snug">
+              All image files stored in R2. Firestore stores only R2 CDN links.
             </div>
             {currentUser ? (
-              <div className="space-y-2">
+              <div className="space-y-2 pt-1 border-t border-[#222F28]">
                 <div className="text-[11px] text-[#9CA9A1] truncate" title={currentUser.email || ''}>
                   Admin: <span className="text-[#F1F5F2]">{currentUser.email}</span>
                 </div>
@@ -1059,7 +1575,7 @@ export default function AdminCmsStudioPage() {
                     className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-[#1F2D25] hover:bg-[#283A30] text-[#E59819] border border-[#2F4438] transition-colors"
                   >
                     <RefreshCw className={`w-3 h-3 ${syncingSeed ? 'animate-spin' : ''}`} />
-                    <span>{syncingSeed ? 'Syncing...' : 'Sync Section Photos'}</span>
+                    <span>{syncingSeed ? 'Syncing...' : 'Sync CDN Links'}</span>
                   </button>
                   <button
                     type="button"
@@ -1086,7 +1602,7 @@ export default function AdminCmsStudioPage() {
           {/* Primary Mode Switcher (4 Tabs) */}
           <div className="space-y-1">
             <div className="px-2 text-[11px] font-medium uppercase tracking-wider text-[#68756D] mb-1">
-              CMS Workspaces
+              CMS & R2 Workspaces
             </div>
             <button
               type="button"
@@ -1153,10 +1669,10 @@ export default function AdminCmsStudioPage() {
             >
               <span className="flex items-center gap-2">
                 <FolderOpen className="w-4 h-4 text-[#E59819]" />
-                <span>Global Media Files</span>
+                <span>R2 Storage Bucket</span>
               </span>
               <span className="text-xs font-mono tabular-nums text-[#68756D]">
-                {mediaAssets.length}
+                {enrichedR2Objects.length}
               </span>
             </button>
           </div>
@@ -1166,7 +1682,7 @@ export default function AdminCmsStudioPage() {
             <div className="px-2 text-[11px] font-medium uppercase tracking-wider text-[#68756D] mb-1">
               Filter by Page (12)
             </div>
-            <div className="max-h-[260px] md:max-h-[calc(100vh-450px)] overflow-y-auto space-y-0.5 pr-1">
+            <div className="max-h-[260px] md:max-h-[calc(100vh-470px)] overflow-y-auto space-y-0.5 pr-1">
               <button
                 type="button"
                 onClick={() => setSelectedPage('all')}
@@ -1233,16 +1749,16 @@ export default function AdminCmsStudioPage() {
         {/* Top Utility Header */}
         <header className="h-auto min-h-16 px-6 py-3 bg-[#111714] border-b border-[#1F2923] flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-[#68756D]">Firebase CMS</span>
+            <span className="text-[#68756D]">R2 + Firebase CMS</span>
             <span className="text-[#3B4740]">/</span>
             <span className="font-medium text-[#F1F5F2]">
               {viewMode === 'slots'
-                ? 'Page Image Slots'
+                ? 'Page Image Slots (R2 CDN)'
                 : viewMode === 'section-images'
-                ? 'Section Wildlife Galleries'
+                ? 'Section Wildlife Galleries (R2 CDN)'
                 : viewMode === 'texts'
                 ? 'Site Text Editor'
-                : 'Global Media Files'}
+                : `Cloudflare R2 Bucket (${bucketName})`}
             </span>
             <span className="text-[#3B4740]">/</span>
             <span className="text-[#E59819] font-medium">
@@ -1262,8 +1778,10 @@ export default function AdminCmsStudioPage() {
                   viewMode === 'texts'
                     ? 'Search any heading, paragraph, button...'
                     : viewMode === 'section-images'
-                    ? 'Search section photos, captions...'
-                    : 'Search section, alt text, filename...'
+                    ? 'Search section photos, R2 keys...'
+                    : viewMode === 'library'
+                    ? 'Search R2 key, filename, CDN link...'
+                    : 'Search section, alt text, R2 key...'
                 }
                 className="w-full bg-[#0B0F0D] border border-[#243029] focus:border-[#E59819] rounded-md pl-9 pr-3 py-1.5 text-xs text-[#F1F5F2] placeholder-[#68756D] focus:outline-none transition-colors"
               />
@@ -1276,7 +1794,18 @@ export default function AdminCmsStudioPage() {
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-[#E59819] hover:bg-[#F5A623] text-[#0B0F0D] transition-colors whitespace-nowrap shrink-0"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Add Section Image</span>
+                <span>Add Section Image (R2)</span>
+              </button>
+            )}
+
+            {viewMode !== 'texts' && (
+              <button
+                type="button"
+                onClick={openNewR2UploadModal}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-[#182820] hover:bg-[#22382D] text-[#86EFAC] border border-[#2B4739] transition-colors whitespace-nowrap shrink-0"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>Upload Image to R2 Bucket</span>
               </button>
             )}
 
@@ -1295,7 +1824,7 @@ export default function AdminCmsStudioPage() {
               type="button"
               onClick={handleManualRefresh}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-[#1A241E] hover:bg-[#222F28] text-[#D5E0D9] border border-[#2A3830] transition-colors whitespace-nowrap shrink-0"
-              title="Refresh inventory"
+              title="Refresh R2 & Firebase inventory"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
               <span>Refresh</span>
@@ -1358,11 +1887,11 @@ export default function AdminCmsStudioPage() {
             </div>
           ) : viewMode === 'section-images' ? (
             <div className="text-xs text-[#9CA9A1]">
-              Curated wildlife & safari images injected into every page section via Firebase Firestore. Add, edit, or delete photos for any section.
+              Uploaded section photos are pushed directly to the Cloudflare R2 bucket and accessed through Firebase Firestore via R2 CDN links.
             </div>
           ) : (
             <div className="text-xs text-[#9CA9A1]">
-              Replacing a file in the Global Media Library updates every page that references that filename.
+              Direct Cloudflare R2 Bucket Manager ({bucketName}): Add new images from device storage, replace/edit existing R2 objects, copy CDN links, or delete from R2.
             </div>
           )}
 
@@ -1373,7 +1902,7 @@ export default function AdminCmsStudioPage() {
               ? `Showing ${filteredSectionImages.length} of ${mergedSectionImages.length} section photos`
               : viewMode === 'texts'
               ? `Showing ${filteredTexts.length} of ${mergedTexts.length} text elements`
-              : `Showing ${filteredAssets.length} of ${mediaAssets.length} media files`}
+              : `Showing ${filteredR2Objects.length} of ${enrichedR2Objects.length} R2 bucket objects`}
           </div>
         </div>
 
@@ -1436,23 +1965,46 @@ export default function AdminCmsStudioPage() {
                         onClick={() => openSlotEditor(slot)}
                         className="relative h-44 bg-[#090D0B] border-b border-[#1A231E] overflow-hidden cursor-pointer flex items-center justify-center"
                       >
-                        <img
-                          src={resolveImageUrl(slot.src)}
-                          alt={slot.alt || slot.label}
-                          className={`w-full h-full transition-transform duration-200 group-hover:scale-[1.02] ${
-                            slot.type === 'logo' ? 'object-contain p-6' : 'object-cover'
-                          }`}
-                          loading="lazy"
-                        />
+                        {slot.isDeleted || !slot.src ? (
+                          <div className="flex flex-col items-center justify-center text-center p-4 space-y-1.5">
+                            <Trash2 className="w-6 h-6 text-[#F87171]" />
+                            <span className="text-xs font-semibold text-[#FCA5A5]">
+                              Deleted from R2 Bucket
+                            </span>
+                            <span className="text-[11px] text-[#9CA9A1]">
+                              Click to upload a new image from device to R2
+                            </span>
+                          </div>
+                        ) : (
+                          <img
+                            src={resolveImageUrl(slot.src)}
+                            alt={slot.alt || slot.label}
+                            className={`w-full h-full transition-transform duration-200 group-hover:scale-[1.02] ${
+                              slot.type === 'logo' ? 'object-contain p-6' : 'object-cover'
+                            }`}
+                            loading="lazy"
+                          />
+                        )}
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                           <span className="inline-flex items-center gap-1.5 bg-[#E59819] text-[#0B0F0D] font-semibold text-xs px-3 py-1.5 rounded-md shadow-md">
                             <Upload className="w-3.5 h-3.5" />
-                            <span>Change via Firebase</span>
+                            <span>{slot.isDeleted ? 'Upload New to R2' : 'Upload to R2 & Link'}</span>
                           </span>
                         </div>
                         <div className="absolute top-2.5 left-2.5 bg-[#0B0F0D]/85 backdrop-blur-xs border border-[#26332B] px-2 py-0.5 rounded text-[11px] font-mono tabular-nums text-[#D5E0D9]">
                           #{slot.slotIndex + 1} · {getSlotTypeLabel(slot.type)}
                         </div>
+                        {slot.isDeleted ? (
+                          <div className="absolute bottom-2 left-2 bg-[#2A1616]/90 border border-[#5C2424] px-2 py-0.5 rounded text-[10px] font-mono text-[#FCA5A5]">
+                            Deleted from R2
+                          </div>
+                        ) : (
+                          slot.r2Key && (
+                            <div className="absolute bottom-2 left-2 bg-[#13261C]/90 border border-[#234734] px-2 py-0.5 rounded text-[10px] font-mono text-[#86EFAC] truncate max-w-[90%]">
+                              R2: {slot.r2Key}
+                            </div>
+                          )
+                        )}
                       </div>
 
                       <div className="p-4 space-y-1.5">
@@ -1473,11 +2025,9 @@ export default function AdminCmsStudioPage() {
 
                         <div
                           className="text-xs font-mono text-[#68756D] truncate"
-                          title={slot.src}
+                          title={slot.src || 'Deleted from R2'}
                         >
-                          {slot.src.startsWith('data:')
-                            ? 'Firebase Transferred Data Image'
-                            : slot.assetFilename || slot.src}
+                          {slot.isDeleted ? 'Deleted (Hidden on Live Page)' : slot.src}
                         </div>
                       </div>
                     </div>
@@ -1489,14 +2039,24 @@ export default function AdminCmsStudioPage() {
                         className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#1B2620] hover:bg-[#E59819] text-[#F1F5F2] hover:text-[#0B0F0D] border border-[#2A3A31] hover:border-[#E59819] font-medium text-xs py-2 px-3 rounded-md transition-colors whitespace-nowrap shrink-0"
                       >
                         <Upload className="w-3.5 h-3.5" />
-                        <span>Replace / Transfer</span>
+                        <span>{slot.isDeleted ? 'Add Image to R2' : 'Update via R2'}</span>
                       </button>
-                      {slot.isModified && (
+                      {(slot.isModified || slot.isDeleted) && (
                         <button
                           type="button"
                           onClick={() => handleResetSingleSlot(slot)}
+                          className="p-2 rounded-md bg-[#161F1A] hover:bg-[#222F28] text-[#9CA9A1] hover:text-[#F1F5F2] border border-[#24322A] transition-colors"
+                          title="Restore default R2 image"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      {!slot.isDeleted && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteSingleSlot(slot)}
                           className="p-2 rounded-md bg-[#161F1A] hover:bg-[#2A1616] text-[#9CA9A1] hover:text-[#FCA5A5] border border-[#24322A] transition-colors"
-                          title="Delete override & restore default"
+                          title="Delete image from R2 bucket & hide on page"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -1531,12 +2091,17 @@ export default function AdminCmsStudioPage() {
                           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <span className="inline-flex items-center gap-1.5 bg-[#E59819] text-[#0B0F0D] font-semibold text-xs px-3 py-1.5 rounded-md shadow-md">
                               <Edit3 className="w-3.5 h-3.5" />
-                              <span>Edit Section Photo</span>
+                              <span>Edit / Replace in R2</span>
                             </span>
                           </div>
                           <div className="absolute top-2.5 left-2.5 bg-[#0B0F0D]/85 backdrop-blur-xs border border-[#26332B] px-2 py-0.5 rounded text-[11px] font-mono text-[#E59819]">
                             {pMeta ? pMeta.title : item.page}
                           </div>
+                          {item.r2Key && (
+                            <div className="absolute bottom-2 left-2 bg-[#13261C]/90 border border-[#234734] px-2 py-0.5 rounded text-[10px] font-mono text-[#86EFAC] truncate max-w-[90%]">
+                              R2: {item.r2Key}
+                            </div>
+                          )}
                         </div>
 
                         <div className="p-4 space-y-1.5">
@@ -1549,6 +2114,9 @@ export default function AdminCmsStudioPage() {
                           <p className="text-xs text-[#9CA9A1] line-clamp-2 leading-relaxed">
                             {item.caption}
                           </p>
+                          <div className="text-[11px] font-mono text-[#68756D] truncate" title={item.src}>
+                            CDN: {item.src}
+                          </div>
                         </div>
                       </div>
 
@@ -1559,13 +2127,13 @@ export default function AdminCmsStudioPage() {
                           className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#1B2620] hover:bg-[#E59819] text-[#F1F5F2] hover:text-[#0B0F0D] border border-[#2A3A31] hover:border-[#E59819] font-medium text-xs py-2 px-3 rounded-md transition-colors"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
-                          <span>Edit Photo</span>
+                          <span>Edit / R2 Upload</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDeleteSectionImage(item)}
                           className="p-2 rounded-md bg-[#161F1A] hover:bg-[#2A1616] text-[#9CA9A1] hover:text-[#FCA5A5] border border-[#24322A] transition-colors"
-                          title="Delete section photo from Firebase"
+                          title="Delete section photo from R2 & Firebase"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -1656,82 +2224,118 @@ export default function AdminCmsStudioPage() {
               )}
             </div>
           ) : (
-            /* Global Media Library Grid */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {filteredAssets.map((asset) => (
-                <article
-                  key={asset.filename}
-                  className="bg-[#121915] border border-[#1F2923] hover:border-[#314238] rounded-lg overflow-hidden flex flex-col justify-between transition-colors group"
-                >
-                  <div>
-                    <div
-                      onClick={() => openAssetEditor(asset)}
-                      className="relative h-44 bg-[#090D0B] border-b border-[#1A231E] overflow-hidden cursor-pointer flex items-center justify-center"
+            /* Cloudflare R2 Storage Bucket Manager Grid */
+            <div className="space-y-4">
+              {filteredR2Objects.length === 0 ? (
+                <div className="bg-[#121915] border border-[#1F2923] rounded-lg p-12 text-center max-w-md mx-auto my-8 space-y-3">
+                  <FolderOpen className="w-8 h-8 text-[#E59819] mx-auto" />
+                  <h2 className="text-sm font-semibold text-[#F1F5F2]">No matching R2 bucket objects</h2>
+                  <p className="text-xs text-[#9CA9A1]">
+                    Upload an image from your device to push it directly to the Cloudflare R2 bucket.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={openNewR2UploadModal}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md text-xs font-semibold bg-[#E59819] hover:bg-[#F5A623] text-[#0B0F0D]"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Upload Image to R2 Bucket</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                  {filteredR2Objects.map((obj) => (
+                    <article
+                      key={obj.r2Key}
+                      className="bg-[#121915] border border-[#1F2923] hover:border-[#314238] rounded-lg overflow-hidden flex flex-col justify-between transition-colors group"
                     >
-                      <img
-                        src={resolveImageUrl(asset.url)}
-                        alt={asset.filename}
-                        className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <span className="inline-flex items-center gap-1.5 bg-[#E59819] text-[#0B0F0D] font-semibold text-xs px-3 py-1.5 rounded-md shadow-md">
-                          <Upload className="w-3.5 h-3.5" />
-                          <span>Replace File Globally</span>
-                        </span>
+                      <div>
+                        <div
+                          onClick={() => openEditR2ObjectModal(obj)}
+                          className="relative h-44 bg-[#090D0B] border-b border-[#1A231E] overflow-hidden cursor-pointer flex items-center justify-center"
+                        >
+                          <img
+                            src={resolveImageUrl(obj.cdnUrl)}
+                            alt={obj.alt || obj.filename}
+                            className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+                            loading="lazy"
+                          />
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <span className="inline-flex items-center gap-1.5 bg-[#E59819] text-[#0B0F0D] font-semibold text-xs px-3 py-1.5 rounded-md shadow-md">
+                              <Edit3 className="w-3.5 h-3.5" />
+                              <span>Edit / Replace in R2</span>
+                            </span>
+                          </div>
+                          <div className="absolute top-2.5 left-2.5 bg-[#0B0F0D]/85 backdrop-blur-xs border border-[#26332B] px-2 py-0.5 rounded text-[10px] font-mono text-[#86EFAC] truncate max-w-[85%]">
+                            R2: {obj.r2Key}
+                          </div>
+                        </div>
+
+                        <div className="p-4 space-y-1.5">
+                          <h3
+                            className="text-sm font-medium text-[#F1F5F2] truncate"
+                            title={obj.title || obj.filename}
+                          >
+                            {obj.title || obj.filename}
+                          </h3>
+
+                          <div className="text-xs text-[#9CA9A1] font-mono tabular-nums">
+                            {obj.mimeType.replace('image/', '').toUpperCase()} ·{' '}
+                            {formatBytes(obj.sizeBytes)} · Used {obj.usageCount}x
+                          </div>
+
+                          <div
+                            className="text-[11px] font-mono text-[#E59819] truncate"
+                            title={obj.cdnUrl}
+                          >
+                            CDN: {obj.cdnUrl}
+                          </div>
+
+                          <div className="text-[11px] text-[#68756D] truncate">
+                            Pages:{' '}
+                            {obj.usedInPages.length > 0
+                              ? obj.usedInPages.join(', ')
+                              : obj.page || 'R2 Bucket Object'}
+                          </div>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="p-4 space-y-1.5">
-                      <h3
-                        className="text-sm font-mono font-medium text-[#F1F5F2] truncate"
-                        title={asset.filename}
-                      >
-                        {asset.filename}
-                      </h3>
-
-                      <div className="text-xs text-[#9CA9A1] font-mono tabular-nums">
-                        {asset.mimeType.replace('image/', '').toUpperCase()} ·{' '}
-                        {formatBytes(asset.sizeBytes)} · Used {asset.usageCount}x
+                      <div className="px-4 pb-4 pt-1 flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openEditR2ObjectModal(obj)}
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#1B2620] hover:bg-[#E59819] text-[#F1F5F2] hover:text-[#0B0F0D] border border-[#2A3A31] hover:border-[#E59819] font-medium text-xs py-2 px-2.5 rounded-md transition-colors whitespace-nowrap"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                          <span>Edit / Replace</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => copyCdnLink(obj.cdnUrl)}
+                          className="p-2 rounded-md bg-[#161F1A] hover:bg-[#222F28] text-[#9CA9A1] hover:text-[#F1F5F2] border border-[#24322A] transition-colors"
+                          title="Copy R2 CDN URL"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteR2Object(obj)}
+                          className="p-2 rounded-md bg-[#161F1A] hover:bg-[#2A1616] text-[#9CA9A1] hover:text-[#FCA5A5] border border-[#24322A] transition-colors"
+                          title="Delete object from R2 bucket"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
-
-                      <div className="text-[11px] text-[#68756D] truncate">
-                        Pages:{' '}
-                        {asset.usedInPages.length > 0
-                          ? asset.usedInPages.join(', ')
-                          : 'Direct media path'}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="px-4 pb-4 pt-1 flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => openAssetEditor(asset)}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#1B2620] hover:bg-[#E59819] text-[#F1F5F2] hover:text-[#0B0F0D] border border-[#2A3A31] hover:border-[#E59819] font-medium text-xs py-2 px-3 rounded-md transition-colors whitespace-nowrap shrink-0"
-                    >
-                      <Upload className="w-3.5 h-3.5" />
-                      <span>Replace File</span>
-                    </button>
-                    {asset.hasDefaultBackup && (
-                      <button
-                        type="button"
-                        onClick={() => handleResetSingleAsset(asset)}
-                        className="p-2 rounded-md bg-[#161F1A] hover:bg-[#222F28] text-[#9CA9A1] hover:text-[#F1F5F2] border border-[#24322A] transition-colors"
-                        title="Restore original file"
-                      >
-                        <RotateCcw className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </article>
-              ))}
+                    </article>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </main>
       </div>
 
-      {/* Modal 1: Edit Page Slot Image */}
+      {/* Modal 1: Edit Page Slot Image (Pushes to R2 -> saves R2 CDN link in Firebase Firestore) */}
       {editingSlot && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-[#121915] border border-[#26352D] rounded-lg max-w-xl w-full overflow-hidden shadow-2xl">
@@ -1757,7 +2361,7 @@ export default function AdminCmsStudioPage() {
             <form onSubmit={handleSaveSlot} className="p-6 space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <div className="text-xs font-medium text-[#9CA9A1]">Current Image</div>
+                  <div className="text-xs font-medium text-[#9CA9A1]">Current R2 / CDN Image</div>
                   <div className="h-40 rounded-md bg-[#090D0B] border border-[#1F2923] overflow-hidden flex items-center justify-center">
                     <img
                       src={resolveImageUrl(editingSlot.src)}
@@ -1768,7 +2372,9 @@ export default function AdminCmsStudioPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <div className="text-xs font-medium text-[#9CA9A1]">New Upload / Transfer</div>
+                  <div className="text-xs font-medium text-[#9CA9A1]">
+                    Choose Device Image (Push to R2)
+                  </div>
                   <div
                     onClick={() => fileInputRef.current?.click()}
                     className="h-40 rounded-md bg-[#0B0F0D] border border-dashed border-[#34463C] hover:border-[#E59819] overflow-hidden flex flex-col items-center justify-center cursor-pointer transition-colors p-3 text-center"
@@ -1776,23 +2382,23 @@ export default function AdminCmsStudioPage() {
                     {slotPreviewUrl ? (
                       <img
                         src={slotPreviewUrl}
-                        alt="New upload preview"
+                        alt="New R2 upload preview"
                         className="max-h-full max-w-full object-contain"
                       />
                     ) : slotExternalUrl.trim() ? (
                       <img
-                        src={slotExternalUrl.trim()}
-                        alt="External URL preview"
+                        src={resolveImageUrl(slotExternalUrl.trim())}
+                        alt="CDN URL preview"
                         className="max-h-full max-w-full object-contain"
                       />
                     ) : (
                       <>
                         <Upload className="w-6 h-6 text-[#E59819] mb-2" />
                         <span className="text-xs font-medium text-[#F1F5F2]">
-                          Click to upload & transfer via Firebase
+                          Click to choose image from device
                         </span>
-                        <span className="text-[11px] text-[#68756D] mt-1">
-                          JPG, PNG, WebP, GIF, or SVG
+                        <span className="text-[11px] text-[#86EFAC] mt-1">
+                          Pushes directly to R2 & saves CDN link in Firebase
                         </span>
                       </>
                     )}
@@ -1809,7 +2415,35 @@ export default function AdminCmsStudioPage() {
 
               <div className="space-y-1.5">
                 <label className="block text-xs font-medium text-[#9CA9A1]">
-                  Or Paste Direct Image URL (optional)
+                  Or Select an Existing Image from Cloudflare R2 Bucket
+                </label>
+                <select
+                  value={slotSelectedR2Key}
+                  onChange={(e) => {
+                    const key = e.target.value;
+                    setSlotSelectedR2Key(key);
+                    const found = r2Objects.find((o) => o.r2Key === key);
+                    if (found) {
+                      setSlotExternalUrl(found.cdnUrl);
+                      setSlotUploadFile(null);
+                      setSlotPreviewUrl(null);
+                      if (!slotAltText && found.alt) setSlotAltText(found.alt);
+                    }
+                  }}
+                  className="w-full bg-[#0B0F0D] border border-[#26352D] focus:border-[#E59819] rounded-md px-3 py-2 text-xs text-[#F1F5F2]"
+                >
+                  <option value="">-- Choose from R2 Storage Bucket ({r2Objects.length} items) --</option>
+                  {r2Objects.map((o) => (
+                    <option key={o.r2Key} value={o.r2Key}>
+                      {o.r2Key} ({formatBytes(o.sizeBytes)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-[#9CA9A1]">
+                  R2 CDN URL / Direct Image Link (Saved to Firebase Firestore)
                 </label>
                 <input
                   type="text"
@@ -1821,8 +2455,8 @@ export default function AdminCmsStudioPage() {
                       setSlotPreviewUrl(null);
                     }
                   }}
-                  placeholder="https://images.unsplash.com/... (direct web image link)"
-                  className="w-full bg-[#0B0F0D] border border-[#26352D] focus:border-[#E59819] rounded-md px-3 py-2 text-xs text-[#F1F5F2] placeholder-[#68756D] focus:outline-none"
+                  placeholder="/api/r2/file/... or https://..."
+                  className="w-full bg-[#0B0F0D] border border-[#26352D] focus:border-[#E59819] rounded-md px-3 py-2 text-xs text-[#F1F5F2] placeholder-[#68756D] focus:outline-none font-mono"
                 />
               </div>
 
@@ -1841,16 +2475,29 @@ export default function AdminCmsStudioPage() {
                 </div>
               )}
 
-              <div className="pt-2 border-t border-[#222F28] flex items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={() => handleResetSingleSlot(editingSlot)}
-                  disabled={slotSaving}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium text-[#9CA9A1] hover:text-[#F1F5F2] bg-[#18221D] hover:bg-[#222F28] border border-[#26352D] transition-colors"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Reset to Default</span>
-                </button>
+              <div className="pt-2 border-t border-[#222F28] flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  {!editingSlot.isDeleted && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteSingleSlot(editingSlot)}
+                      disabled={slotSaving}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium text-[#FCA5A5] bg-[#2A1616] hover:bg-[#3B1D1D] border border-[#4C2222] transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete from R2</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleResetSingleSlot(editingSlot)}
+                    disabled={slotSaving}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium text-[#9CA9A1] hover:text-[#F1F5F2] bg-[#18221D] hover:bg-[#222F28] border border-[#26352D] transition-colors"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Restore Default</span>
+                  </button>
+                </div>
 
                 <div className="flex items-center gap-2.5">
                   <button
@@ -1866,7 +2513,7 @@ export default function AdminCmsStudioPage() {
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-semibold bg-[#E59819] hover:bg-[#F5A623] text-[#0B0F0D] transition-colors disabled:opacity-50"
                   >
                     <Check className="w-4 h-4" />
-                    <span>{slotSaving ? 'Transferring...' : 'Save via Firebase'}</span>
+                    <span>{slotSaving ? 'Uploading to R2...' : 'Push to R2 & Save CDN Link'}</span>
                   </button>
                 </div>
               </div>
@@ -1875,17 +2522,17 @@ export default function AdminCmsStudioPage() {
         </div>
       )}
 
-      {/* Modal 2: Add / Edit Section Wildlife Photo */}
+      {/* Modal 2: Add / Edit Section Wildlife Photo (Pushes to R2 -> saves R2 CDN URL in Firebase Firestore) */}
       {editingSectionImg && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-[#121915] border border-[#26352D] rounded-lg max-w-xl w-full overflow-hidden shadow-2xl">
             <div className="px-6 py-4 bg-[#161F1A] border-b border-[#222F28] flex items-center justify-between">
               <div>
                 <div className="text-xs text-[#E59819] font-medium">
-                  Firebase Section Gallery Photo
+                  Cloudflare R2 + Firebase Section Gallery Photo
                 </div>
                 <h2 className="text-base font-semibold text-[#F1F5F2] mt-0.5">
-                  {isNewSectionImg ? 'Add New Photo to Page Section' : 'Edit Section Photo'}
+                  {isNewSectionImg ? 'Add New Photo to R2 & Page Section' : 'Edit R2 Section Photo'}
                 </h2>
               </div>
               <button
@@ -1971,11 +2618,11 @@ export default function AdminCmsStudioPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-[#9CA9A1] mb-1">
-                    Upload Image File (Transferred via Firestore)
+                    Choose Device Image (Pushed Directly to R2)
                   </label>
                   <div
                     onClick={() => secFileInputRef.current?.click()}
-                    className="h-32 rounded-md bg-[#0B0F0D] border border-dashed border-[#34463C] hover:border-[#E59819] overflow-hidden flex flex-col items-center justify-center cursor-pointer p-2 text-center"
+                    className="h-36 rounded-md bg-[#0B0F0D] border border-dashed border-[#34463C] hover:border-[#E59819] overflow-hidden flex flex-col items-center justify-center cursor-pointer p-2 text-center"
                   >
                     {secImgPreviewUrl || editingSectionImg.src ? (
                       <img
@@ -1986,7 +2633,10 @@ export default function AdminCmsStudioPage() {
                     ) : (
                       <>
                         <Upload className="w-5 h-5 text-[#E59819] mb-1.5" />
-                        <span className="text-xs text-[#F1F5F2]">Click to select image</span>
+                        <span className="text-xs text-[#F1F5F2]">Click to select image from device</span>
+                        <span className="text-[10px] text-[#86EFAC] mt-1">
+                          Uploads to R2 & stores CDN link in Firebase
+                        </span>
                       </>
                     )}
                   </div>
@@ -2002,7 +2652,37 @@ export default function AdminCmsStudioPage() {
                 <div className="space-y-3">
                   <div>
                     <label className="block text-xs font-medium text-[#9CA9A1] mb-1">
-                      Or Image URL
+                      Or Pick Existing R2 Object
+                    </label>
+                    <select
+                      value={editingSectionImg.r2Key || ''}
+                      onChange={(e) => {
+                        const key = e.target.value;
+                        const found = r2Objects.find((o) => o.r2Key === key);
+                        if (found) {
+                          setEditingSectionImg({
+                            ...editingSectionImg,
+                            src: found.cdnUrl,
+                            r2Key: found.r2Key,
+                            alt: editingSectionImg.alt || found.alt,
+                          });
+                          setSecImgUploadFile(null);
+                          setSecImgPreviewUrl(null);
+                        }
+                      }}
+                      className="w-full bg-[#0B0F0D] border border-[#26352D] focus:border-[#E59819] rounded-md px-3 py-1.5 text-xs text-[#F1F5F2]"
+                    >
+                      <option value="">-- Select from R2 Bucket --</option>
+                      {r2Objects.map((o) => (
+                        <option key={o.r2Key} value={o.r2Key}>
+                          {o.r2Key}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-[#9CA9A1] mb-1">
+                      R2 CDN URL
                     </label>
                     <input
                       type="text"
@@ -2012,8 +2692,8 @@ export default function AdminCmsStudioPage() {
                         setSecImgUploadFile(null);
                         setSecImgPreviewUrl(null);
                       }}
-                      placeholder="https://images.unsplash.com/..."
-                      className="w-full bg-[#0B0F0D] border border-[#26352D] focus:border-[#E59819] rounded-md px-3 py-2 text-xs text-[#F1F5F2]"
+                      placeholder="/api/r2/file/... or https://..."
+                      className="w-full bg-[#0B0F0D] border border-[#26352D] focus:border-[#E59819] rounded-md px-3 py-1.5 text-xs text-[#F1F5F2] font-mono"
                     />
                   </div>
                   <div>
@@ -2027,7 +2707,7 @@ export default function AdminCmsStudioPage() {
                         setEditingSectionImg({ ...editingSectionImg, alt: e.target.value })
                       }
                       placeholder="Accessible image description"
-                      className="w-full bg-[#0B0F0D] border border-[#26352D] focus:border-[#E59819] rounded-md px-3 py-2 text-xs text-[#F1F5F2]"
+                      className="w-full bg-[#0B0F0D] border border-[#26352D] focus:border-[#E59819] rounded-md px-3 py-1.5 text-xs text-[#F1F5F2]"
                     />
                   </div>
                 </div>
@@ -2042,7 +2722,7 @@ export default function AdminCmsStudioPage() {
                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium text-[#FCA5A5] bg-[#2A1616] hover:bg-[#3B1D1D] border border-[#4C2222]"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    <span>Delete Photo</span>
+                    <span>Delete from R2 & Firebase</span>
                   </button>
                 ) : (
                   <div />
@@ -2062,7 +2742,7 @@ export default function AdminCmsStudioPage() {
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-semibold bg-[#E59819] hover:bg-[#F5A623] text-[#0B0F0D] transition-colors disabled:opacity-50"
                   >
                     <Check className="w-4 h-4" />
-                    <span>{secImgSaving ? 'Saving...' : 'Save to Firebase'}</span>
+                    <span>{secImgSaving ? 'Uploading to R2...' : 'Push to R2 & Save CDN Link'}</span>
                   </button>
                 </div>
               </div>
@@ -2203,83 +2883,211 @@ export default function AdminCmsStudioPage() {
         </div>
       )}
 
-      {/* Modal 4: Global Media Asset Replacement */}
-      {editingAsset && (
+      {/* Modal 4: Cloudflare R2 Bucket Direct Upload / Edit / Replace / Delete Modal */}
+      {editingR2Obj && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-[#121915] border border-[#26352D] rounded-lg max-w-lg w-full overflow-hidden shadow-2xl">
+          <div className="bg-[#121915] border border-[#26352D] rounded-lg max-w-xl w-full overflow-hidden shadow-2xl">
             <div className="px-6 py-4 bg-[#161F1A] border-b border-[#222F28] flex items-center justify-between">
               <div>
-                <div className="text-xs text-[#E59819] font-medium">Global Media Asset</div>
+                <div className="text-xs text-[#E59819] font-medium">
+                  Cloudflare R2 Bucket ({bucketName})
+                </div>
                 <h2 className="text-base font-mono font-semibold text-[#F1F5F2] mt-0.5">
-                  {editingAsset.filename}
+                  {isNewR2Upload
+                    ? 'Upload New Image from Device to R2 Bucket'
+                    : editingR2Obj.r2Key}
                 </h2>
               </div>
               <button
                 type="button"
-                onClick={() => setEditingAsset(null)}
+                onClick={() => setEditingR2Obj(null)}
                 className="text-[#9CA9A1] hover:text-[#F1F5F2] p-1 rounded-md"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveAsset} className="p-6 space-y-5">
+            <form onSubmit={handleSaveR2Object} className="p-6 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <div className="text-xs font-medium text-[#9CA9A1]">Current File</div>
-                  <div className="h-40 rounded-md bg-[#090D0B] border border-[#1F2923] overflow-hidden flex items-center justify-center">
-                    <img
-                      src={resolveImageUrl(editingAsset.url)}
-                      alt={editingAsset.filename}
-                      className="max-h-full max-w-full object-contain"
-                    />
+                {!isNewR2Upload && (
+                  <div className="space-y-1.5">
+                    <div className="text-xs font-medium text-[#9CA9A1]">Current R2 Object</div>
+                    <div className="h-40 rounded-md bg-[#090D0B] border border-[#1F2923] overflow-hidden flex items-center justify-center">
+                      <img
+                        src={resolveImageUrl(editingR2Obj.cdnUrl)}
+                        alt={editingR2Obj.alt || editingR2Obj.filename}
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div className="space-y-1.5">
-                  <div className="text-xs font-medium text-[#9CA9A1]">Replacement File</div>
+                <div className={isNewR2Upload ? 'sm:col-span-2 space-y-1.5' : 'space-y-1.5'}>
+                  <div className="text-xs font-medium text-[#9CA9A1]">
+                    {isNewR2Upload
+                      ? 'Choose Image File from Device Storage'
+                      : 'Upload Replacement File to R2 (optional)'}
+                  </div>
                   <div
-                    onClick={() => assetFileInputRef.current?.click()}
+                    onClick={() => r2FileInputRef.current?.click()}
                     className="h-40 rounded-md bg-[#0B0F0D] border border-dashed border-[#34463C] hover:border-[#E59819] overflow-hidden flex flex-col items-center justify-center cursor-pointer transition-colors p-3 text-center"
                   >
-                    {assetPreviewUrl ? (
+                    {r2PreviewUrl ? (
                       <img
-                        src={assetPreviewUrl}
-                        alt="New file preview"
+                        src={r2PreviewUrl}
+                        alt="New R2 file preview"
                         className="max-h-full max-w-full object-contain"
                       />
                     ) : (
                       <>
                         <Upload className="w-6 h-6 text-[#E59819] mb-2" />
                         <span className="text-xs font-medium text-[#F1F5F2]">
-                          Select replacement image
+                          Click to select image from device storage
                         </span>
-                        <span className="text-[11px] text-[#68756D] mt-1">
-                          Updates all {editingAsset.usageCount} occurrences
+                        <span className="text-[11px] text-[#86EFAC] mt-1">
+                          Pushed directly into Cloudflare R2 bucket ({bucketName})
                         </span>
                       </>
                     )}
                   </div>
                   <input
-                    ref={assetFileInputRef}
+                    ref={r2FileInputRef}
                     type="file"
                     accept="image/*"
-                    onChange={handleAssetFileChange}
+                    onChange={handleR2FileChange}
                     className="hidden"
                   />
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-[#222F28] flex items-center justify-between gap-3">
-                {editingAsset.hasDefaultBackup ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-[#9CA9A1] mb-1">
+                    R2 Object Key (optional custom path)
+                  </label>
+                  <input
+                    type="text"
+                    value={r2DraftKey}
+                    onChange={(e) => setR2DraftKey(e.target.value)}
+                    placeholder="e.g. yala-safari/leopard-hero.jpg"
+                    className="w-full bg-[#0B0F0D] border border-[#26352D] focus:border-[#E59819] rounded-md px-3 py-2 text-xs text-[#F1F5F2] font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-[#9CA9A1] mb-1">
+                    Associated Website Page
+                  </label>
+                  <select
+                    value={r2DraftPage}
+                    onChange={(e) => setR2DraftPage(e.target.value)}
+                    className="w-full bg-[#0B0F0D] border border-[#26352D] focus:border-[#E59819] rounded-md px-3 py-2 text-xs text-[#F1F5F2]"
+                  >
+                    {pages.map((p) => (
+                      <option key={p.file} value={p.file}>
+                        {p.title} ({p.file})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-[#9CA9A1] mb-1">
+                    Image Title / Label
+                  </label>
+                  <input
+                    type="text"
+                    value={r2DraftTitle}
+                    onChange={(e) => setR2DraftTitle(e.target.value)}
+                    placeholder="Safari Wildlife Photo"
+                    className="w-full bg-[#0B0F0D] border border-[#26352D] focus:border-[#E59819] rounded-md px-3 py-2 text-xs text-[#F1F5F2]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-[#9CA9A1] mb-1">
+                    Alt Text (SEO & Caption)
+                  </label>
+                  <input
+                    type="text"
+                    value={r2DraftAlt}
+                    onChange={(e) => setR2DraftAlt(e.target.value)}
+                    placeholder="Describe this image..."
+                    className="w-full bg-[#0B0F0D] border border-[#26352D] focus:border-[#E59819] rounded-md px-3 py-2 text-xs text-[#F1F5F2]"
+                  />
+                </div>
+              </div>
+
+              {!isNewR2Upload && editingR2Obj.cdnUrl && (
+                <div className="p-3 rounded-md bg-[#0E1411] border border-[#1F2923] flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="text-[11px] font-medium text-[#68756D] flex items-center gap-1">
+                      <Link2 className="w-3 h-3 text-[#E59819]" />
+                      <span>R2 Bucket CDN URL (stored in Firebase Firestore)</span>
+                    </div>
+                    <div className="text-xs font-mono text-[#86EFAC] truncate mt-0.5">
+                      {editingR2Obj.cdnUrl}
+                    </div>
+                  </div>
                   <button
                     type="button"
-                    onClick={() => handleResetSingleAsset(editingAsset)}
-                    disabled={assetSaving}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium text-[#9CA9A1] hover:text-[#F1F5F2] bg-[#18221D] hover:bg-[#222F28] border border-[#26352D]"
+                    onClick={() => copyCdnLink(editingR2Obj.cdnUrl)}
+                    className="px-2.5 py-1.5 rounded bg-[#18221D] hover:bg-[#222F28] text-xs text-[#F1F5F2] border border-[#26352D] shrink-0"
                   >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Restore Default</span>
+                    Copy Link
+                  </button>
+                </div>
+              )}
+
+              {isNewR2Upload && (
+                <div className="space-y-3 pt-1 border-t border-[#1F2923]">
+                  <div>
+                    <label className="block text-xs font-medium text-[#9CA9A1] mb-1">
+                      Optionally Link Uploaded R2 Image Directly to a Page Slot
+                    </label>
+                    <select
+                      value={r2AssignSlotId}
+                      onChange={(e) => setR2AssignSlotId(e.target.value)}
+                      className="w-full bg-[#0B0F0D] border border-[#26352D] focus:border-[#E59819] rounded-md px-3 py-2 text-xs text-[#F1F5F2]"
+                    >
+                      <option value="">
+                        -- None (Store in R2 Bucket Only or Add to Section Gallery below) --
+                      </option>
+                      {mergedSlots
+                        .filter((s) => s.page === r2DraftPage)
+                        .map((s) => (
+                          <option key={s.slotId} value={s.slotId}>
+                            Slot #{s.slotIndex + 1}: {s.label} ({getSlotTypeLabel(s.type)})
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                  <label className="flex items-center gap-2 text-xs text-[#D5E0D9] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={r2AssignSectionGallery}
+                      onChange={(e) => setR2AssignSectionGallery(e.target.checked)}
+                      className="rounded border-[#34463C] bg-[#0B0F0D] text-[#E59819]"
+                    />
+                    <span>
+                      Also publish this R2 CDN link as a new card in {r2DraftPage}’s Section Wildlife Gallery
+                    </span>
+                  </label>
+                </div>
+              )}
+
+              <div className="pt-2 border-t border-[#222F28] flex items-center justify-between gap-3">
+                {!isNewR2Upload ? (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteR2Object(editingR2Obj)}
+                    disabled={r2Saving}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium text-[#FCA5A5] bg-[#2A1616] hover:bg-[#3B1D1D] border border-[#4C2222]"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete from R2 Bucket</span>
                   </button>
                 ) : (
                   <div />
@@ -2288,18 +3096,24 @@ export default function AdminCmsStudioPage() {
                 <div className="flex items-center gap-2.5">
                   <button
                     type="button"
-                    onClick={() => setEditingAsset(null)}
+                    onClick={() => setEditingR2Obj(null)}
                     className="px-4 py-2 rounded-md text-xs font-medium text-[#9CA9A1] hover:text-[#F1F5F2]"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    disabled={!assetUploadFile || assetSaving}
+                    disabled={r2Saving || (isNewR2Upload && !r2UploadFile)}
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-semibold bg-[#E59819] hover:bg-[#F5A623] text-[#0B0F0D] transition-colors disabled:opacity-50"
                   >
                     <Check className="w-4 h-4" />
-                    <span>{assetSaving ? 'Uploading...' : 'Replace Everywhere'}</span>
+                    <span>
+                      {r2Saving
+                        ? 'Pushing to R2...'
+                        : isNewR2Upload
+                        ? 'Upload Directly to R2'
+                        : 'Save Changes to R2'}
+                    </span>
                   </button>
                 </div>
               </div>
@@ -2320,7 +3134,7 @@ export default function AdminCmsStudioPage() {
                 </h3>
                 <p className="text-xs text-[#9CA9A1] mt-1 leading-relaxed">
                   {confirmResetModal.scope === 'all'
-                    ? 'This will revert all 12 HTML pages and all 118 media files back to their original factory state.'
+                    ? 'This will revert all 12 HTML pages and media slots back to their original factory state.'
                     : `This will revert all image slots on ${confirmResetModal.title} back to their default configuration.`}
                 </p>
               </div>

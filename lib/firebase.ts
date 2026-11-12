@@ -1,5 +1,3 @@
-'use client';
-
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import {
   getAuth,
@@ -10,47 +8,39 @@ import {
   type User,
 } from 'firebase/auth';
 import {
+  initializeFirestore,
   getFirestore,
+  collection,
   doc,
   getDoc,
-  getDocs,
   setDoc,
-  updateDoc,
   deleteDoc,
-  collection,
+  onSnapshot,
   query,
   where,
-  onSnapshot,
   serverTimestamp,
-  getDocFromServer,
-  type Unsubscribe,
+  type Firestore,
 } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
+
+let dbInstance: Firestore;
+try {
+  dbInstance = initializeFirestore(
+    app,
+    {
+      experimentalForceLongPolling: true,
+    },
+    firebaseConfig.firestoreDatabaseId
+  );
+} catch {
+  dbInstance = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+}
+
+export const db = dbInstance;
 export const googleProvider = new GoogleAuthProvider();
-
-// Validate connection to Firestore on boot as required by firebase-integration-rpc skill
-let connectionTested = false;
-export async function testFirestoreConnection(): Promise<boolean> {
-  if (connectionTested) return true;
-  connectionTested = true;
-  try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
-    return true;
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error('Please check your Firebase configuration.');
-    }
-    return false;
-  }
-}
-
-if (typeof window !== 'undefined') {
-  void testFirestoreConnection();
-}
 
 export enum OperationType {
   CREATE = 'create',
@@ -66,14 +56,16 @@ export interface FirestoreErrorInfo {
   operationType: OperationType;
   path: string | null;
   authInfo: {
-    userId?: string | null;
-    email?: string | null;
-    emailVerified?: boolean | null;
-    isAnonymous?: boolean | null;
-    tenantId?: string | null;
-    providerInfo?: {
-      providerId?: string | null;
-      email?: string | null;
+    userId: string | undefined;
+    email: string | null | undefined;
+    emailVerified: boolean | undefined;
+    isAnonymous: boolean | undefined;
+    tenantId: string | null | undefined;
+    providerInfo: {
+      providerId: string;
+      displayName: string | null;
+      email: string | null;
+      photoUrl: string | null;
     }[];
   };
 }
@@ -92,9 +84,11 @@ export function handleFirestoreError(
       isAnonymous: auth.currentUser?.isAnonymous,
       tenantId: auth.currentUser?.tenantId,
       providerInfo:
-        auth.currentUser?.providerData?.map((provider) => ({
+        auth.currentUser?.providerData.map((provider) => ({
           providerId: provider.providerId,
+          displayName: provider.displayName,
           email: provider.email,
+          photoUrl: provider.photoURL,
         })) || [],
     },
     operationType,
@@ -104,68 +98,147 @@ export function handleFirestoreError(
   throw new Error(JSON.stringify(errInfo));
 }
 
-// Defensive sanitization helper matching firebase-blueprint.json constraints
-export function sanitizeId(raw: string): string {
-  const cleaned = raw.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 128);
-  return cleaned || 'item_0';
-}
-
-export function sanitizePageName(raw: string): string {
-  const cleaned = raw.replace(/[^a-zA-Z0-9_.-]/g, '_').slice(0, 64);
-  return cleaned || 'index.html';
+export function extractR2KeyFromUrl(url?: string): string | undefined {
+  if (!url) return undefined;
+  const clean = url.split('?')[0].trim();
+  const marker = '/api/r2/file/';
+  const idx = clean.indexOf(marker);
+  if (idx !== -1) {
+    const key = clean.slice(idx + marker.length).replace(/^\/+/, '');
+    return key ? key.slice(0, 512) : undefined;
+  }
+  const publicBase = (process.env.NEXT_PUBLIC_R2_PUBLIC_URL || '').trim().replace(/\/+$/, '');
+  if (publicBase && clean.startsWith(publicBase + '/')) {
+    const key = clean.slice(publicBase.length + 1).replace(/^\/+/, '');
+    return key ? key.slice(0, 512) : undefined;
+  }
+  return undefined;
 }
 
 /**
- * Compresses an uploaded image file into a transferrable Data URL (< 500KB)
- * so it can be transferred and stored directly through Firebase Firestore
- * while staying well within Firestore's 1MB document limit.
+ * Uploads an image File from device storage directly to the Cloudflare R2 bucket (`/api/r2`)
+ * and returns its R2 object key (`r2Key`) and R2 CDN URL (`cdnUrl`).
+ * No image binary or base64 data is ever stored in Firestore.
  */
-export async function fileToFirestoreDataUrl(
+export async function uploadImageToR2Bucket(
   file: File,
-  maxWidth = 1400,
-  quality = 0.82
-): Promise<string> {
-  if (file.type === 'image/svg+xml') {
-    const text = await file.text();
-    const encoded = typeof window !== 'undefined' ? window.btoa(unescape(encodeURIComponent(text))) : '';
-    return `data:image/svg+xml;base64,${encoded}`.slice(0, 740000);
+  options?: {
+    customKey?: string;
+    replaceKey?: string;
+    alt?: string;
+    title?: string;
+    page?: string;
   }
+): Promise<{
+  r2Key: string;
+  cdnUrl: string;
+  sizeBytes: number;
+  mimeType: string;
+}> {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (options?.customKey) formData.append('customKey', options.customKey);
+  if (options?.replaceKey) formData.append('replaceKey', options.replaceKey);
+  if (options?.alt !== undefined) formData.append('alt', options.alt);
+  if (options?.title !== undefined) formData.append('title', options.title);
+  if (options?.page) formData.append('page', options.page);
 
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error('Failed to read image file'));
-    reader.onload = () => {
-      const img = new Image();
-      img.onerror = () => reject(new Error('Failed to decode image'));
-      img.onload = () => {
-        let width = img.width;
-        let height = img.height;
-        if (width > maxWidth) {
-          height = Math.round((height * maxWidth) / width);
-          width = maxWidth;
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          resolve(String(reader.result).slice(0, 740000));
-          return;
-        }
-        ctx.drawImage(img, 0, 0, width, height);
-        let dataUrl = canvas.toDataURL('image/jpeg', quality);
-        if (dataUrl.length > 700000) {
-          dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-        }
-        resolve(dataUrl.slice(0, 740000));
-      };
-      img.src = String(reader.result);
-    };
-    reader.readAsDataURL(file);
+  const res = await fetch('/api/r2', {
+    method: 'POST',
+    body: formData,
   });
+  const data = await res.json();
+  if (!res.ok || !data.cdnUrl) {
+    throw new Error(data.error || 'Failed to upload image to Cloudflare R2 bucket');
+  }
+  return {
+    r2Key: String(data.r2Key),
+    cdnUrl: String(data.cdnUrl),
+    sizeBytes: Number(data.sizeBytes || file.size),
+    mimeType: String(data.mimeType || file.type || 'image/jpeg'),
+  };
 }
 
-export interface FirestoreSiteImageInput {
+/**
+ * Converts any legacy base64 `data:image/...` URI into an object in the Cloudflare R2 bucket
+ * and returns its R2 key and R2 CDN link so Firestore stores only the R2 CDN URL.
+ */
+export async function migrateDataUrlToR2Bucket(
+  dataUrl: string,
+  options?: {
+    filenameHint?: string;
+    alt?: string;
+    title?: string;
+    page?: string;
+  }
+): Promise<{ r2Key: string; cdnUrl: string }> {
+  const res = await fetch('/api/r2', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'upload-data-url',
+      dataUrl,
+      filenameHint: options?.filenameHint,
+      alt: options?.alt,
+      title: options?.title,
+      page: options?.page,
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.cdnUrl) {
+    throw new Error(data.error || 'Failed to migrate data URL to Cloudflare R2 bucket');
+  }
+  return {
+    r2Key: String(data.r2Key),
+    cdnUrl: String(data.cdnUrl),
+  };
+}
+
+/**
+ * Updates metadata (`alt`, `title`, or object key) of an existing object in the Cloudflare R2 bucket.
+ */
+export async function updateR2BucketObjectMeta(options: {
+  r2Key: string;
+  newKey?: string;
+  alt?: string;
+  title?: string;
+  page?: string;
+}): Promise<{ r2Key: string; cdnUrl: string }> {
+  const res = await fetch('/api/r2', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(options),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Failed to update R2 object metadata');
+  }
+  return {
+    r2Key: String(data.r2Key || options.newKey || options.r2Key),
+    cdnUrl: String(data.cdnUrl || `/api/r2/file/${options.newKey || options.r2Key}`),
+  };
+}
+
+/**
+ * Deletes an image object directly from the Cloudflare R2 bucket.
+ */
+export async function deleteImageFromR2Bucket(r2KeyOrUrl: string): Promise<void> {
+  const key = extractR2KeyFromUrl(r2KeyOrUrl) || r2KeyOrUrl;
+  if (!key) return;
+  const res = await fetch(`/api/r2?key=${encodeURIComponent(key)}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to delete object from Cloudflare R2 bucket');
+  }
+}
+
+/**
+ * Upserts a SiteImage record in Firestore (`site_images/{slotId}`) storing ONLY the R2 CDN URL
+ * (`src`, `lightboxHref`, and optional `r2Key`) and text metadata — never raw image data.
+ */
+export async function saveSiteImageInFirestore(input: {
   slotId: string;
   page: string;
   slotIndex: number;
@@ -174,73 +247,72 @@ export interface FirestoreSiteImageInput {
   sectionContext: string;
   src: string;
   lightboxHref?: string;
+  r2Key?: string;
   alt: string;
-}
-
-export async function saveSiteImageInFirestore(input: FirestoreSiteImageInput): Promise<void> {
-  const user = auth.currentUser;
-  if (!user) {
-    throw new Error('Please sign in with Google Admin to save directly to Firebase Firestore.');
+}) {
+  const uid = auth.currentUser?.uid;
+  if (!uid) {
+    throw new Error('Admin authentication required to write to Firestore');
   }
-  const slotId = sanitizeId(input.slotId);
-  const docPath = `site_images/${slotId}`;
-  const docRef = doc(db, 'site_images', slotId);
-
-  let exists = false;
-  try {
-    const snap = await getDoc(docRef);
-    exists = snap.exists();
-  } catch (error) {
-    handleFirestoreError(error, OperationType.GET, docPath);
-  }
-
-  const basePayload = {
-    slotId,
-    page: sanitizePageName(input.page),
-    slotIndex: Math.max(0, Math.min(1000, Math.floor(input.slotIndex))),
-    type: input.type,
-    label: (input.label || 'Image Slot').slice(0, 200),
-    sectionContext: (input.sectionContext || 'Page Section').slice(0, 200),
-    src: input.src.slice(0, 750000),
-    ...(input.lightboxHref ? { lightboxHref: input.lightboxHref.slice(0, 750000) } : {}),
-    alt: (input.alt || '').slice(0, 500),
-    visibility: 'public' as const,
-    authorId: sanitizeId(user.uid),
-  };
-
-  try {
-    if (exists) {
-      await updateDoc(docRef, {
-        ...basePayload,
-        updatedAt: serverTimestamp(),
-      });
-    } else {
-      await setDoc(docRef, {
-        ...basePayload,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-    }
-  } catch (error) {
-    handleFirestoreError(
-      error,
-      exists ? OperationType.UPDATE : OperationType.CREATE,
-      docPath
+  if (input.src.startsWith('data:')) {
+    throw new Error(
+      'Saving raw image data in Firestore is disabled. Upload to Cloudflare R2 bucket first and save the R2 CDN URL.'
     );
   }
-}
-
-export async function deleteSiteImageInFirestore(rawSlotId: string): Promise<void> {
-  const slotId = sanitizeId(rawSlotId);
-  const docPath = `site_images/${slotId}`;
+  const path = `site_images/${input.slotId}`;
+  const docRef = doc(db, 'site_images', input.slotId);
   try {
-    await deleteDoc(doc(db, 'site_images', slotId));
-  } catch (error) {
-    handleFirestoreError(error, OperationType.DELETE, docPath);
+    const existing = await getDoc(docRef);
+    const createdAt = existing.exists() ? existing.data().createdAt : serverTimestamp();
+    const authorId = existing.exists() ? existing.data().authorId : uid;
+
+    const resolvedR2Key = input.r2Key || extractR2KeyFromUrl(input.src);
+
+    const payload: Record<string, unknown> = {
+      slotId: input.slotId,
+      page: input.page,
+      slotIndex: input.slotIndex,
+      type: input.type,
+      label: input.label.slice(0, 300),
+      sectionContext: input.sectionContext.slice(0, 300),
+      src: input.src.slice(0, 2048),
+      alt: input.alt.slice(0, 500),
+      visibility: 'public',
+      authorId,
+      createdAt,
+      updatedAt: serverTimestamp(),
+    };
+
+    const cleanLb = input.lightboxHref && !input.lightboxHref.startsWith('data:')
+      ? input.lightboxHref
+      : input.src;
+    if (cleanLb) {
+      payload.lightboxHref = cleanLb.slice(0, 2048);
+    }
+    if (resolvedR2Key) {
+      payload.r2Key = resolvedR2Key.slice(0, 512);
+    }
+
+    await setDoc(docRef, payload);
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, path);
   }
 }
 
-export interface FirestoreSectionGalleryInput {
+export async function deleteSiteImageInFirestore(slotId: string) {
+  const path = `site_images/${slotId}`;
+  try {
+    await deleteDoc(doc(db, 'site_images', slotId));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, path);
+  }
+}
+
+/**
+ * Upserts a SectionGalleryItem in Firestore (`section_gallery_items/{itemId}`) storing ONLY
+ * the R2 CDN URL (`src` and optional `r2Key`) and text metadata — never raw image data.
+ */
+export async function saveSectionGalleryItemInFirestore(input: {
   itemId: string;
   page: string;
   sectionKey: string;
@@ -248,76 +320,66 @@ export interface FirestoreSectionGalleryInput {
   title: string;
   caption: string;
   src: string;
+  r2Key?: string;
   alt: string;
   order: number;
-}
-
-export async function saveSectionGalleryItemInFirestore(
-  input: FirestoreSectionGalleryInput
-): Promise<void> {
-  const user = auth.currentUser;
-  if (!user) {
-    throw new Error('Please sign in with Google Admin to save section images to Firebase Firestore.');
+}) {
+  const uid = auth.currentUser?.uid;
+  if (!uid) {
+    throw new Error('Admin authentication required to write to Firestore');
   }
-  const itemId = sanitizeId(input.itemId);
-  const docPath = `section_gallery_items/${itemId}`;
-  const docRef = doc(db, 'section_gallery_items', itemId);
-
-  let exists = false;
-  try {
-    const snap = await getDoc(docRef);
-    exists = snap.exists();
-  } catch (error) {
-    handleFirestoreError(error, OperationType.GET, docPath);
-  }
-
-  const basePayload = {
-    itemId,
-    page: sanitizePageName(input.page),
-    sectionKey: sanitizeId(input.sectionKey),
-    sectionTitle: (input.sectionTitle || 'Safari Section').slice(0, 200),
-    title: (input.title || 'Safari Photo').slice(0, 200),
-    caption: (input.caption || '').slice(0, 600),
-    src: input.src.slice(0, 750000),
-    alt: (input.alt || input.title || 'Safari photo').slice(0, 300),
-    order: Math.max(0, Math.min(10000, Math.floor(input.order))),
-    visibility: 'public' as const,
-    authorId: sanitizeId(user.uid),
-  };
-
-  try {
-    if (exists) {
-      await updateDoc(docRef, {
-        ...basePayload,
-        updatedAt: serverTimestamp(),
-      });
-    } else {
-      await setDoc(docRef, {
-        ...basePayload,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-    }
-  } catch (error) {
-    handleFirestoreError(
-      error,
-      exists ? OperationType.UPDATE : OperationType.CREATE,
-      docPath
+  if (input.src.startsWith('data:')) {
+    throw new Error(
+      'Saving raw image data in Firestore is disabled. Upload to Cloudflare R2 bucket first and save the R2 CDN URL.'
     );
   }
-}
-
-export async function deleteSectionGalleryItemInFirestore(rawItemId: string): Promise<void> {
-  const itemId = sanitizeId(rawItemId);
-  const docPath = `section_gallery_items/${itemId}`;
+  const path = `section_gallery_items/${input.itemId}`;
+  const docRef = doc(db, 'section_gallery_items', input.itemId);
   try {
-    await deleteDoc(doc(db, 'section_gallery_items', itemId));
-  } catch (error) {
-    handleFirestoreError(error, OperationType.DELETE, docPath);
+    const existing = await getDoc(docRef);
+    const createdAt = existing.exists() ? existing.data().createdAt : serverTimestamp();
+    const authorId = existing.exists() ? existing.data().authorId : uid;
+    const resolvedR2Key = input.r2Key || extractR2KeyFromUrl(input.src);
+
+    const payload: Record<string, unknown> = {
+      itemId: input.itemId,
+      page: input.page,
+      sectionKey: input.sectionKey.slice(0, 120),
+      sectionTitle: input.sectionTitle.slice(0, 200),
+      title: input.title.slice(0, 200),
+      caption: input.caption.slice(0, 1000),
+      src: input.src.slice(0, 2048),
+      alt: input.alt.slice(0, 500),
+      order: input.order,
+      visibility: 'public',
+      authorId,
+      createdAt,
+      updatedAt: serverTimestamp(),
+    };
+
+    if (resolvedR2Key) {
+      payload.r2Key = resolvedR2Key.slice(0, 512);
+    }
+
+    await setDoc(docRef, payload);
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, path);
   }
 }
 
-export interface FirestoreSiteTextInput {
+export async function deleteSectionGalleryItemInFirestore(itemId: string) {
+  const path = `section_gallery_items/${itemId}`;
+  try {
+    await deleteDoc(doc(db, 'section_gallery_items', itemId));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, path);
+  }
+}
+
+/**
+ * Upserts a SiteText record in Firestore (`site_texts/{textId}`)
+ */
+export async function saveSiteTextInFirestore(input: {
   textId: string;
   page: string;
   textIndex: number;
@@ -339,102 +401,67 @@ export interface FirestoreSiteTextInput {
   content: string;
   isDeleted: boolean;
   isCustomAdded: boolean;
-}
-
-export async function saveSiteTextInFirestore(input: FirestoreSiteTextInput): Promise<void> {
-  const user = auth.currentUser;
-  if (!user) {
-    throw new Error('Please sign in with Google Admin to save text changes to Firebase Firestore.');
+}) {
+  const uid = auth.currentUser?.uid;
+  if (!uid) {
+    throw new Error('Admin authentication required to write to Firestore');
   }
-  const textId = sanitizeId(input.textId);
-  const docPath = `site_texts/${textId}`;
-  const docRef = doc(db, 'site_texts', textId);
-
-  let exists = false;
+  const path = `site_texts/${input.textId}`;
+  const docRef = doc(db, 'site_texts', input.textId);
   try {
-    const snap = await getDoc(docRef);
-    exists = snap.exists();
-  } catch (error) {
-    handleFirestoreError(error, OperationType.GET, docPath);
-  }
+    const existing = await getDoc(docRef);
+    const createdAt = existing.exists() ? existing.data().createdAt : serverTimestamp();
+    const authorId = existing.exists() ? existing.data().authorId : uid;
 
-  const basePayload = {
-    textId,
-    page: sanitizePageName(input.page),
-    textIndex: Math.max(-1, Math.min(5000, Math.floor(input.textIndex))),
-    tagName: input.tagName,
-    sectionContext: (input.sectionContext || 'Page Content').slice(0, 200),
-    content: (input.content || '').slice(0, 20000),
-    isDeleted: Boolean(input.isDeleted),
-    isCustomAdded: Boolean(input.isCustomAdded),
-    visibility: 'public' as const,
-    authorId: sanitizeId(user.uid),
-  };
-
-  try {
-    if (exists) {
-      await updateDoc(docRef, {
-        ...basePayload,
-        updatedAt: serverTimestamp(),
-      });
-    } else {
-      await setDoc(docRef, {
-        ...basePayload,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-    }
-  } catch (error) {
-    handleFirestoreError(
-      error,
-      exists ? OperationType.UPDATE : OperationType.CREATE,
-      docPath
-    );
+    await setDoc(docRef, {
+      textId: input.textId,
+      page: input.page,
+      textIndex: input.textIndex,
+      tagName: input.tagName,
+      sectionContext: input.sectionContext.slice(0, 300),
+      content: input.content.slice(0, 10000),
+      isDeleted: input.isDeleted,
+      isCustomAdded: input.isCustomAdded,
+      visibility: 'public',
+      authorId,
+      createdAt,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, path);
   }
 }
 
-export async function deleteSiteTextInFirestore(rawTextId: string): Promise<void> {
-  const textId = sanitizeId(rawTextId);
-  const docPath = `site_texts/${textId}`;
+export async function deleteSiteTextInFirestore(textId: string) {
+  const path = `site_texts/${textId}`;
   try {
     await deleteDoc(doc(db, 'site_texts', textId));
-  } catch (error) {
-    handleFirestoreError(error, OperationType.DELETE, docPath);
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, path);
   }
 }
 
+/**
+ * Subscribes to public documents in a Firestore collection
+ */
 export function subscribePublicCollection<T>(
   collectionName: 'site_images' | 'section_gallery_items' | 'site_texts',
   onData: (items: T[]) => void
-): Unsubscribe {
+) {
   const q = query(collection(db, collectionName), where('visibility', '==', 'public'));
   return onSnapshot(
     q,
     (snapshot) => {
-      const list: T[] = [];
+      const items: T[] = [];
       snapshot.forEach((docSnap) => {
-        list.push(docSnap.data() as T);
+        items.push(docSnap.data() as T);
       });
-      onData(list);
+      onData(items);
     },
-    (error) => {
-      handleFirestoreError(error, OperationType.LIST, collectionName);
+    (err) => {
+      console.warn(`Firestore subscription warning on ${collectionName}:`, err.message);
     }
   );
-}
-
-export async function fetchPublicCollectionOnce<T>(
-  collectionName: 'site_images' | 'section_gallery_items' | 'site_texts'
-): Promise<T[]> {
-  const q = query(collection(db, collectionName), where('visibility', '==', 'public'));
-  try {
-    const snap = await getDocs(q);
-    const list: T[] = [];
-    snap.forEach((d) => list.push(d.data() as T));
-    return list;
-  } catch (error) {
-    handleFirestoreError(error, OperationType.LIST, collectionName);
-  }
 }
 
 export { signInWithPopup, firebaseSignOut, onAuthStateChanged, type User };

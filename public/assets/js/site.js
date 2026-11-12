@@ -350,10 +350,13 @@
         <input type="text" id="admin-alt-input" class="admin-input" placeholder="Describe image..." />
       </div>
       <div class="admin-modal-footer">
-        <a href="/admin" class="admin-dock-btn">Open Firebase Studio</a>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <a href="/admin" class="admin-dock-btn">Open R2 + Firebase Studio</a>
+          <button type="button" class="admin-dock-btn" id="admin-slot-delete-btn" style="color:#fca5a5;border-color:#5c2424;">Delete from R2</button>
+        </div>
         <div style="display:flex;gap:8px;">
           <button type="button" class="admin-dock-btn" id="admin-cancel-btn">Cancel</button>
-          <button type="submit" class="admin-dock-btn is-primary" id="admin-save-btn">Save via Firebase</button>
+          <button type="submit" class="admin-dock-btn is-primary" id="admin-save-btn">Push to R2 &amp; Save</button>
         </div>
       </div>
     </form>
@@ -389,6 +392,7 @@
 
   const closeInlineBtn = editorDialog.querySelector(".admin-modal-close");
   const cancelInlineBtn = document.getElementById("admin-cancel-btn");
+  const slotDeleteBtn = document.getElementById("admin-slot-delete-btn");
   const uploadTrigger = document.getElementById("admin-upload-trigger");
   const fileInput = document.getElementById("admin-file-input");
   const newPreviewImg = document.getElementById("admin-new-preview");
@@ -600,13 +604,40 @@
     }
   }
 
+  if (slotDeleteBtn) {
+    slotDeleteBtn.addEventListener("click", async () => {
+      if (!activeDomSlot) return;
+      try {
+        await fetch("/api/admin/images", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "delete-slot",
+            page: currentPageFile,
+            slotIndex: activeDomSlot.slotIndex,
+            slotId: activeDomSlot.slotId,
+          }),
+        });
+        if (activeDomSlot.type === "hero-bg") {
+          activeDomSlot.element.style.backgroundImage = "none";
+        } else {
+          activeDomSlot.element.removeAttribute("src");
+          activeDomSlot.element.style.display = "none";
+        }
+        editorDialog.close();
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  }
+
   if (slotForm) {
     slotForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       if (!activeDomSlot) return;
       if (saveBtn) {
         saveBtn.disabled = true;
-        saveBtn.textContent = "Saving...";
+        saveBtn.textContent = "Uploading to R2...";
       }
       try {
         const scopeInput = slotForm.querySelector('input[name="adminScope"]:checked');
@@ -615,50 +646,58 @@
         const customUrl = urlInput ? urlInput.value.trim() : "";
 
         let updatedSrc = activeDomSlot.src;
+        let updatedR2Key = undefined;
 
         if (selectedUploadFile) {
-          const fd = new FormData();
-          fd.append("mode", "update-slot");
-          fd.append("page", currentPageFile);
-          fd.append("slotIndex", String(activeDomSlot.slotIndex));
-          fd.append("scope", scope);
-          fd.append("altText", newAlt);
-          fd.append("file", selectedUploadFile);
+          const r2Fd = new FormData();
+          r2Fd.append("file", selectedUploadFile);
+          r2Fd.append("replaceKey", `slots/${activeDomSlot.slotId}`);
+          r2Fd.append("alt", newAlt || activeDomSlot.label || "");
+          r2Fd.append("title", activeDomSlot.label || selectedUploadFile.name);
+          r2Fd.append("page", currentPageFile);
 
-          const res = await fetch("/api/admin/images", {
+          const r2Res = await fetch("/api/r2", {
             method: "POST",
-            body: fd,
+            body: r2Fd,
           });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || "Upload failed");
-          if (data.updatedSrc) {
-            updatedSrc = `${data.updatedSrc.replace(/^\/+/, "")}?v=${Date.now()}`;
+          const r2Data = await r2Res.json();
+          if (!r2Res.ok || !r2Data.cdnUrl) {
+            throw new Error(r2Data.error || "R2 bucket upload failed");
           }
-        } else {
-          const res = await fetch("/api/admin/images", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action: "update-slot-meta",
-              page: currentPageFile,
-              slotIndex: activeDomSlot.slotIndex,
-              altText: newAlt,
-              externalUrl: customUrl || undefined,
-            }),
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || "Update failed");
-          if (customUrl) updatedSrc = customUrl;
+          updatedSrc = r2Data.cdnUrl;
+          updatedR2Key = r2Data.r2Key;
+        } else if (customUrl) {
+          updatedSrc = customUrl;
         }
 
+        const res = await fetch("/api/admin/images", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "update-slot-meta",
+            page: currentPageFile,
+            slotIndex: activeDomSlot.slotIndex,
+            scope,
+            altText: newAlt,
+            externalUrl: updatedSrc,
+            r2Key: updatedR2Key,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Update failed");
+        const cacheUrl = updatedSrc.includes("?")
+          ? `${updatedSrc}&v=${Date.now()}`
+          : `${updatedSrc}?v=${Date.now()}`;
+
         if (activeDomSlot.type === "hero-bg") {
-          activeDomSlot.element.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)), url("${updatedSrc}")`;
+          activeDomSlot.element.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)), url("${cacheUrl}")`;
         } else {
-          activeDomSlot.element.src = updatedSrc;
+          activeDomSlot.element.style.display = "";
+          activeDomSlot.element.src = cacheUrl;
           activeDomSlot.element.alt = newAlt;
           const parentAnchor = activeDomSlot.element.closest("a[data-lightbox]");
           if (parentAnchor) {
-            parentAnchor.href = updatedSrc;
+            parentAnchor.href = cacheUrl;
           }
         }
         editorDialog.close();
@@ -667,7 +706,7 @@
       } finally {
         if (saveBtn) {
           saveBtn.disabled = false;
-          saveBtn.textContent = "Save via Firebase";
+          saveBtn.textContent = "Push to R2 & Save";
         }
       }
     });
@@ -738,19 +777,32 @@
     });
   }
 
-  // Hydrate page with Firebase CMS state (slot image overrides, section wildlife galleries, text edits, and custom text blocks)
+  // Hydrate page with Firebase CMS state (slot image R2 CDN overrides, section wildlife galleries, text edits, and custom text blocks)
   async function hydrateFromFirebaseCms() {
     try {
       const res = await fetch(`/api/admin/cms?t=${Date.now()}`, { cache: "no-store" });
       if (!res.ok) return;
       const cms = await res.json();
 
-      // 1. Apply image slot overrides for this page
+      // 1. Apply image slot overrides (strictly R2 CDN links or explicit slot deletions, never raw data: URIs)
       if (cms.imageOverrides) {
         Object.values(cms.imageOverrides).forEach((ov) => {
-          if (!ov || ov.page !== currentPageFile || !ov.src) return;
+          if (!ov || ov.page !== currentPageFile) return;
           const entry = slotElementMap.get(ov.slotId);
           if (!entry) return;
+
+          if (ov.isDeleted) {
+            if (entry.type === "hero-bg") {
+              entry.element.style.backgroundImage = "none";
+            } else {
+              entry.element.removeAttribute("src");
+              entry.element.style.display = "none";
+            }
+            return;
+          }
+
+          if (!ov.src || /^data:/i.test(ov.src)) return;
+
           if (entry.type === "hero-bg") {
             if (/payment-|visa|mastercard/i.test(ov.src)) return;
             if (entry.element.classList.contains("wsite-body-section")) return;
@@ -764,17 +816,12 @@
             }
           } else {
             if (
-              entry.element.classList.contains("janaka-brand-logo") ||
-              entry.element.classList.contains("tripadvisor-user-award-img") ||
-              entry.element.id === "CDSWIDCOELOGO" ||
               entry.element.closest(".hero-cross-bridge-wrap") ||
-              entry.element.closest(".home-review-award") ||
-              entry.element.closest(".logo") ||
-              entry.element.closest(".footer-wrap") ||
-              /^data:image\/svg\+xml/i.test(ov.src)
+              entry.element.id === "CDSWIDCOELOGO"
             ) {
               return;
             }
+            entry.element.style.display = "";
             entry.element.src = ov.src;
             if (ov.alt) entry.element.alt = ov.alt;
             const parentAnchor = entry.element.closest("a[data-lightbox]");
@@ -840,9 +887,11 @@
         });
       }
 
-      // 4. Render Curated Firebase Section Wildlife Gallery for this page
+      // 4. Render Curated Firebase Section Wildlife Gallery for this page (from R2 CDN links)
       const pageSectionItems = Array.isArray(cms.sectionGalleryItems)
-        ? cms.sectionGalleryItems.filter((item) => item.page === currentPageFile)
+        ? cms.sectionGalleryItems.filter(
+            (item) => item.page === currentPageFile && item.src && !/^data:/i.test(item.src)
+          )
         : [];
       if (pageSectionItems.length > 0 && mainEl) {
         let showcase = document.getElementById("firebase-section-gallery");
@@ -857,10 +906,10 @@
         showcase.innerHTML = `
           <div class="firebase-section-header">
             <div>
-              <div class="firebase-section-kicker">Firebase Live Section Gallery</div>
+              <div class="firebase-section-kicker">R2 Bucket + Firebase Section Gallery</div>
               <h2 class="firebase-section-title">${sectionGroupsTitle}</h2>
             </div>
-            <a href="/admin" class="admin-dock-btn">Manage Section Photos in Studio</a>
+            <a href="/admin" class="admin-dock-btn">Manage R2 Photos in Studio</a>
           </div>
           <div class="firebase-section-grid" id="firebase-section-grid"></div>
         `;
@@ -881,19 +930,25 @@
               </div>
             </div>
             <div class="firebase-section-card-actions">
-              <a href="/admin" class="admin-dock-btn is-primary">Edit / Replace in Studio</a>
+              <a href="/admin" class="admin-dock-btn is-primary">Edit / Replace in R2 Studio</a>
               <button type="button" class="admin-dock-btn" data-delete-sec-img="${item.itemId}">Delete</button>
             </div>
           `;
           const delBtn = card.querySelector("[data-delete-sec-img]");
           if (delBtn) {
             delBtn.addEventListener("click", async () => {
+              if (item.r2Key) {
+                await fetch(`/api/r2?key=${encodeURIComponent(item.r2Key)}`, {
+                  method: "DELETE",
+                }).catch(() => {});
+              }
               await fetch("/api/admin/cms", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   action: "delete-section-image",
                   itemId: item.itemId,
+                  r2Key: item.r2Key,
                 }),
               });
               card.remove();
@@ -944,10 +999,10 @@
   async function initDistinctGsapAnimations() {
     try {
       if (!window.gsap) {
-        await loadScript("/assets/js/gsap.min.js?v=gsap19");
+        await loadScript("/assets/js/gsap.min.js?v=gsap20");
       }
       if (!window.ScrollTrigger) {
-        await loadScript("/assets/js/ScrollTrigger.min.js?v=gsap19");
+        await loadScript("/assets/js/ScrollTrigger.min.js?v=gsap20");
       }
     } catch (err) {
       console.warn("Local GSAP load fallback:", err);
@@ -983,15 +1038,19 @@
       const vh = window.innerHeight || document.documentElement.clientHeight;
       viewportReplayRegistry.forEach(({ anim, triggerEl }) => {
         if (!triggerEl || !document.body.contains(triggerEl)) return;
+        if (anim.datasetPlayedOnce) return;
         const rect = triggerEl.getBoundingClientRect();
         if (rect.top < vh * 0.92 && rect.bottom > vh * 0.08) {
-          anim.restart(true);
+          anim.datasetPlayedOnce = true;
+          if (anim.progress() === 0) {
+            anim.play(0);
+          }
         }
       });
     }
 
-    // Animated counters helper (works cleanly on both mobile and desktop)
-    function initCrossBridgeCounters(toggleMode) {
+    // Animated counters helper (plays once on downward scroll per page load/refresh)
+    function initCrossBridgeCounters(toggleMode = "play none none none") {
       const crossCard = document.querySelector(".hero-cross-bridge-card");
       if (!crossCard) return;
 
@@ -1008,8 +1067,8 @@
             scrollTrigger: {
               trigger: crossCard,
               start: "top 95%",
-              end: "bottom 5%",
               toggleActions: toggleMode,
+              once: true,
             },
             onUpdate: () => {
               scoreEl.textContent = scoreObj.val.toFixed(1);
@@ -1032,8 +1091,8 @@
             scrollTrigger: {
               trigger: crossCard,
               start: "top 95%",
-              end: "bottom 5%",
               toggleActions: toggleMode,
+              once: true,
             },
             onUpdate: () => {
               metricEl.textContent = `${Math.round(countObj.val).toLocaleString()}+`;
@@ -1065,8 +1124,8 @@
           scrollTrigger: {
             trigger: showcase,
             start: "top 92%",
-            end: "bottom 8%",
-            toggleActions: "restart none restart reverse",
+            toggleActions: "play none none none",
+            once: true,
           },
         });
         showcaseTl.fromTo(
@@ -1090,7 +1149,7 @@
         }
         registerForViewportReplay(showcaseTl, showcase);
 
-        cards.forEach((card, i) => {
+        cards.forEach((card) => {
           const img = card.querySelector(".firebase-section-card-media img");
           const innerItems = gsap.utils.toArray(
             card.querySelectorAll(
@@ -1101,8 +1160,8 @@
             scrollTrigger: {
               trigger: card,
               start: "top 92%",
-              end: "bottom 8%",
-              toggleActions: "restart none restart reverse",
+              toggleActions: "play none none none",
+              once: true,
             },
           });
           tl.fromTo(
@@ -1133,8 +1192,8 @@
           scrollTrigger: {
             trigger: showcase,
             start: "top 90%",
-            end: "bottom 10%",
-            toggleActions: "restart none restart reverse",
+            toggleActions: "play none none none",
+            once: true,
           },
         });
         headerTl.fromTo(
@@ -1189,8 +1248,8 @@
             scrollTrigger: {
               trigger: card,
               start: "top 90%",
-              end: "bottom 10%",
-              toggleActions: "restart none restart reverse",
+              toggleActions: "play none none none",
+              once: true,
             },
           });
 
@@ -1332,8 +1391,8 @@
           scrollTrigger: {
             trigger: ".banner-wrap",
             start: "top 95%",
-            end: "bottom 5%",
-            toggleActions: "restart none restart none",
+            toggleActions: "play none none none",
+            once: true,
           },
         });
         if (heroSectionContent) {
@@ -1383,8 +1442,8 @@
               scrollTrigger: {
                 trigger: col,
                 start: "top 92%",
-                end: "bottom 8%",
-                toggleActions: "restart none restart reverse",
+                toggleActions: "play none none none",
+                once: true,
               },
             }
           );
@@ -1399,8 +1458,8 @@
           scrollTrigger: {
             trigger: crossCard,
             start: "top 95%",
-            end: "bottom 5%",
-            toggleActions: "restart none restart reverse",
+            toggleActions: "play none none none",
+            once: true,
           },
         });
         crossTl.fromTo(
@@ -1418,7 +1477,7 @@
           );
         }
         registerForViewportReplay(crossTl, crossCard);
-        initCrossBridgeCounters("restart none restart none");
+        initCrossBridgeCounters("play none none none");
       }
 
       // 4. Mobile Direct Booking Section & Items (Selector 3: .wsite-background-75 .container)
@@ -1433,8 +1492,8 @@
           scrollTrigger: {
             trigger: mobileDirectContainer,
             start: "top 92%",
-            end: "bottom 8%",
-            toggleActions: "restart none restart reverse",
+            toggleActions: "play none none none",
+            once: true,
           },
         });
         directTl.fromTo(
@@ -1470,8 +1529,8 @@
               scrollTrigger: {
                 trigger: mobileSafariSection,
                 start: "top 92%",
-                end: "bottom 8%",
-                toggleActions: "restart none restart reverse",
+                toggleActions: "play none none none",
+                once: true,
               },
             }
           );
@@ -1487,8 +1546,8 @@
             scrollTrigger: {
               trigger: card,
               start: "top 92%",
-              end: "bottom 8%",
-              toggleActions: "restart none restart reverse",
+              toggleActions: "play none none none",
+              once: true,
             },
           });
           tl.fromTo(
@@ -1529,8 +1588,8 @@
             scrollTrigger: {
               trigger: yalaFeature,
               start: "top 92%",
-              end: "bottom 8%",
-              toggleActions: "restart none restart reverse",
+              toggleActions: "play none none none",
+              once: true,
             },
           });
           yalaTl.fromTo(
@@ -1565,8 +1624,8 @@
             scrollTrigger: {
               trigger: wCard,
               start: "top 92%",
-              end: "bottom 8%",
-              toggleActions: "restart none restart reverse",
+              toggleActions: "play none none none",
+              once: true,
             },
           });
           tl.fromTo(
@@ -1615,8 +1674,8 @@
               scrollTrigger: {
                 trigger: mobilePortContainer,
                 start: "top 92%",
-                end: "bottom 8%",
-                toggleActions: "restart none restart reverse",
+                toggleActions: "play none none none",
+                once: true,
               },
             }
           );
@@ -1633,8 +1692,8 @@
             scrollTrigger: {
               trigger: pCard,
               start: "top 92%",
-              end: "bottom 8%",
-              toggleActions: "restart none restart reverse",
+              toggleActions: "play none none none",
+              once: true,
             },
           });
           tl.fromTo(
@@ -1685,8 +1744,8 @@
             scrollTrigger: {
               trigger: h,
               start: "top 92%",
-              end: "bottom 8%",
-              toggleActions: "restart none restart reverse",
+              toggleActions: "play none none none",
+              once: true,
             },
           }
         );
@@ -1747,8 +1806,8 @@
             scrollTrigger: {
               trigger: card,
               start: "top 93%",
-              end: "bottom 7%",
-              toggleActions: "restart none restart reverse",
+              toggleActions: "play none none none",
+              once: true,
             },
           }
         );
@@ -1876,25 +1935,14 @@
             { scale: baseScale + 0.12 },
             { scale: baseScale, duration: 1.9, ease: "power3.out" }
           );
-          gsap.to(heroBg, {
-            backgroundPositionY: "65%",
-            scale: baseScale + 0.06,
-            ease: "none",
-            scrollTrigger: {
-              trigger: ".banner-wrap",
-              start: "top top",
-              end: "bottom top",
-              scrub: 0.6,
-            },
-          });
         }
 
         const heroTl = gsap.timeline({
           scrollTrigger: {
             trigger: ".banner-wrap",
             start: "top 95%",
-            end: "bottom 15%",
-            toggleActions: "restart none restart none",
+            toggleActions: "play none none none",
+            once: true,
           },
         });
         if (heroSectionContent) {
@@ -1970,8 +2018,8 @@
           scrollTrigger: {
             trigger: crossCard,
             start: "top 95%",
-            end: "bottom 5%",
-            toggleActions: "restart none restart reverse",
+            toggleActions: "play none none none",
+            once: true,
           },
         });
 
@@ -2041,7 +2089,7 @@
 
         registerForViewportReplay(crossTl, crossCard);
         bindGsap3DHover([subLeft, subCenter, subRight], 5, -5, 1.02);
-        initCrossBridgeCounters("restart none restart none");
+        initCrossBridgeCounters("play none none none");
       }
 
       // 4. SECTION: WHY EXPLORE WITH NISHA (Selector 2: .janaka-benefits .container)
@@ -2066,8 +2114,8 @@
               scrollTrigger: {
                 trigger: benefitsContainer,
                 start: "top 90%",
-                end: "bottom 10%",
-                toggleActions: "restart none restart reverse",
+                toggleActions: "play none none none",
+                once: true,
               },
             }
           );
@@ -2076,10 +2124,12 @@
 
         const distinctBenefitFromVars = [
           { x: -75, y: 45, rotate: -6, autoAlpha: 0, scale: 0.86 },
-          { y: 75, rotateX: 40, transformPerspective: 900, autoAlpha: 0, scale: 0.84 },
-          { y: -70, rotateX: -40, transformPerspective: 900, autoAlpha: 0, scale: 0.84 },
+          { y: 65, rotateX: 35, transformPerspective: 900, autoAlpha: 0, scale: 0.84 },
+          { y: 65, rotateX: -35, transformPerspective: 900, autoAlpha: 0, scale: 0.84 },
           { x: 75, y: 45, rotate: 6, autoAlpha: 0, scale: 0.86 },
         ];
+
+        const benefitsRow = benefitsSection.querySelector(".wsite-multicol-tr") || benefitsContainer;
 
         benefitCols.forEach((col, i) => {
           const fromVars = distinctBenefitFromVars[i % distinctBenefitFromVars.length];
@@ -2089,10 +2139,10 @@
 
           const tl = gsap.timeline({
             scrollTrigger: {
-              trigger: col,
-              start: "top 90%",
-              end: "bottom 10%",
-              toggleActions: "restart none restart reverse",
+              trigger: benefitsRow,
+              start: "top 86%",
+              toggleActions: "play none none none",
+              once: true,
             },
           });
 
@@ -2108,7 +2158,7 @@
               autoAlpha: 1,
               scale: 1,
               duration: 0.85,
-              delay: (i % 4) * 0.08,
+              delay: i * 0.12,
               ease: "back.out(1.5)",
             }
           );
@@ -2137,7 +2187,7 @@
               "-=0.35"
             );
           }
-          registerForViewportReplay(tl, col);
+          registerForViewportReplay(tl, benefitsRow);
         });
 
         bindGsap3DHover(benefitCols, 7, -8, 1.03);
@@ -2160,8 +2210,8 @@
           scrollTrigger: {
             trigger: triggerTarget,
             start: "top 90%",
-            end: "bottom 10%",
-            toggleActions: "restart none restart reverse",
+            toggleActions: "play none none none",
+            once: true,
           },
         });
 
@@ -2239,8 +2289,8 @@
               scrollTrigger: {
                 trigger: whyChooseSection,
                 start: "top 88%",
-                end: "bottom 12%",
-                toggleActions: "restart none restart reverse",
+                toggleActions: "play none none none",
+                once: true,
               },
             }
           );
@@ -2251,8 +2301,8 @@
           scrollTrigger: {
             trigger: whyChooseSection,
             start: "top 88%",
-            end: "bottom 12%",
-            toggleActions: "restart none restart reverse",
+            toggleActions: "play none none none",
+            once: true,
           },
         });
 
@@ -2313,8 +2363,8 @@
             scrollTrigger: {
               trigger: headerTarget,
               start: "top 90%",
-              end: "bottom 10%",
-              toggleActions: "restart none restart reverse",
+              toggleActions: "play none none none",
+              once: true,
             },
           });
           hTl.fromTo(
@@ -2354,8 +2404,8 @@
             scrollTrigger: {
               trigger: card,
               start: "top 90%",
-              end: "bottom 10%",
-              toggleActions: "restart none restart reverse",
+              toggleActions: "play none none none",
+              once: true,
             },
           });
 
@@ -2428,8 +2478,8 @@
           scrollTrigger: {
             trigger: yalaFeature,
             start: "top 90%",
-            end: "bottom 10%",
-            toggleActions: "restart none restart reverse",
+            toggleActions: "play none none none",
+            once: true,
           },
         });
 
@@ -2477,8 +2527,8 @@
               scrollTrigger: {
                 trigger: wildlifeDivider,
                 start: "top 92%",
-                end: "bottom 8%",
-                toggleActions: "restart none restart reverse",
+                toggleActions: "play none none none",
+                once: true,
               },
             }
           );
@@ -2497,8 +2547,8 @@
               scrollTrigger: {
                 trigger: wildlifeHeading,
                 start: "top 90%",
-                end: "bottom 10%",
-                toggleActions: "restart none restart reverse",
+                toggleActions: "play none none none",
+                once: true,
               },
             }
           );
@@ -2516,8 +2566,8 @@
               scrollTrigger: {
                 trigger: wildlifeFooterNote,
                 start: "top 92%",
-                end: "bottom 8%",
-                toggleActions: "restart none restart reverse",
+                toggleActions: "play none none none",
+                once: true,
               },
             }
           );
@@ -2544,8 +2594,8 @@
             scrollTrigger: {
               trigger: wCard,
               start: "top 90%",
-              end: "bottom 10%",
-              toggleActions: "restart none restart reverse",
+              toggleActions: "play none none none",
+              once: true,
             },
           });
           tl.fromTo(
@@ -2608,8 +2658,8 @@
           scrollTrigger: {
             trigger: meetSection,
             start: "top 88%",
-            end: "bottom 12%",
-            toggleActions: "restart none restart reverse",
+            toggleActions: "play none none none",
+            once: true,
           },
         });
 
@@ -2660,8 +2710,8 @@
           scrollTrigger: {
             trigger: reviewsSection,
             start: "top 88%",
-            end: "bottom 12%",
-            toggleActions: "restart none restart reverse",
+            toggleActions: "play none none none",
+            once: true,
           },
         });
 
@@ -2734,8 +2784,8 @@
               scrollTrigger: {
                 trigger: portTarget,
                 start: "top 90%",
-                end: "bottom 10%",
-                toggleActions: "restart none restart reverse",
+                toggleActions: "play none none none",
+                once: true,
               },
             }
           );
@@ -2757,8 +2807,8 @@
             scrollTrigger: {
               trigger: pCard,
               start: "top 90%",
-              end: "bottom 10%",
-              toggleActions: "restart none restart reverse",
+              toggleActions: "play none none none",
+              once: true,
             },
           });
 
@@ -2835,8 +2885,8 @@
               scrollTrigger: {
                 trigger: col,
                 start: "top 90%",
-                end: "bottom 10%",
-                toggleActions: "restart none restart reverse",
+                toggleActions: "play none none none",
+                once: true,
               },
             }
           );
@@ -2860,8 +2910,8 @@
               scrollTrigger: {
                 trigger: h,
                 start: "top 90%",
-                end: "bottom 10%",
-                toggleActions: "restart none restart reverse",
+                toggleActions: "play none none none",
+                once: true,
               },
             }
           );
@@ -2885,8 +2935,8 @@
               scrollTrigger: {
                 trigger: card,
                 start: "top 90%",
-                end: "bottom 10%",
-                toggleActions: "restart none restart reverse",
+                toggleActions: "play none none none",
+                once: true,
               },
             }
           );
@@ -2911,8 +2961,8 @@
             scrollTrigger: {
               trigger: footerWrap,
               start: "top 92%",
-              end: "bottom 8%",
-              toggleActions: "restart none restart reverse",
+              toggleActions: "play none none none",
+              once: true,
             },
           }
         );

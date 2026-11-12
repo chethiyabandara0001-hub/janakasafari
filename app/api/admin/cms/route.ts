@@ -10,6 +10,11 @@ import {
   INITIAL_FIREBASE_SLOT_UPGRADES,
 } from '@/lib/section-seed-data';
 import { updatePageSlotImage } from '@/lib/image-manager';
+import {
+  putR2ObjectFromDataUrl,
+  deleteR2Object,
+  extractR2KeyFromCdnUrl,
+} from '@/lib/r2-storage';
 
 export const dynamic = 'force-dynamic';
 
@@ -92,20 +97,48 @@ export async function POST(req: NextRequest) {
 
     if (action === 'save-section-image') {
       const itemId = String(body.itemId || `sec_img_${Date.now()}`);
+      const page = String(body.page || 'index.html');
+      let src = String(body.src || '');
+      let r2Key = body.r2Key
+        ? String(body.r2Key)
+        : extractR2KeyFromCdnUrl(src) || undefined;
+
+      // Never store data: URLs; if one is sent, push it to R2 and use its CDN link
+      if (src.startsWith('data:')) {
+        const migrated = await putR2ObjectFromDataUrl({
+          dataUrl: src,
+          filenameHint: itemId,
+          alt: String(body.alt || body.title || 'Safari photo'),
+          title: String(body.title || 'Safari Wildlife Moment'),
+          page,
+        });
+        src = migrated.cdnUrl;
+        r2Key = migrated.r2Key;
+      }
+
       const newItem = {
         itemId,
-        page: String(body.page || 'index.html'),
+        page,
         sectionKey: String(body.sectionKey || 'general_section'),
         sectionTitle: String(body.sectionTitle || 'Featured Safari Gallery'),
         title: String(body.title || 'Safari Wildlife Moment'),
         caption: String(body.caption || ''),
-        src: String(body.src || ''),
+        src,
+        r2Key,
         alt: String(body.alt || body.title || 'Safari photo'),
         order: typeof body.order === 'number' ? body.order : state.sectionGalleryItems.length + 1,
       };
 
       const existingIdx = state.sectionGalleryItems.findIndex((i) => i.itemId === itemId);
       if (existingIdx >= 0) {
+        const prevItem = state.sectionGalleryItems[existingIdx];
+        if (
+          prevItem.r2Key &&
+          prevItem.r2Key !== r2Key &&
+          !prevItem.r2Key.startsWith('media/')
+        ) {
+          await deleteR2Object(prevItem.r2Key);
+        }
         state.sectionGalleryItems[existingIdx] = newItem;
       } else {
         state.sectionGalleryItems.push(newItem);
@@ -118,6 +151,14 @@ export async function POST(req: NextRequest) {
 
     if (action === 'delete-section-image') {
       const itemId = String(body.itemId || '');
+      const targetItem = state.sectionGalleryItems.find((i) => i.itemId === itemId);
+      const keyToDelete =
+        body.r2Key ||
+        targetItem?.r2Key ||
+        (targetItem?.src ? extractR2KeyFromCdnUrl(targetItem.src) : null);
+      if (keyToDelete) {
+        await deleteR2Object(String(keyToDelete));
+      }
       state.sectionGalleryItems = state.sectionGalleryItems.filter((i) => i.itemId !== itemId);
       await saveCmsState(state);
       const updated = await getAllSiteTexts();
@@ -128,10 +169,29 @@ export async function POST(req: NextRequest) {
       const slotId = String(body.slotId || '');
       const page = String(body.page || 'index.html');
       const slotIndex = Number(body.slotIndex || 0);
-      const src = String(body.src || '');
+      let src = String(body.src || '');
       const alt = String(body.alt ?? '');
+      let r2Key = body.r2Key
+        ? String(body.r2Key)
+        : extractR2KeyFromCdnUrl(src) || undefined;
+
+      if (src.startsWith('data:')) {
+        const migrated = await putR2ObjectFromDataUrl({
+          dataUrl: src,
+          filenameHint: slotId,
+          alt,
+          title: String(body.label || alt || slotId),
+          page,
+        });
+        src = migrated.cdnUrl;
+        r2Key = migrated.r2Key;
+      }
 
       if (slotId && src) {
+        const prevOv = state.imageOverrides[slotId];
+        if (prevOv?.r2Key && prevOv.r2Key !== r2Key && !prevOv.r2Key.startsWith('media/')) {
+          await deleteR2Object(prevOv.r2Key);
+        }
         state.imageOverrides[slotId] = {
           slotId,
           page,
@@ -140,13 +200,14 @@ export async function POST(req: NextRequest) {
           label: String(body.label || 'Image Slot'),
           sectionContext: String(body.sectionContext || 'Page Section'),
           src,
-          lightboxHref: body.lightboxHref ? String(body.lightboxHref) : undefined,
+          lightboxHref: body.lightboxHref ? String(body.lightboxHref) : src,
+          r2Key,
           alt,
+          isDeleted: false,
           updatedAt: new Date().toISOString(),
         };
         await saveCmsState(state);
 
-        // If src is a standard URL (not a multi-hundred-KB data URI), also update the HTML file on disk
         if (!src.startsWith('data:')) {
           try {
             await updatePageSlotImage({
@@ -162,13 +223,34 @@ export async function POST(req: NextRequest) {
         }
       }
       const updated = await getAllSiteTexts();
-      return NextResponse.json({ ok: true, ...updated });
+      return NextResponse.json({ ok: true, src, r2Key, ...updated });
     }
 
     if (action === 'delete-slot-override') {
       const slotId = String(body.slotId || '');
       if (slotId) {
-        delete state.imageOverrides[slotId];
+        const prevOv = state.imageOverrides[slotId];
+        const keyToDelete =
+          body.r2Key ||
+          prevOv?.r2Key ||
+          (prevOv?.src ? extractR2KeyFromCdnUrl(prevOv.src) : null);
+        if (keyToDelete) {
+          await deleteR2Object(String(keyToDelete));
+        }
+        state.imageOverrides[slotId] = {
+          slotId,
+          page: String(body.page || prevOv?.page || 'index.html'),
+          slotIndex: typeof body.slotIndex === 'number' ? body.slotIndex : prevOv?.slotIndex || 0,
+          type: prevOv?.type || body.type || 'img',
+          label: prevOv?.label || String(body.label || 'Image Slot'),
+          sectionContext: prevOv?.sectionContext || String(body.sectionContext || 'Page Section'),
+          src: '',
+          lightboxHref: '',
+          r2Key: undefined,
+          alt: prevOv?.alt || '',
+          isDeleted: true,
+          updatedAt: new Date().toISOString(),
+        };
         await saveCmsState(state);
       }
       const updated = await getAllSiteTexts();

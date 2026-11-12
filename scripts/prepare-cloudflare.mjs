@@ -6,8 +6,11 @@ const ROOT_DIR = fileURLToPath(new URL('../', import.meta.url));
 const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
 const DEFAULTS_HTML_DIR = path.join(PUBLIC_DIR, 'assets', 'html-defaults');
 const CMS_STATE_PATH = path.join(PUBLIC_DIR, 'assets', 'firebase-cms-state.json');
+const R2_INDEX_PATH = path.join(PUBLIC_DIR, 'assets', 'r2-bucket', '_index.json');
 const CF_DIR = path.join(ROOT_DIR, '.cloudflare');
 const CF_ASSETS_DIR = path.join(CF_DIR, 'assets');
+const DEFAULT_R2_BUCKET_NAME =
+  process.env.R2_BUCKET_NAME || 'ai-studio-applet-opennext-cache';
 
 const SITE_PAGES = [
   { file: 'index.html', title: 'Home' },
@@ -63,7 +66,6 @@ function parsePageSlots(html) {
   let match;
   while ((match = tokenRegex.exec(html)) !== null) {
     const startIndex = match.index;
-    const fullTag = match[0];
 
     if (match[1]) {
       const bgUrl = match[2].trim();
@@ -215,6 +217,18 @@ async function buildInventories() {
     // use default empty state if file missing
   }
 
+  let r2Index = { objects: {}, deletedMediaKeys: [] };
+  try {
+    const rawIdx = await fs.readFile(R2_INDEX_PATH, 'utf8');
+    const parsedIdx = JSON.parse(rawIdx);
+    r2Index = {
+      objects: parsedIdx.objects || {},
+      deletedMediaKeys: Array.isArray(parsedIdx.deletedMediaKeys) ? parsedIdx.deletedMediaKeys : [],
+    };
+  } catch {
+    // ignore if _index.json does not exist yet
+  }
+
   const slotCountBySrc = new Map();
   const usageMap = new Map();
   const allRawByPage = new Map();
@@ -278,6 +292,7 @@ async function buildInventories() {
         sectionContext: m.sectionContext,
         src: effectiveSrc,
         lightboxHref: override?.lightboxHref || m.lightboxHref,
+        r2Key: override?.r2Key,
         alt: effectiveAlt,
         assetFilename,
         sharedCount,
@@ -288,6 +303,16 @@ async function buildInventories() {
   }
 
   const mediaAssets = [];
+  const r2ObjectsMap = new Map();
+
+  for (const [k, obj] of Object.entries(r2Index.objects)) {
+    r2ObjectsMap.set(k, {
+      ...obj,
+      cdnUrl: `/api/r2/file/${k}`,
+      bucketName: DEFAULT_R2_BUCKET_NAME,
+    });
+  }
+
   const mediaDir = path.join(PUBLIC_DIR, 'assets', 'media');
   try {
     const files = await fs.readdir(mediaDir);
@@ -297,10 +322,13 @@ async function buildInventories() {
       if (!stat.isFile()) continue;
       const { format, mimeType } = detectFormatFromExt(filename);
       const mediaPath = `assets/media/${filename}`;
+      const r2Key = `media/${filename}`;
       const pagesSet = usageMap.get(mediaPath);
 
       mediaAssets.push({
         mediaPath,
+        r2Key,
+        cdnUrl: `/api/r2/file/${r2Key}`,
         filename,
         format,
         url: `/${mediaPath}`,
@@ -311,10 +339,27 @@ async function buildInventories() {
         usageCount: slotCountBySrc.get(mediaPath) || (pagesSet ? pagesSet.size : 0),
         hasDefaultBackup: !filename.startsWith('custom-'),
       });
+
+      if (!r2ObjectsMap.has(r2Key) && !r2Index.deletedMediaKeys.includes(r2Key)) {
+        const cleanTitle = filename.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim();
+        r2ObjectsMap.set(r2Key, {
+          r2Key,
+          filename,
+          cdnUrl: `/api/r2/file/${r2Key}`,
+          mimeType,
+          sizeBytes: stat.size,
+          alt: cleanTitle,
+          title: cleanTitle,
+          updatedAt: stat.mtime.toISOString(),
+          bucketName: DEFAULT_R2_BUCKET_NAME,
+        });
+      }
     }
   } catch {
     // ignore
   }
+
+  const r2Objects = Array.from(r2ObjectsMap.values());
 
   const textSlots = [];
   const customTexts = [];
@@ -381,8 +426,10 @@ async function buildInventories() {
 
   return {
     imagesPayload: {
+      bucketName: DEFAULT_R2_BUCKET_NAME,
       slots: enrichedSlots,
       mediaAssets,
+      r2Objects,
       pages: imagePagesSummary,
     },
     cmsPayload: {
@@ -444,30 +491,387 @@ async function main() {
     await fs.copyFile(notFoundHtmlPath, path.join(CF_ASSETS_DIR, '404.html'));
   }
 
-  // 4. Build inventories and generate .cloudflare/worker.mjs
+  // 4. Build inventories and generate .cloudflare/worker.mjs with native Cloudflare R2_BUCKET support
   const { imagesPayload, cmsPayload } = await buildInventories();
 
-  const workerCode = `// Auto-generated Cloudflare Worker for Nisha Safari (Next.js + Static Assets)
+  const workerCode = `// Auto-generated Cloudflare Worker for Nisha Safari (Next.js + Cloudflare R2 Bucket + Static Assets)
 const IMAGES_INVENTORY = ${JSON.stringify(imagesPayload)};
 const CMS_INVENTORY = ${JSON.stringify(cmsPayload)};
+const BUCKET_NAME = ${JSON.stringify(DEFAULT_R2_BUCKET_NAME)};
 
 const JSON_HEADERS = {
   'Content-Type': 'application/json; charset=utf-8',
   'Cache-Control': 'no-store, no-cache, must-revalidate',
 };
 
+function guessMimeType(key) {
+  const lower = (key || '').toLowerCase();
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.webp')) return 'image/webp';
+  if (lower.endsWith('.gif')) return 'image/gif';
+  if (lower.endsWith('.svg')) return 'image/svg+xml';
+  if (lower.endsWith('.avif')) return 'image/avif';
+  return 'image/jpeg';
+}
+
+function sanitizeKey(raw) {
+  return String(raw || '')
+    .trim()
+    .replace(/\\\\/g, '/')
+    .replace(/^\\/+/, '')
+    .replace(/\\.\\.+/, '')
+    .replace(/[^a-zA-Z0-9._/-]/g, '-');
+}
+
+async function listLiveR2Objects(env) {
+  const map = new Map();
+  for (const item of IMAGES_INVENTORY.r2Objects || []) {
+    map.set(item.r2Key, { ...item });
+  }
+  if (env && env.R2_BUCKET && typeof env.R2_BUCKET.list === 'function') {
+    try {
+      const listed = await env.R2_BUCKET.list({ include: ['httpMetadata', 'customMetadata'] });
+      for (const obj of listed.objects || []) {
+        const r2Key = obj.key;
+        const filename = r2Key.split('/').pop() || r2Key;
+        const meta = obj.customMetadata || {};
+        map.set(r2Key, {
+          r2Key,
+          filename,
+          cdnUrl: '/api/r2/file/' + r2Key,
+          mimeType: (obj.httpMetadata && obj.httpMetadata.contentType) || guessMimeType(r2Key),
+          sizeBytes: obj.size || 0,
+          alt: meta.alt || filename,
+          title: meta.title || filename,
+          page: meta.page || undefined,
+          updatedAt: obj.uploaded ? new Date(obj.uploaded).toISOString() : new Date().toISOString(),
+          bucketName: BUCKET_NAME,
+        });
+      }
+    } catch (e) {
+      // fallback to static inventory if list fails
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+}
+
+async function uploadFileToWorkerR2(env, { bytes, originalFilename, mimeType, customKey, replaceKey, alt, title, page }) {
+  const extMatch = String(originalFilename || customKey || 'image.jpg').match(/\\.([a-zA-Z0-9]+)$/);
+  const ext = extMatch ? extMatch[1].toLowerCase() : 'jpg';
+  const baseSlug = String(originalFilename || 'safari-photo')
+    .replace(/\\.[^.]+$/, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60) || 'safari-photo';
+
+  let r2Key;
+  if (customKey && String(customKey).trim()) {
+    r2Key = sanitizeKey(customKey);
+    if (!/\\.[a-z0-9]+$/i.test(r2Key)) r2Key += '.' + ext;
+  } else if (replaceKey && String(replaceKey).startsWith('media/')) {
+    r2Key = sanitizeKey(replaceKey);
+  } else {
+    const folder = page ? String(page).replace('.html', '').replace(/[^a-z0-9_-]/gi, '-') : 'uploads';
+    r2Key = folder + '/' + Date.now() + '-' + baseSlug + '.' + ext;
+  }
+
+  const finalMime = mimeType || guessMimeType(r2Key);
+  const now = new Date().toISOString();
+
+  if (env && env.R2_BUCKET) {
+    if (replaceKey && replaceKey !== r2Key) {
+      try {
+        await env.R2_BUCKET.delete(sanitizeKey(replaceKey));
+      } catch (e) {}
+    }
+    await env.R2_BUCKET.put(r2Key, bytes, {
+      httpMetadata: { contentType: finalMime },
+      customMetadata: {
+        alt: String(alt || baseSlug),
+        title: String(title || originalFilename || r2Key),
+        page: String(page || ''),
+        updatedAt: now,
+      },
+    });
+  }
+
+  return {
+    r2Key,
+    filename: r2Key.split('/').pop() || r2Key,
+    cdnUrl: '/api/r2/file/' + r2Key,
+    mimeType: finalMime,
+    sizeBytes: bytes.byteLength || 0,
+    alt: String(alt || baseSlug),
+    title: String(title || originalFilename || r2Key),
+    page: page || undefined,
+    updatedAt: now,
+    bucketName: BUCKET_NAME,
+  };
+}
+
 const worker = {
   async fetch(request, env) {
     const url = new URL(request.url);
     const pathname = url.pathname;
 
+    // 1. Serve R2 Bucket Object via CDN URL: /api/r2/file/:key*
+    if (pathname.startsWith('/api/r2/file/')) {
+      const rawKey = decodeURIComponent(pathname.slice('/api/r2/file/'.length));
+      const r2Key = sanitizeKey(rawKey);
+      if (!r2Key) {
+        return new Response('Missing R2 key', { status: 400 });
+      }
+
+      if (env && env.R2_BUCKET) {
+        try {
+          const obj = await env.R2_BUCKET.get(r2Key);
+          if (obj) {
+            const headers = new Headers();
+            if (typeof obj.writeHttpMetadata === 'function') {
+              obj.writeHttpMetadata(headers);
+            }
+            if (!headers.has('Content-Type')) {
+              headers.set('Content-Type', guessMimeType(r2Key));
+            }
+            headers.set('Cache-Control', 'public, max-age=31536000, stale-while-revalidate=86400');
+            if (obj.httpEtag) headers.set('ETag', obj.httpEtag);
+            headers.set('X-R2-Key', r2Key);
+            return new Response(obj.body, { status: 200, headers });
+          }
+        } catch (e) {
+          // fallback to static assets
+        }
+      }
+
+      // Fallback 1: check /assets/r2-bucket/<r2Key>
+      const r2AssetRes = await env.ASSETS.fetch(new Request(new URL('/assets/r2-bucket/' + r2Key, url.origin), request));
+      if (r2AssetRes.ok) return r2AssetRes;
+
+      // Fallback 2: if media/<filename>, check /assets/media/<filename>
+      const fileNameOnly = r2Key.split('/').pop();
+      if (fileNameOnly) {
+        return env.ASSETS.fetch(new Request(new URL('/assets/media/' + fileNameOnly, url.origin), request));
+      }
+      return new Response('R2 object not found', { status: 404 });
+    }
+
+    // 2. Cloudflare R2 Bucket Management API: /api/r2
+    if (pathname === '/api/r2') {
+      if (request.method === 'GET') {
+        const objects = await listLiveR2Objects(env);
+        return new Response(JSON.stringify({ ok: true, bucketName: BUCKET_NAME, objects }), {
+          status: 200,
+          headers: JSON_HEADERS,
+        });
+      }
+
+      if (request.method === 'POST' || request.method === 'PUT') {
+        const ct = request.headers.get('content-type') || '';
+        if (ct.includes('multipart/form-data')) {
+          const formData = await request.formData();
+          const file = formData.get('file');
+          if (!file || typeof file.arrayBuffer !== 'function') {
+            return new Response(JSON.stringify({ error: 'Image file is required' }), { status: 400, headers: JSON_HEADERS });
+          }
+          const bytes = await file.arrayBuffer();
+          const record = await uploadFileToWorkerR2(env, {
+            bytes,
+            originalFilename: file.name || 'upload.jpg',
+            mimeType: file.type || undefined,
+            customKey: formData.get('customKey') ? String(formData.get('customKey')) : undefined,
+            replaceKey: formData.get('replaceKey') ? String(formData.get('replaceKey')) : undefined,
+            alt: formData.get('alt') !== null ? String(formData.get('alt')) : undefined,
+            title: formData.get('title') !== null ? String(formData.get('title')) : undefined,
+            page: formData.get('page') ? String(formData.get('page')) : undefined,
+          });
+          const objects = await listLiveR2Objects(env);
+          return new Response(
+            JSON.stringify({
+              ok: true,
+              object: record,
+              r2Key: record.r2Key,
+              cdnUrl: record.cdnUrl,
+              sizeBytes: record.sizeBytes,
+              mimeType: record.mimeType,
+              objects,
+            }),
+            { status: 200, headers: JSON_HEADERS }
+          );
+        }
+
+        const body = await request.json();
+        if (body.action === 'upload-data-url' && typeof body.dataUrl === 'string') {
+          const match = body.dataUrl.match(/^data:([^;,]+)?(?:;base64)?,([\\s\\S]*)$/i);
+          if (!match) {
+            return new Response(JSON.stringify({ error: 'Invalid data URL' }), { status: 400, headers: JSON_HEADERS });
+          }
+          const mimeType = (match[1] || 'image/jpeg').trim();
+          const binStr = atob(match[2].trim());
+          const bytes = new Uint8Array(binStr.length);
+          for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+          const ext = mimeType.includes('png') ? 'png' : mimeType.includes('webp') ? 'webp' : mimeType.includes('svg') ? 'svg' : 'jpg';
+          const record = await uploadFileToWorkerR2(env, {
+            bytes: bytes.buffer,
+            originalFilename: (body.filenameHint || 'migrated') + '.' + ext,
+            mimeType,
+            alt: body.alt,
+            title: body.title,
+            page: body.page,
+          });
+          const objects = await listLiveR2Objects(env);
+          return new Response(JSON.stringify({ ok: true, object: record, r2Key: record.r2Key, cdnUrl: record.cdnUrl, objects }), {
+            status: 200,
+            headers: JSON_HEADERS,
+          });
+        }
+
+        if (body.action === 'update-meta' && body.r2Key) {
+          const oldKey = sanitizeKey(body.r2Key);
+          const newKey = body.newKey ? sanitizeKey(body.newKey) : oldKey;
+          if (env && env.R2_BUCKET) {
+            const existingObj = await env.R2_BUCKET.get(oldKey);
+            if (existingObj) {
+              const buf = await existingObj.arrayBuffer();
+              const mime = (existingObj.httpMetadata && existingObj.httpMetadata.contentType) || guessMimeType(newKey);
+              await env.R2_BUCKET.put(newKey, buf, {
+                httpMetadata: { contentType: mime },
+                customMetadata: {
+                  alt: String(body.alt ?? ''),
+                  title: String(body.title ?? newKey),
+                  page: String(body.page ?? ''),
+                  updatedAt: new Date().toISOString(),
+                },
+              });
+              if (newKey !== oldKey) {
+                await env.R2_BUCKET.delete(oldKey);
+              }
+            }
+          }
+          const objects = await listLiveR2Objects(env);
+          return new Response(
+            JSON.stringify({
+              ok: true,
+              r2Key: newKey,
+              cdnUrl: '/api/r2/file/' + newKey,
+              objects,
+            }),
+            { status: 200, headers: JSON_HEADERS }
+          );
+        }
+
+        if (body.action === 'delete' && (body.r2Key || body.cdnUrl)) {
+          const rawTarget = String(body.r2Key || body.cdnUrl).replace(/^.*\\/api\\/r2\\/file\\//, '');
+          const cleanTarget = sanitizeKey(rawTarget);
+          if (env && env.R2_BUCKET && cleanTarget) {
+            await env.R2_BUCKET.delete(cleanTarget);
+          }
+          const objects = await listLiveR2Objects(env);
+          return new Response(JSON.stringify({ ok: true, deletedKey: cleanTarget, objects }), {
+            status: 200,
+            headers: JSON_HEADERS,
+          });
+        }
+      }
+
+      if (request.method === 'PATCH') {
+        const body = await request.json();
+        const oldKey = sanitizeKey(body.r2Key || '');
+        const newKey = body.newKey ? sanitizeKey(body.newKey) : oldKey;
+        if (env && env.R2_BUCKET && oldKey) {
+          const existingObj = await env.R2_BUCKET.get(oldKey);
+          if (existingObj) {
+            const buf = await existingObj.arrayBuffer();
+            const mime = (existingObj.httpMetadata && existingObj.httpMetadata.contentType) || guessMimeType(newKey);
+            await env.R2_BUCKET.put(newKey, buf, {
+              httpMetadata: { contentType: mime },
+              customMetadata: {
+                alt: String(body.alt ?? ''),
+                title: String(body.title ?? newKey),
+                page: String(body.page ?? ''),
+                updatedAt: new Date().toISOString(),
+              },
+            });
+            if (newKey !== oldKey) {
+              await env.R2_BUCKET.delete(oldKey);
+            }
+          }
+        }
+        const objects = await listLiveR2Objects(env);
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            r2Key: newKey,
+            cdnUrl: '/api/r2/file/' + newKey,
+            objects,
+          }),
+          { status: 200, headers: JSON_HEADERS }
+        );
+      }
+
+      if (request.method === 'DELETE') {
+        let keyParam = url.searchParams.get('key') || url.searchParams.get('r2Key') || '';
+        if (!keyParam) {
+          try {
+            const body = await request.json();
+            keyParam = String(body.r2Key || body.key || body.cdnUrl || '');
+          } catch (e) {}
+        }
+        const cleanTarget = sanitizeKey(keyParam.replace(/^.*\\/api\\/r2\\/file\\//, ''));
+        if (env && env.R2_BUCKET && cleanTarget) {
+          await env.R2_BUCKET.delete(cleanTarget);
+        }
+        const objects = await listLiveR2Objects(env);
+        return new Response(JSON.stringify({ ok: true, deletedKey: cleanTarget, objects }), {
+          status: 200,
+          headers: JSON_HEADERS,
+        });
+      }
+    }
+
     // API: /api/admin/images
     if (pathname === '/api/admin/images') {
       if (request.method === 'GET') {
-        return new Response(JSON.stringify(IMAGES_INVENTORY), { status: 200, headers: JSON_HEADERS });
+        const r2Objects = await listLiveR2Objects(env);
+        return new Response(JSON.stringify({ ...IMAGES_INVENTORY, r2Objects }), {
+          status: 200,
+          headers: JSON_HEADERS,
+        });
       }
       if (request.method === 'POST') {
-        return new Response(JSON.stringify({ ok: true, ...IMAGES_INVENTORY }), {
+        const ct = request.headers.get('content-type') || '';
+        if (ct.includes('multipart/form-data')) {
+          const formData = await request.formData();
+          const file = formData.get('file');
+          if (file && typeof file.arrayBuffer === 'function') {
+            const bytes = await file.arrayBuffer();
+            const mode = String(formData.get('mode') || 'update-slot');
+            const assetFilename = String(formData.get('assetFilename') || '');
+            const record = await uploadFileToWorkerR2(env, {
+              bytes,
+              originalFilename: assetFilename || file.name || 'upload.jpg',
+              mimeType: file.type || undefined,
+              customKey: mode === 'replace-media' && assetFilename ? 'media/' + assetFilename.split('/').pop() : undefined,
+              replaceKey: mode === 'replace-media' && assetFilename ? 'media/' + assetFilename.split('/').pop() : undefined,
+              alt: formData.get('altText') ? String(formData.get('altText')) : undefined,
+              page: formData.get('page') ? String(formData.get('page')) : undefined,
+            });
+            const r2Objects = await listLiveR2Objects(env);
+            return new Response(
+              JSON.stringify({
+                ok: true,
+                updatedSrc: record.cdnUrl,
+                cdnUrl: record.cdnUrl,
+                r2Key: record.r2Key,
+                ...IMAGES_INVENTORY,
+                r2Objects,
+              }),
+              { status: 200, headers: JSON_HEADERS }
+            );
+          }
+        }
+        const r2Objects = await listLiveR2Objects(env);
+        return new Response(JSON.stringify({ ok: true, ...IMAGES_INVENTORY, r2Objects }), {
           status: 200,
           headers: JSON_HEADERS,
         });

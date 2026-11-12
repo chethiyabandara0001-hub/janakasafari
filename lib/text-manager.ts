@@ -62,7 +62,9 @@ export interface CmsPersistedState {
       sectionContext: string;
       src: string;
       lightboxHref?: string;
+      r2Key?: string;
       alt: string;
+      isDeleted?: boolean;
       updatedAt: string;
     }
   >;
@@ -108,7 +110,6 @@ interface ParsedTextMatch {
  */
 export function parsePageTextSlots(html: string): ParsedTextMatch[] {
   const results: ParsedTextMatch[] = [];
-  // Extract the <main ...>...</main> region so we don't index nav chrome or hidden dialogs
   const mainMatch = html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i);
   const targetRegion = mainMatch ? mainMatch[1] : html;
 
@@ -122,7 +123,6 @@ export function parsePageTextSlots(html: string): ParsedTextMatch[] {
   while ((match = regex.exec(targetRegion)) !== null) {
     const rawTag = match[1] ? match[1].toUpperCase() : 'SPAN';
     const innerHtml = match[1] ? match[2] : match[3];
-    // Skip elements that contain nested block elements to avoid duplicate parent/child matches
     if (/<(p|div|ul|ol|table|h1|h2|h3|h4)\b/i.test(innerHtml)) {
       continue;
     }
@@ -157,7 +157,7 @@ export async function getCmsState(): Promise<CmsPersistedState> {
   try {
     const raw = await fs.readFile(CMS_STATE_PATH, 'utf8');
     const parsed = JSON.parse(raw) as CmsPersistedState;
-    if (!parsed.sectionGalleryItems || parsed.sectionGalleryItems.length === 0) {
+    if (!Array.isArray(parsed.sectionGalleryItems)) {
       parsed.sectionGalleryItems = [...INITIAL_FIREBASE_SECTION_IMAGES];
     }
     if (!parsed.textOverrides) parsed.textOverrides = {};
