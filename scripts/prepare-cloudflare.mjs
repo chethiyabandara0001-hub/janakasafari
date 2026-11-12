@@ -538,9 +538,9 @@ function getR2BucketBinding(env) {
 }
 
 function getWorkerCdnBase(env) {
-  const publicUrl = (env && (env.R2_PUBLIC_URL || env.NEXT_PUBLIC_R2_PUBLIC_URL)) || '';
+  const publicUrl = (env && (env.R2_PUBLIC_URL || env.NEXT_PUBLIC_R2_PUBLIC_URL)) || 'https://cdn.srilankabestsafari.com';
   if (publicUrl && String(publicUrl).trim()) {
-    const trimmed = String(publicUrl).trim().replace(/\/+$/, '');
+    const trimmed = String(publicUrl).trim().replace(/\\/+$/, '');
     return trimmed.startsWith('http://') || trimmed.startsWith('https://') ? trimmed : 'https://' + trimmed;
   }
   return '/api/r2/file';
@@ -698,10 +698,20 @@ const worker = {
     if (pathname === '/api/r2') {
       if (request.method === 'GET') {
         const objects = await listLiveR2Objects(env);
-        return new Response(JSON.stringify({ ok: true, bucketName: activeBucketName, objects }), {
-          status: 200,
-          headers: JSON_HEADERS,
-        });
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            bucketName: activeBucketName,
+            cdnBase,
+            remoteSyncEnabled: Boolean(r2Bucket),
+            remoteMode: r2Bucket ? 'worker-binding' : 'static-fallback',
+            objects,
+          }),
+          {
+            status: 200,
+            headers: JSON_HEADERS,
+          }
+        );
       }
 
       if (request.method === 'POST' || request.method === 'PUT') {
@@ -739,6 +749,68 @@ const worker = {
         }
 
         const body = await request.json();
+        if (body.action === 'test-connection' || body.action === 'save-credentials') {
+          const objects = await listLiveR2Objects(env);
+          return new Response(
+            JSON.stringify({
+              ok: true,
+              mode: r2Bucket ? 'worker-binding' : 'static-fallback',
+              bucketName: activeBucketName,
+              cdnBase,
+              remoteSyncEnabled: Boolean(r2Bucket),
+              remoteMode: r2Bucket ? 'worker-binding' : 'static-fallback',
+              objects,
+            }),
+            { status: 200, headers: JSON_HEADERS }
+          );
+        }
+
+        if (body.action === 'sync-remote-r2') {
+          let synced = 0;
+          let failed = 0;
+          const errors = [];
+          if (r2Bucket) {
+            for (const item of IMAGES_INVENTORY.r2Objects || []) {
+              try {
+                const existing = await r2Bucket.head(item.r2Key);
+                if (!existing) {
+                  const assetRes = await env.ASSETS.fetch(new Request(new URL('/assets/r2-bucket/' + item.r2Key, url.origin)));
+                  if (assetRes.ok) {
+                    const buf = await assetRes.arrayBuffer();
+                    await r2Bucket.put(item.r2Key, buf, {
+                      httpMetadata: { contentType: item.mimeType || guessMimeType(item.r2Key) },
+                      customMetadata: {
+                        alt: String(item.alt || ''),
+                        title: String(item.title || item.filename || item.r2Key),
+                        page: String(item.page || ''),
+                      },
+                    });
+                  }
+                }
+                synced++;
+              } catch (e) {
+                failed++;
+                errors.push(item.r2Key + ': ' + (e && e.message ? e.message : String(e)));
+              }
+            }
+          }
+          const objects = await listLiveR2Objects(env);
+          return new Response(
+            JSON.stringify({
+              ok: failed === 0,
+              synced,
+              failed,
+              total: (IMAGES_INVENTORY.r2Objects || []).length,
+              mode: r2Bucket ? 'worker-binding' : 'static-fallback',
+              errors: errors.slice(0, 10),
+              bucketName: activeBucketName,
+              cdnBase,
+              objects,
+            }),
+            { status: 200, headers: JSON_HEADERS }
+          );
+        }
+
         if (body.action === 'upload-data-url' && typeof body.dataUrl === 'string') {
           const match = body.dataUrl.match(/^data:([^;,]+)?(?:;base64)?,([\\s\\S]*)$/i);
           if (!match) {
