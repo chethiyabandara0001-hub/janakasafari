@@ -937,6 +937,13 @@
             } else {
               entry.element.removeAttribute("src");
               entry.element.style.display = "none";
+              const holder =
+                entry.element.closest(".galleryImageHolder") ||
+                entry.element.closest("a[data-lightbox]") ||
+                entry.element.closest(".wsite-image");
+              if (holder) {
+                holder.style.display = "none";
+              }
             }
             return;
           }
@@ -959,6 +966,13 @@
               return;
             }
             entry.element.style.display = "";
+            const holder =
+              entry.element.closest(".galleryImageHolder") ||
+              entry.element.closest("a[data-lightbox]") ||
+              entry.element.closest(".wsite-image");
+            if (holder) {
+              holder.style.display = "";
+            }
             entry.element.src = ov.src;
             if (ov.alt) entry.element.alt = ov.alt;
             const parentAnchor = entry.element.closest("a[data-lightbox]");
@@ -1106,11 +1120,6 @@
           const delBtn = card.querySelector("[data-delete-sec-img]");
           if (delBtn) {
             delBtn.addEventListener("click", async () => {
-              if (item.r2Key) {
-                await fetch(`/api/r2?key=${encodeURIComponent(item.r2Key)}`, {
-                  method: "DELETE",
-                }).catch(() => {});
-              }
               await fetch("/api/admin/cms", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

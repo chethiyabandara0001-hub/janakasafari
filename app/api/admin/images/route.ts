@@ -256,14 +256,13 @@ export async function POST(req: NextRequest) {
       const slotId = body.slotId ? String(body.slotId) : makeImageSlotId(page, slotIndex);
       const cmsState = await getCmsState();
       const prevOv = cmsState.imageOverrides[slotId];
-      const keyToDelete =
+      const rawKeyCandidate =
         body.r2Key ||
         prevOv?.r2Key ||
         (prevOv?.src ? extractR2KeyFromCdnUrl(prevOv.src) : undefined);
-
-      if (keyToDelete) {
-        await deleteR2Object(String(keyToDelete));
-      }
+      const keyToDelete = rawKeyCandidate
+        ? extractR2KeyFromCdnUrl(String(rawKeyCandidate)) || String(rawKeyCandidate)
+        : undefined;
 
       cmsState.imageOverrides[slotId] = {
         slotId,
@@ -281,6 +280,22 @@ export async function POST(req: NextRequest) {
       };
       await saveCmsState(cmsState);
       await deleteSiteImageInFirestore(slotId).catch(() => {});
+
+      if (keyToDelete && !keyToDelete.startsWith('media/')) {
+        const usedByOtherSlot = Object.values(cmsState.imageOverrides).some(
+          (ov) =>
+            ov &&
+            ov.slotId !== slotId &&
+            !ov.isDeleted &&
+            (ov.r2Key === keyToDelete || (ov.src && ov.src.includes(keyToDelete)))
+        );
+        const usedBySection = cmsState.sectionGalleryItems.some(
+          (sec) => sec.r2Key === keyToDelete || (sec.src && sec.src.includes(keyToDelete))
+        );
+        if (!usedByOtherSlot && !usedBySection) {
+          await deleteR2Object(keyToDelete);
+        }
+      }
 
       const data = await buildEnrichedImageInventory();
       return NextResponse.json({ ok: true, slotId, deletedKey: keyToDelete, ...data });

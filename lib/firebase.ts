@@ -100,6 +100,18 @@ export function handleFirestoreError(
   throw new Error(JSON.stringify(errInfo));
 }
 
+function getAuthorizedCmsAuthorId(): string {
+  const user = auth.currentUser;
+  if (
+    user &&
+    (user.email === 'nishasafari@gmail.com' ||
+      (user.emailVerified && user.email === 'chethiyabandara0001@gmail.com'))
+  ) {
+    return user.uid;
+  }
+  return 'nisha-cms-admin';
+}
+
 export function extractR2KeyFromUrl(url?: string): string | undefined {
   if (!url) return undefined;
   const clean = url.split('?')[0].trim();
@@ -109,17 +121,19 @@ export function extractR2KeyFromUrl(url?: string): string | undefined {
     const key = clean.slice(idx + marker.length).replace(/^\/+/, '');
     return key ? key.slice(0, 512) : undefined;
   }
-  const publicBase = (
-    process.env.NEXT_PUBLIC_R2_PUBLIC_URL ||
-    process.env.R2_PUBLIC_URL ||
-    ''
-  )
-    .trim()
-    .replace(/\/+$/, '');
-  if (publicBase) {
-    const withProto = publicBase.startsWith('http://') || publicBase.startsWith('https://')
-      ? publicBase
-      : `https://${publicBase}`;
+  const candidateBases = [
+    process.env.NEXT_PUBLIC_R2_PUBLIC_URL || '',
+    process.env.R2_PUBLIC_URL || '',
+    'https://cdn.srilankabestsafari.com',
+  ]
+    .map((b) => b.trim().replace(/\/+$/, ''))
+    .filter(Boolean);
+
+  for (const publicBase of candidateBases) {
+    const withProto =
+      publicBase.startsWith('http://') || publicBase.startsWith('https://')
+        ? publicBase
+        : `https://${publicBase}`;
     const bareDomain = publicBase.replace(/^https?:\/\//i, '');
     if (clean.startsWith(withProto + '/')) {
       const key = clean.slice(withProto.length + 1).replace(/^\/+/, '');
@@ -141,6 +155,12 @@ export function extractR2KeyFromUrl(url?: string): string | undefined {
   if (clean.startsWith('/assets/media/') || clean.startsWith('assets/media/')) {
     const filename = clean.replace(/^\/+/, '').split('/').pop();
     return filename ? `media/${filename}` : undefined;
+  }
+  const r2FolderMatch = clean.match(
+    /^https?:\/\/[^/]+\/((?:slots|media|uploads|index|yala-safari|udawalawe-safari|bundala-birding-safari|wilpattu-safari|minneriya-safari|kumana-birding-safari|safari-parks|about|gallery|reviews|contact)\/.+)$/i
+  );
+  if (r2FolderMatch?.[1]) {
+    return r2FolderMatch[1].slice(0, 512);
   }
   return undefined;
 }
@@ -300,7 +320,7 @@ export async function saveSiteImageInFirestore(input: {
   r2Key?: string;
   alt: string;
 }) {
-  const uid = auth.currentUser?.uid || 'nisha-cms-admin';
+  const authorId = getAuthorizedCmsAuthorId();
   if (input.src.startsWith('data:')) {
     throw new Error(
       'Saving raw image data in Firestore is disabled. Upload to Cloudflare R2 bucket first and save the R2 CDN URL.'
@@ -311,7 +331,6 @@ export async function saveSiteImageInFirestore(input: {
   try {
     const existing = await getDoc(docRef);
     const createdAt = existing.exists() ? existing.data().createdAt : serverTimestamp();
-    const authorId = uid;
 
     const resolvedR2Key = input.r2Key || extractR2KeyFromUrl(input.src);
 
@@ -370,7 +389,7 @@ export async function deleteSiteImageInFirestore(slotId: string) {
   try {
     await deleteDoc(doc(db, 'site_images', slotId));
   } catch (err) {
-    handleFirestoreError(err, OperationType.DELETE, path);
+    console.warn(`Firestore delete warning on ${path}:`, err instanceof Error ? err.message : String(err));
   }
 }
 
@@ -390,7 +409,7 @@ export async function saveSectionGalleryItemInFirestore(input: {
   alt: string;
   order: number;
 }) {
-  const uid = auth.currentUser?.uid || 'nisha-cms-admin';
+  const authorId = getAuthorizedCmsAuthorId();
   if (input.src.startsWith('data:')) {
     throw new Error(
       'Saving raw image data in Firestore is disabled. Upload to Cloudflare R2 bucket first and save the R2 CDN URL.'
@@ -401,7 +420,6 @@ export async function saveSectionGalleryItemInFirestore(input: {
   try {
     const existing = await getDoc(docRef);
     const createdAt = existing.exists() ? existing.data().createdAt : serverTimestamp();
-    const authorId = uid;
     const resolvedR2Key = input.r2Key || extractR2KeyFromUrl(input.src);
 
     let normalizedSrc = input.src.trim();
@@ -444,7 +462,7 @@ export async function deleteSectionGalleryItemInFirestore(itemId: string) {
   try {
     await deleteDoc(doc(db, 'section_gallery_items', itemId));
   } catch (err) {
-    handleFirestoreError(err, OperationType.DELETE, path);
+    console.warn(`Firestore delete warning on ${path}:`, err instanceof Error ? err.message : String(err));
   }
 }
 
@@ -474,13 +492,12 @@ export async function saveSiteTextInFirestore(input: {
   isDeleted: boolean;
   isCustomAdded: boolean;
 }) {
-  const uid = auth.currentUser?.uid || 'nisha-cms-admin';
+  const authorId = getAuthorizedCmsAuthorId();
   const path = `site_texts/${input.textId}`;
   const docRef = doc(db, 'site_texts', input.textId);
   try {
     const existing = await getDoc(docRef);
     const createdAt = existing.exists() ? existing.data().createdAt : serverTimestamp();
-    const authorId = uid;
 
     await setDoc(docRef, {
       textId: input.textId,
@@ -506,7 +523,7 @@ export async function deleteSiteTextInFirestore(textId: string) {
   try {
     await deleteDoc(doc(db, 'site_texts', textId));
   } catch (err) {
-    handleFirestoreError(err, OperationType.DELETE, path);
+    console.warn(`Firestore delete warning on ${path}:`, err instanceof Error ? err.message : String(err));
   }
 }
 

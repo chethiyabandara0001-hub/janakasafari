@@ -756,13 +756,17 @@ export default function AdminCmsStudioPage() {
     [slots, sectionImages, textSlots, customTexts, firestoreSectionDocs, firestoreImageDocs, fetchInventory, showNotice]
   );
 
-  // One-time sync when R2 & CMS inventory is loaded
+  // Background remote R2 sync check on initial load (without overwriting Firestore deletions)
   useEffect(() => {
     if (adminAuthenticated && !loading && slots.length > 0 && !autoSeededRef.current) {
       autoSeededRef.current = true;
-      void handleSeedSectionImagesToFirestore(true);
+      void fetch('/api/r2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'sync-remote-r2' }),
+      }).catch(() => {});
     }
-  }, [adminAuthenticated, loading, slots.length, handleSeedSectionImagesToFirestore]);
+  }, [adminAuthenticated, loading, slots.length]);
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1189,9 +1193,28 @@ export default function AdminCmsStudioPage() {
     setSlotSaving(true);
     try {
       const r2KeyToDelete = slot.r2Key || extractR2KeyFromUrl(slot.src);
-      if (r2KeyToDelete) {
-        await deleteImageFromR2Bucket(r2KeyToDelete);
-      }
+
+      // Optimistically update local slot & Firestore state immediately
+      setSlots((prev) =>
+        prev.map((s) =>
+          s.slotId === slot.slotId
+            ? {
+                ...s,
+                src: '',
+                lightboxHref: '',
+                r2Key: undefined,
+                isDeleted: true,
+                isModified: true,
+              }
+            : s
+        )
+      );
+      setFirestoreImageDocs((prev) => {
+        const next = { ...prev };
+        delete next[slot.slotId];
+        return next;
+      });
+      setEditingSlot(null);
 
       const res = await fetch('/api/admin/images', {
         method: 'POST',
@@ -1202,18 +1225,30 @@ export default function AdminCmsStudioPage() {
           slotIndex: slot.slotIndex,
           slotId: slot.slotId,
           r2Key: r2KeyToDelete,
+          type: slot.type,
+          label: slot.label,
+          sectionContext: slot.sectionContext,
         }),
       });
-      if (!res.ok) throw new Error('Failed to delete slot image from R2');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to delete slot image');
+
+      if (Array.isArray(data.slots)) {
+        setSlots(data.slots);
+      }
+      if (Array.isArray(data.r2Objects)) {
+        setR2Objects(data.r2Objects);
+      }
+      setCacheBuster(Date.now());
 
       await deleteSiteImageInFirestore(slot.slotId);
       showNotice(
-        `Deleted "${slot.label}" from Cloudflare R2 bucket and removed its CDN link from Firebase.`
+        `Deleted "${slot.label}" from Cloudflare R2 bucket and hidden on ${slot.pageTitle}.`
       );
-      setEditingSlot(null);
       await fetchInventory();
     } catch (err) {
       showNotice(err instanceof Error ? err.message : 'Delete failed', 'error');
+      await fetchInventory();
     } finally {
       setSlotSaving(false);
     }
@@ -1222,7 +1257,14 @@ export default function AdminCmsStudioPage() {
   const handleResetSingleSlot = async (slot: ImageSlot) => {
     setSlotSaving(true);
     try {
-      await fetch('/api/admin/images', {
+      setFirestoreImageDocs((prev) => {
+        const next = { ...prev };
+        delete next[slot.slotId];
+        return next;
+      });
+      setEditingSlot(null);
+
+      const res = await fetch('/api/admin/images', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1232,9 +1274,15 @@ export default function AdminCmsStudioPage() {
           slotIndex: slot.slotIndex,
         }),
       });
+      const data = await res.json().catch(() => ({}));
+      if (Array.isArray(data.slots)) {
+        setSlots(data.slots);
+      }
+      if (Array.isArray(data.r2Objects)) {
+        setR2Objects(data.r2Objects);
+      }
       await deleteSiteImageInFirestore(slot.slotId);
       showNotice(`Restored default R2 image for "${slot.label}".`);
-      setEditingSlot(null);
       await fetchInventory();
     } catch (err) {
       showNotice(err instanceof Error ? err.message : 'Reset failed', 'error');
@@ -1369,11 +1417,13 @@ export default function AdminCmsStudioPage() {
     setSecImgSaving(true);
     try {
       const r2KeyToDelete = item.r2Key || extractR2KeyFromUrl(item.src);
-      if (r2KeyToDelete && !r2KeyToDelete.startsWith('media/')) {
-        await deleteImageFromR2Bucket(r2KeyToDelete);
-      }
 
-      await fetch('/api/admin/cms', {
+      // Optimistically remove from local state immediately
+      setSectionImages((prev) => prev.filter((i) => i.itemId !== item.itemId));
+      setFirestoreSectionDocs((prev) => prev.filter((i) => i.itemId !== item.itemId));
+      setEditingSectionImg(null);
+
+      const res = await fetch('/api/admin/cms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1382,12 +1432,19 @@ export default function AdminCmsStudioPage() {
           r2Key: r2KeyToDelete,
         }),
       });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to delete section image');
+
+      if (Array.isArray(data.sectionGalleryItems)) {
+        setSectionImages(data.sectionGalleryItems);
+      }
+
       await deleteSectionGalleryItemInFirestore(item.itemId);
       showNotice(`Deleted "${item.title}" from Cloudflare R2 bucket and Firebase Firestore.`);
-      setEditingSectionImg(null);
       await fetchInventory();
     } catch (err) {
       showNotice(err instanceof Error ? err.message : 'Failed to delete section image', 'error');
+      await fetchInventory();
     } finally {
       setSecImgSaving(false);
     }
@@ -1739,13 +1796,22 @@ export default function AdminCmsStudioPage() {
   const handleDeleteR2Object = async (obj: R2BucketObject) => {
     setR2Saving(true);
     try {
+      // Optimistically remove from R2 list and close modal immediately
+      setR2Objects((prev) => prev.filter((o) => o.r2Key !== obj.r2Key));
+      setEditingR2Obj(null);
+
       await deleteImageFromR2Bucket(obj.r2Key);
 
-      // Also clean up any section gallery item or slot override referencing this deleted R2 object
+      // Clean up any section gallery item or slot override referencing this deleted R2 object
       const linkedSections = mergedSectionImages.filter(
-        (sec) => sec.r2Key === obj.r2Key || sec.src === obj.cdnUrl
+        (sec) =>
+          sec.r2Key === obj.r2Key ||
+          sec.src === obj.cdnUrl ||
+          (obj.r2Key && sec.src.includes(obj.r2Key))
       );
       for (const sec of linkedSections) {
+        setSectionImages((prev) => prev.filter((i) => i.itemId !== sec.itemId));
+        setFirestoreSectionDocs((prev) => prev.filter((i) => i.itemId !== sec.itemId));
         await fetch('/api/admin/cms', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1758,9 +1824,25 @@ export default function AdminCmsStudioPage() {
       }
 
       const linkedSlots = mergedSlots.filter(
-        (s) => s.r2Key === obj.r2Key || s.src === obj.cdnUrl || s.src.startsWith(`${obj.cdnUrl}?`)
+        (s) =>
+          s.r2Key === obj.r2Key ||
+          s.src === obj.cdnUrl ||
+          s.src.startsWith(`${obj.cdnUrl}?`) ||
+          (obj.r2Key && s.src.includes(obj.r2Key))
       );
       for (const s of linkedSlots) {
+        setSlots((prev) =>
+          prev.map((item) =>
+            item.slotId === s.slotId
+              ? { ...item, src: '', lightboxHref: '', r2Key: undefined, isDeleted: true, isModified: true }
+              : item
+          )
+        );
+        setFirestoreImageDocs((prev) => {
+          const next = { ...prev };
+          delete next[s.slotId];
+          return next;
+        });
         await fetch('/api/admin/images', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1776,10 +1858,10 @@ export default function AdminCmsStudioPage() {
       }
 
       showNotice(`Deleted "${obj.r2Key}" from Cloudflare R2 bucket and cleaned up Firebase links.`);
-      setEditingR2Obj(null);
       await fetchInventory();
     } catch (err) {
       showNotice(err instanceof Error ? err.message : 'Failed to delete from R2 bucket', 'error');
+      await fetchInventory();
     } finally {
       setR2Saving(false);
     }
@@ -2404,7 +2486,10 @@ export default function AdminCmsStudioPage() {
                   const extraSlides = filteredHeroSlides.filter(
                     (item) => item.page === pageMeta.file
                   );
-                  const totalSlidesCount = (primaryHeroSlot ? 1 : 0) + extraSlides.length;
+                  const isPrimaryActive = Boolean(
+                    primaryHeroSlot && !primaryHeroSlot.isDeleted && primaryHeroSlot.src
+                  );
+                  const totalSlidesCount = (isPrimaryActive ? 1 : 0) + extraSlides.length;
 
                   return (
                     <section
@@ -2445,16 +2530,28 @@ export default function AdminCmsStudioPage() {
                                 onClick={() => openSlotEditor(primaryHeroSlot)}
                                 className="relative h-40 bg-[#090D0B] border-b border-[#1A231E] overflow-hidden cursor-pointer flex items-center justify-center"
                               >
-                                <img
-                                  src={resolveImageUrl(primaryHeroSlot.src)}
-                                  alt={primaryHeroSlot.alt || primaryHeroSlot.label}
-                                  className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
-                                  loading="lazy"
-                                />
+                                {primaryHeroSlot.isDeleted || !primaryHeroSlot.src ? (
+                                  <div className="flex flex-col items-center justify-center text-center p-4 space-y-1">
+                                    <Trash2 className="w-5 h-5 text-[#F87171]" />
+                                    <span className="text-xs font-semibold text-[#FCA5A5]">
+                                      Slide #1 Deleted
+                                    </span>
+                                    <span className="text-[11px] text-[#9CA9A1]">
+                                      Click to upload new Hero Slide #1 or restore default
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <img
+                                    src={resolveImageUrl(primaryHeroSlot.src)}
+                                    alt={primaryHeroSlot.alt || primaryHeroSlot.label}
+                                    className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+                                    loading="lazy"
+                                  />
+                                )}
                                 <div className="absolute top-2 left-2 bg-[#E59819] text-[#0B0F0D] px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
                                   Slide #1 (Primary Hero)
                                 </div>
-                                {primaryHeroSlot.r2Key && (
+                                {!primaryHeroSlot.isDeleted && primaryHeroSlot.r2Key && (
                                   <div className="absolute bottom-2 left-2 bg-[#13261C]/90 border border-[#234734] px-2 py-0.5 rounded text-[10px] font-mono text-[#86EFAC] truncate max-w-[90%]">
                                     R2: {primaryHeroSlot.r2Key}
                                   </div>
@@ -2467,9 +2564,11 @@ export default function AdminCmsStudioPage() {
                                 </h3>
                                 <div
                                   className="text-[11px] font-mono text-[#68756D] truncate"
-                                  title={primaryHeroSlot.src}
+                                  title={primaryHeroSlot.src || 'Deleted'}
                                 >
-                                  CDN: {primaryHeroSlot.src}
+                                  {primaryHeroSlot.isDeleted || !primaryHeroSlot.src
+                                    ? 'Deleted (Hidden from Hero Slideshow)'
+                                    : `CDN: ${primaryHeroSlot.src}`}
                                 </div>
                               </div>
                             </div>
@@ -2481,8 +2580,30 @@ export default function AdminCmsStudioPage() {
                                 className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#1B2620] hover:bg-[#E59819] text-[#F1F5F2] hover:text-[#0B0F0D] border border-[#2A3A31] hover:border-[#E59819] font-medium text-xs py-1.5 px-2.5 rounded-md transition-colors"
                               >
                                 <Upload className="w-3.5 h-3.5" />
-                                <span>Change Slide #1</span>
+                                <span>
+                                  {primaryHeroSlot.isDeleted ? 'Upload Slide #1' : 'Change Slide #1'}
+                                </span>
                               </button>
+                              {(primaryHeroSlot.isModified || primaryHeroSlot.isDeleted) && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleResetSingleSlot(primaryHeroSlot)}
+                                  className="p-1.5 rounded-md bg-[#161F1A] hover:bg-[#222F28] text-[#9CA9A1] hover:text-[#F1F5F2] border border-[#24322A] transition-colors"
+                                  title="Restore default Hero Slide #1"
+                                >
+                                  <RotateCcw className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              {!primaryHeroSlot.isDeleted && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteSingleSlot(primaryHeroSlot)}
+                                  className="p-1.5 rounded-md bg-[#161F1A] hover:bg-[#2A1616] text-[#9CA9A1] hover:text-[#FCA5A5] border border-[#24322A] transition-colors"
+                                  title="Delete Primary Hero Slide #1"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                             </div>
                           </article>
                         )}

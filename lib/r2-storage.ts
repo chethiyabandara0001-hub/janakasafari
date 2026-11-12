@@ -267,7 +267,9 @@ export function getR2ConfigStatus(): {
 }
 
 export function getR2CdnBaseUrl(): string {
+  const storedCdn = (loadStoredCredentialsSync().cdnBaseUrl || '').trim().replace(/\/+$/, '');
   const customPublic = (
+    storedCdn ||
     process.env.NEXT_PUBLIC_R2_PUBLIC_URL ||
     process.env.R2_PUBLIC_URL ||
     ''
@@ -275,7 +277,11 @@ export function getR2CdnBaseUrl(): string {
     .trim()
     .replace(/\/+$/, '');
   if (customPublic) {
-    if (!customPublic.startsWith('http://') && !customPublic.startsWith('https://')) {
+    if (
+      !customPublic.startsWith('/') &&
+      !customPublic.startsWith('http://') &&
+      !customPublic.startsWith('https://')
+    ) {
       return `https://${customPublic}`;
     }
     return customPublic;
@@ -292,17 +298,26 @@ export function buildR2CdnUrl(r2Key: string): string {
 export function extractR2KeyFromCdnUrl(url: string): string | null {
   if (!url) return null;
   const withoutQuery = url.split('?')[0].trim();
-  const customBase = (
-    process.env.NEXT_PUBLIC_R2_PUBLIC_URL ||
-    process.env.R2_PUBLIC_URL ||
-    ''
-  )
-    .trim()
-    .replace(/\/+$/, '');
-  if (customBase) {
-    const withProtocol = customBase.startsWith('http://') || customBase.startsWith('https://')
-      ? customBase
-      : `https://${customBase}`;
+  const marker = '/api/r2/file/';
+  const idx = withoutQuery.indexOf(marker);
+  if (idx !== -1) {
+    return withoutQuery.slice(idx + marker.length).replace(/^\/+/, '');
+  }
+  const storedCdn = (loadStoredCredentialsSync().cdnBaseUrl || '').trim().replace(/\/+$/, '');
+  const candidateBases = [
+    storedCdn,
+    process.env.NEXT_PUBLIC_R2_PUBLIC_URL || '',
+    process.env.R2_PUBLIC_URL || '',
+    'https://cdn.srilankabestsafari.com',
+  ]
+    .map((b) => b.trim().replace(/\/+$/, ''))
+    .filter(Boolean);
+
+  for (const customBase of candidateBases) {
+    const withProtocol =
+      customBase.startsWith('http://') || customBase.startsWith('https://')
+        ? customBase
+        : `https://${customBase}`;
     const bareDomain = customBase.replace(/^https?:\/\//i, '');
 
     if (withoutQuery.startsWith(withProtocol + '/')) {
@@ -315,11 +330,6 @@ export function extractR2KeyFromCdnUrl(url: string): string | null {
       return withoutQuery.slice(('http://' + bareDomain).length + 1).replace(/^\/+/, '');
     }
   }
-  const marker = '/api/r2/file/';
-  const idx = withoutQuery.indexOf(marker);
-  if (idx !== -1) {
-    return withoutQuery.slice(idx + marker.length).replace(/^\/+/, '');
-  }
   if (withoutQuery.startsWith('/assets/r2-bucket/') || withoutQuery.startsWith('assets/r2-bucket/')) {
     const clean = withoutQuery.replace(/^\/+/, '');
     return clean.replace(/^assets\/r2-bucket\//, '');
@@ -327,6 +337,12 @@ export function extractR2KeyFromCdnUrl(url: string): string | null {
   if (withoutQuery.startsWith('/assets/media/') || withoutQuery.startsWith('assets/media/')) {
     const clean = withoutQuery.replace(/^\/+/, '');
     return `media/${path.basename(clean)}`;
+  }
+  const r2FolderMatch = withoutQuery.match(
+    /^https?:\/\/[^/]+\/((?:slots|media|uploads|index|yala-safari|udawalawe-safari|bundala-birding-safari|wilpattu-safari|minneriya-safari|kumana-birding-safari|safari-parks|about|gallery|reviews|contact)\/.+)$/i
+  );
+  if (r2FolderMatch?.[1]) {
+    return r2FolderMatch[1].replace(/^\/+/, '');
   }
   return null;
 }

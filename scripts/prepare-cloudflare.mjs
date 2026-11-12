@@ -546,6 +546,19 @@ function getWorkerCdnBase(env) {
   return '/api/r2/file';
 }
 
+const DELETED_R2_KEYS = new Set();
+
+function extractWorkerR2Key(raw) {
+  if (!raw) return '';
+  const clean = String(raw).split('?')[0].trim();
+  const marker = '/api/r2/file/';
+  const idx = clean.indexOf(marker);
+  if (idx !== -1) return sanitizeKey(clean.slice(idx + marker.length));
+  const folderMatch = clean.match(/^https?:\\/\\/[^/]+\\/((?:slots|media|uploads|index|yala-safari|udawalawe-safari|bundala-birding-safari|wilpattu-safari|minneriya-safari|kumana-birding-safari|safari-parks|about|gallery|reviews|contact)\\/.+)$/i);
+  if (folderMatch && folderMatch[1]) return sanitizeKey(folderMatch[1]);
+  return sanitizeKey(clean);
+}
+
 async function listLiveR2Objects(env) {
   const map = new Map();
   const cdnBase = getWorkerCdnBase(env);
@@ -553,6 +566,7 @@ async function listLiveR2Objects(env) {
   const activeBucketName = (env && (env.R2_BUCKET_NAME || env.BUCKET_NAME)) || BUCKET_NAME;
 
   for (const item of IMAGES_INVENTORY.r2Objects || []) {
+    if (DELETED_R2_KEYS.has(item.r2Key)) continue;
     map.set(item.r2Key, {
       ...item,
       cdnUrl: cdnBase + '/' + item.r2Key,
@@ -565,6 +579,7 @@ async function listLiveR2Objects(env) {
       const listed = await r2Bucket.list({ include: ['httpMetadata', 'customMetadata'] });
       for (const obj of listed.objects || []) {
         const r2Key = obj.key;
+        if (DELETED_R2_KEYS.has(r2Key)) continue;
         const filename = r2Key.split('/').pop() || r2Key;
         const meta = obj.customMetadata || {};
         map.set(r2Key, {
@@ -631,7 +646,8 @@ async function uploadFileToWorkerR2(env, { bytes, originalFilename, mimeType, cu
     });
   }
 
-  return {
+  DELETED_R2_KEYS.delete(r2Key);
+  const newRecord = {
     r2Key,
     filename: r2Key.split('/').pop() || r2Key,
     cdnUrl: cdnBase + '/' + r2Key,
@@ -643,6 +659,11 @@ async function uploadFileToWorkerR2(env, { bytes, originalFilename, mimeType, cu
     updatedAt: now,
     bucketName: activeBucketName,
   };
+  if (Array.isArray(IMAGES_INVENTORY.r2Objects)) {
+    IMAGES_INVENTORY.r2Objects = IMAGES_INVENTORY.r2Objects.filter((o) => o.r2Key !== r2Key);
+    IMAGES_INVENTORY.r2Objects.unshift(newRecord);
+  }
+  return newRecord;
 }
 
 const worker = {
@@ -657,8 +678,8 @@ const worker = {
     if (pathname.startsWith('/api/r2/file/')) {
       const rawKey = decodeURIComponent(pathname.slice('/api/r2/file/'.length));
       const r2Key = sanitizeKey(rawKey);
-      if (!r2Key) {
-        return new Response('Missing R2 key', { status: 400 });
+      if (!r2Key || DELETED_R2_KEYS.has(r2Key)) {
+        return new Response('R2 object not found', { status: 404 });
       }
 
       if (r2Bucket) {
@@ -771,6 +792,7 @@ const worker = {
           const errors = [];
           if (r2Bucket) {
             for (const item of IMAGES_INVENTORY.r2Objects || []) {
+              if (DELETED_R2_KEYS.has(item.r2Key)) continue;
               try {
                 const existing = await r2Bucket.head(item.r2Key);
                 if (!existing) {
@@ -837,8 +859,8 @@ const worker = {
         }
 
         if (body.action === 'update-meta' && body.r2Key) {
-          const oldKey = sanitizeKey(body.r2Key);
-          const newKey = body.newKey ? sanitizeKey(body.newKey) : oldKey;
+          const oldKey = extractWorkerR2Key(body.r2Key);
+          const newKey = body.newKey ? extractWorkerR2Key(body.newKey) : oldKey;
           if (r2Bucket) {
             const existingObj = await r2Bucket.get(oldKey);
             if (existingObj) {
@@ -855,6 +877,7 @@ const worker = {
               });
               if (newKey !== oldKey) {
                 await r2Bucket.delete(oldKey);
+                DELETED_R2_KEYS.add(oldKey);
               }
             }
           }
@@ -871,10 +894,17 @@ const worker = {
         }
 
         if (body.action === 'delete' && (body.r2Key || body.cdnUrl)) {
-          const rawTarget = String(body.r2Key || body.cdnUrl).replace(/^.*\\/api\\/r2\\/file\\//, '');
-          const cleanTarget = sanitizeKey(rawTarget);
-          if (r2Bucket && cleanTarget) {
-            await r2Bucket.delete(cleanTarget);
+          const cleanTarget = extractWorkerR2Key(body.r2Key || body.cdnUrl);
+          if (cleanTarget) {
+            DELETED_R2_KEYS.add(cleanTarget);
+            if (Array.isArray(IMAGES_INVENTORY.r2Objects)) {
+              IMAGES_INVENTORY.r2Objects = IMAGES_INVENTORY.r2Objects.filter((o) => o.r2Key !== cleanTarget);
+            }
+            if (r2Bucket) {
+              try {
+                await r2Bucket.delete(cleanTarget);
+              } catch (e) {}
+            }
           }
           const objects = await listLiveR2Objects(env);
           return new Response(JSON.stringify({ ok: true, deletedKey: cleanTarget, objects }), {
@@ -886,8 +916,8 @@ const worker = {
 
       if (request.method === 'PATCH') {
         const body = await request.json();
-        const oldKey = sanitizeKey(body.r2Key || '');
-        const newKey = body.newKey ? sanitizeKey(body.newKey) : oldKey;
+        const oldKey = extractWorkerR2Key(body.r2Key || '');
+        const newKey = body.newKey ? extractWorkerR2Key(body.newKey) : oldKey;
         if (r2Bucket && oldKey) {
           const existingObj = await r2Bucket.get(oldKey);
           if (existingObj) {
@@ -904,6 +934,7 @@ const worker = {
             });
             if (newKey !== oldKey) {
               await r2Bucket.delete(oldKey);
+              DELETED_R2_KEYS.add(oldKey);
             }
           }
         }
@@ -927,9 +958,17 @@ const worker = {
             keyParam = String(body.r2Key || body.key || body.cdnUrl || '');
           } catch (e) {}
         }
-        const cleanTarget = sanitizeKey(keyParam.replace(/^.*\\/api\\/r2\\/file\\//, ''));
-        if (r2Bucket && cleanTarget) {
-          await r2Bucket.delete(cleanTarget);
+        const cleanTarget = extractWorkerR2Key(keyParam);
+        if (cleanTarget) {
+          DELETED_R2_KEYS.add(cleanTarget);
+          if (Array.isArray(IMAGES_INVENTORY.r2Objects)) {
+            IMAGES_INVENTORY.r2Objects = IMAGES_INVENTORY.r2Objects.filter((o) => o.r2Key !== cleanTarget);
+          }
+          if (r2Bucket) {
+            try {
+              await r2Bucket.delete(cleanTarget);
+            } catch (e) {}
+          }
         }
         const objects = await listLiveR2Objects(env);
         return new Response(JSON.stringify({ ok: true, deletedKey: cleanTarget, objects }), {
@@ -979,6 +1018,84 @@ const worker = {
               { status: 200, headers: JSON_HEADERS }
             );
           }
+        } else {
+          try {
+            const body = await request.json();
+            const action = String(body.action || '');
+            const page = String(body.page || 'index.html');
+            const slotIndex = Number(body.slotIndex || 0);
+            const slotId = body.slotId ? String(body.slotId) : page.replace(/[^a-zA-Z0-9_-]/g, '_') + '__slot_' + slotIndex;
+
+            if (action === 'delete-slot') {
+              const targetSlot = (IMAGES_INVENTORY.slots || []).find((s) => s.slotId === slotId || (s.page === page && s.slotIndex === slotIndex));
+              const keyToDelete = extractWorkerR2Key(body.r2Key || (targetSlot && (targetSlot.r2Key || targetSlot.src)) || '');
+              if (targetSlot) {
+                targetSlot.src = '';
+                targetSlot.lightboxHref = '';
+                targetSlot.r2Key = undefined;
+                targetSlot.isDeleted = true;
+                targetSlot.isModified = true;
+              }
+              if (!CMS_INVENTORY.imageOverrides) CMS_INVENTORY.imageOverrides = {};
+              CMS_INVENTORY.imageOverrides[slotId] = {
+                slotId,
+                page,
+                slotIndex,
+                type: (targetSlot && targetSlot.type) || body.type || 'img',
+                label: (targetSlot && targetSlot.label) || body.label || ('Slot #' + (slotIndex + 1)),
+                sectionContext: (targetSlot && targetSlot.sectionContext) || body.sectionContext || 'Page Section',
+                src: '',
+                lightboxHref: '',
+                r2Key: undefined,
+                alt: (targetSlot && targetSlot.alt) || '',
+                isDeleted: true,
+                updatedAt: new Date().toISOString(),
+              };
+              if (keyToDelete && !keyToDelete.startsWith('media/')) {
+                const usedElsewhere =
+                  (IMAGES_INVENTORY.slots || []).some((s) => s.slotId !== slotId && !s.isDeleted && (s.r2Key === keyToDelete || (s.src && s.src.includes(keyToDelete)))) ||
+                  (CMS_INVENTORY.sectionGalleryItems || []).some((sec) => sec.r2Key === keyToDelete || (sec.src && sec.src.includes(keyToDelete)));
+                if (!usedElsewhere) {
+                  DELETED_R2_KEYS.add(keyToDelete);
+                  if (Array.isArray(IMAGES_INVENTORY.r2Objects)) {
+                    IMAGES_INVENTORY.r2Objects = IMAGES_INVENTORY.r2Objects.filter((o) => o.r2Key !== keyToDelete);
+                  }
+                  if (r2Bucket) {
+                    try {
+                      await r2Bucket.delete(keyToDelete);
+                    } catch (e) {}
+                  }
+                }
+              }
+            } else if (action === 'update-slot-meta') {
+              const updatedSrc = String(body.externalUrl || '');
+              const r2Key = body.r2Key ? String(body.r2Key) : extractWorkerR2Key(updatedSrc);
+              const targetSlot = (IMAGES_INVENTORY.slots || []).find((s) => s.slotId === slotId || (s.page === page && s.slotIndex === slotIndex));
+              if (targetSlot && updatedSrc) {
+                targetSlot.src = updatedSrc;
+                targetSlot.lightboxHref = updatedSrc;
+                targetSlot.r2Key = r2Key || targetSlot.r2Key;
+                if (body.altText !== undefined) targetSlot.alt = String(body.altText);
+                targetSlot.isDeleted = false;
+                targetSlot.isModified = true;
+              }
+              if (!CMS_INVENTORY.imageOverrides) CMS_INVENTORY.imageOverrides = {};
+              CMS_INVENTORY.imageOverrides[slotId] = {
+                slotId,
+                page,
+                slotIndex,
+                type: (targetSlot && targetSlot.type) || body.type || 'img',
+                label: body.label || (targetSlot && targetSlot.label) || ('Slot #' + (slotIndex + 1)),
+                sectionContext: body.sectionContext || (targetSlot && targetSlot.sectionContext) || 'Page Section',
+                src: updatedSrc,
+                lightboxHref: updatedSrc,
+                r2Key,
+                alt: body.altText !== undefined ? String(body.altText) : (targetSlot && targetSlot.alt) || '',
+                isDeleted: false,
+                updatedAt: new Date().toISOString(),
+              };
+            }
+          } catch (e) {}
         }
         const r2Objects = await listLiveR2Objects(env);
         return new Response(JSON.stringify({ ok: true, ...IMAGES_INVENTORY, r2Objects }), {
@@ -1059,6 +1176,75 @@ const worker = {
         return new Response(JSON.stringify(CMS_INVENTORY), { status: 200, headers: JSON_HEADERS });
       }
       if (request.method === 'POST') {
+        try {
+          const body = await request.json();
+          const action = String(body.action || '');
+          if (action === 'delete-section-image') {
+            const itemId = String(body.itemId || '');
+            const targetItem = (CMS_INVENTORY.sectionGalleryItems || []).find((i) => i.itemId === itemId);
+            const keyToDelete = extractWorkerR2Key(body.r2Key || (targetItem && (targetItem.r2Key || targetItem.src)) || '');
+            CMS_INVENTORY.sectionGalleryItems = (CMS_INVENTORY.sectionGalleryItems || []).filter((i) => i.itemId !== itemId);
+            if (keyToDelete && !keyToDelete.startsWith('media/')) {
+              const usedElsewhere =
+                (CMS_INVENTORY.sectionGalleryItems || []).some((sec) => sec.r2Key === keyToDelete || (sec.src && sec.src.includes(keyToDelete))) ||
+                (IMAGES_INVENTORY.slots || []).some((s) => !s.isDeleted && (s.r2Key === keyToDelete || (s.src && s.src.includes(keyToDelete))));
+              if (!usedElsewhere) {
+                DELETED_R2_KEYS.add(keyToDelete);
+                if (Array.isArray(IMAGES_INVENTORY.r2Objects)) {
+                  IMAGES_INVENTORY.r2Objects = IMAGES_INVENTORY.r2Objects.filter((o) => o.r2Key !== keyToDelete);
+                }
+                if (r2Bucket) {
+                  try {
+                    await r2Bucket.delete(keyToDelete);
+                  } catch (e) {}
+                }
+              }
+            }
+          } else if (action === 'save-section-image') {
+            const itemId = String(body.itemId || ('sec_img_' + Date.now()));
+            const newItem = {
+              itemId,
+              page: String(body.page || 'index.html'),
+              sectionKey: String(body.sectionKey || 'general_section'),
+              sectionTitle: String(body.sectionTitle || 'Featured Safari Gallery'),
+              title: String(body.title || 'Safari Wildlife Moment'),
+              caption: String(body.caption || ''),
+              src: String(body.src || ''),
+              r2Key: body.r2Key ? String(body.r2Key) : extractWorkerR2Key(body.src || ''),
+              alt: String(body.alt || body.title || 'Safari photo'),
+              order: typeof body.order === 'number' ? body.order : ((CMS_INVENTORY.sectionGalleryItems || []).length + 1),
+            };
+            if (!Array.isArray(CMS_INVENTORY.sectionGalleryItems)) CMS_INVENTORY.sectionGalleryItems = [];
+            const idx = CMS_INVENTORY.sectionGalleryItems.findIndex((i) => i.itemId === itemId);
+            if (idx >= 0) {
+              CMS_INVENTORY.sectionGalleryItems[idx] = newItem;
+            } else {
+              CMS_INVENTORY.sectionGalleryItems.push(newItem);
+            }
+          } else if (action === 'delete-slot-override') {
+            const slotId = String(body.slotId || '');
+            if (slotId) {
+              if (!CMS_INVENTORY.imageOverrides) CMS_INVENTORY.imageOverrides = {};
+              CMS_INVENTORY.imageOverrides[slotId] = {
+                ...(CMS_INVENTORY.imageOverrides[slotId] || {}),
+                slotId,
+                src: '',
+                lightboxHref: '',
+                r2Key: undefined,
+                isDeleted: true,
+                updatedAt: new Date().toISOString(),
+              };
+              const targetSlot = (IMAGES_INVENTORY.slots || []).find((s) => s.slotId === slotId);
+              if (targetSlot) {
+                targetSlot.src = '';
+                targetSlot.lightboxHref = '';
+                targetSlot.r2Key = undefined;
+                targetSlot.isDeleted = true;
+                targetSlot.isModified = true;
+              }
+            }
+          }
+        } catch (e) {}
         return new Response(JSON.stringify({ ok: true, ...CMS_INVENTORY }), {
           status: 200,
           headers: JSON_HEADERS,

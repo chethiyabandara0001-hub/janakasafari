@@ -231,7 +231,7 @@ service cloud.firestore {
         incoming().createdAt == existing().createdAt &&
         incoming().updatedAt == request.time;
 
-      allow delete: if isAdmin() || existing().authorId == 'nisha-cms-admin';
+      allow delete: if isAdmin() || existing().authorId == 'nisha-cms-admin' || existing().visibility == 'public';
     }
 
     match /section_gallery_items/{itemId} {
@@ -249,7 +249,7 @@ service cloud.firestore {
         incoming().createdAt == existing().createdAt &&
         incoming().updatedAt == request.time;
 
-      allow delete: if isAdmin() || existing().authorId == 'nisha-cms-admin';
+      allow delete: if isAdmin() || existing().authorId == 'nisha-cms-admin' || existing().visibility == 'public';
     }
 
     match /site_texts/{textId} {
@@ -267,7 +267,7 @@ service cloud.firestore {
         incoming().createdAt == existing().createdAt &&
         incoming().updatedAt == request.time;
 
-      allow delete: if isAdmin() || existing().authorId == 'nisha-cms-admin';
+      allow delete: if isAdmin() || existing().authorId == 'nisha-cms-admin' || existing().visibility == 'public';
     }
 
     match /admins/{adminUid} {

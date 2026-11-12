@@ -214,18 +214,35 @@ export async function POST(req: NextRequest) {
     if (action === 'delete-section-image') {
       const itemId = String(body.itemId || '');
       const targetItem = state.sectionGalleryItems.find((i) => i.itemId === itemId);
-      const keyToDelete =
+      const rawKeyCandidate =
         body.r2Key ||
         targetItem?.r2Key ||
         (targetItem?.src ? extractR2KeyFromCdnUrl(targetItem.src) : null);
-      if (keyToDelete) {
-        await deleteR2Object(String(keyToDelete));
-      }
+      const keyToDelete = rawKeyCandidate
+        ? extractR2KeyFromCdnUrl(String(rawKeyCandidate)) || String(rawKeyCandidate)
+        : undefined;
+
       state.sectionGalleryItems = state.sectionGalleryItems.filter((i) => i.itemId !== itemId);
       await saveCmsState(state);
       await deleteSectionGalleryItemInFirestore(itemId).catch(() => {});
+
+      if (keyToDelete && !keyToDelete.startsWith('media/')) {
+        const usedByRemainingSection = state.sectionGalleryItems.some(
+          (sec) => sec.r2Key === keyToDelete || (sec.src && sec.src.includes(keyToDelete))
+        );
+        const usedByActiveSlot = Object.values(state.imageOverrides).some(
+          (ov) =>
+            ov &&
+            !ov.isDeleted &&
+            (ov.r2Key === keyToDelete || (ov.src && ov.src.includes(keyToDelete)))
+        );
+        if (!usedByRemainingSection && !usedByActiveSlot) {
+          await deleteR2Object(keyToDelete);
+        }
+      }
+
       const updated = await getAllSiteTexts();
-      return NextResponse.json({ ok: true, ...updated });
+      return NextResponse.json({ ok: true, deletedItemId: itemId, deletedKey: keyToDelete, ...updated });
     }
 
     if (action === 'save-slot-override') {
@@ -253,7 +270,15 @@ export async function POST(req: NextRequest) {
       if (slotId && src) {
         const prevOv = state.imageOverrides[slotId];
         if (prevOv?.r2Key && prevOv.r2Key !== r2Key && !prevOv.r2Key.startsWith('media/')) {
-          await deleteR2Object(prevOv.r2Key);
+          const prevKey = prevOv.r2Key;
+          const usedElsewhere =
+            state.sectionGalleryItems.some((s) => s.r2Key === prevKey) ||
+            Object.values(state.imageOverrides).some(
+              (o) => o && o.slotId !== slotId && !o.isDeleted && o.r2Key === prevKey
+            );
+          if (!usedElsewhere) {
+            await deleteR2Object(prevKey);
+          }
         }
         const slotType = (body.type || 'img') as 'hero-bg' | 'img' | 'lightbox-img' | 'logo';
         state.imageOverrides[slotId] = {
@@ -306,13 +331,14 @@ export async function POST(req: NextRequest) {
       const slotId = String(body.slotId || '');
       if (slotId) {
         const prevOv = state.imageOverrides[slotId];
-        const keyToDelete =
+        const rawKeyCandidate =
           body.r2Key ||
           prevOv?.r2Key ||
           (prevOv?.src ? extractR2KeyFromCdnUrl(prevOv.src) : null);
-        if (keyToDelete) {
-          await deleteR2Object(String(keyToDelete));
-        }
+        const keyToDelete = rawKeyCandidate
+          ? extractR2KeyFromCdnUrl(String(rawKeyCandidate)) || String(rawKeyCandidate)
+          : undefined;
+
         state.imageOverrides[slotId] = {
           slotId,
           page: String(body.page || prevOv?.page || 'index.html'),
@@ -329,6 +355,22 @@ export async function POST(req: NextRequest) {
         };
         await saveCmsState(state);
         await deleteSiteImageInFirestore(slotId).catch(() => {});
+
+        if (keyToDelete && !keyToDelete.startsWith('media/')) {
+          const usedByOtherSlot = Object.values(state.imageOverrides).some(
+            (ov) =>
+              ov &&
+              ov.slotId !== slotId &&
+              !ov.isDeleted &&
+              (ov.r2Key === keyToDelete || (ov.src && ov.src.includes(keyToDelete)))
+          );
+          const usedBySection = state.sectionGalleryItems.some(
+            (sec) => sec.r2Key === keyToDelete || (sec.src && sec.src.includes(keyToDelete))
+          );
+          if (!usedByOtherSlot && !usedBySection) {
+            await deleteR2Object(keyToDelete);
+          }
+        }
       }
       const updated = await getAllSiteTexts();
       return NextResponse.json({ ok: true, ...updated });
