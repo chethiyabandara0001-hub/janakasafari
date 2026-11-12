@@ -35,18 +35,30 @@ async function buildEnrichedImageInventory() {
     listR2Objects(),
   ]);
 
+  const seedMetaMap = new Map(
+    INITIAL_FIREBASE_SLOT_UPGRADES.map((u) => [u.slotId, u])
+  );
+
   const enrichedSlots = raw.slots.map((s) => {
     const firestoreSlotId = makeImageSlotId(s.page, s.slotIndex);
     const override = cmsState.imageOverrides[firestoreSlotId];
+    const seedMeta = seedMetaMap.get(firestoreSlotId);
     const mappedType: 'hero-bg' | 'img' | 'lightbox-img' | 'logo' =
       s.kind === 'gallery-img' ? 'lightbox-img' : s.kind;
-    const isDeleted = Boolean(override?.isDeleted);
-    const effectiveSrc = isDeleted ? '' : override?.src || s.src;
-    const effectiveAlt = override?.alt !== undefined ? override.alt : s.alt;
-    const cleanFile = (effectiveSrc || s.src).split('?')[0].replace(/^\/+/, '');
-    const assetFilename = cleanFile.startsWith('assets/media/')
-      ? path.basename(cleanFile)
-      : path.basename(cleanFile);
+    const rawSrcCandidate =
+      override && !override.isDeleted ? override.src : s.src;
+    const isSlotEmpty =
+      !rawSrcCandidate ||
+      rawSrcCandidate === '/deleted' ||
+      rawSrcCandidate.includes('empty-slot.svg');
+    const isDeleted = isSlotEmpty || Boolean(override?.isDeleted);
+    const effectiveSrc = isDeleted ? '' : rawSrcCandidate;
+    const effectiveAlt =
+      override?.alt !== undefined
+        ? override.alt
+        : seedMeta?.alt || s.alt;
+    const cleanFile = (effectiveSrc || '').split('?')[0].replace(/^\/+/, '');
+    const assetFilename = cleanFile ? path.basename(cleanFile) : '';
     const effectiveR2Key = isDeleted
       ? undefined
       : override?.r2Key || extractR2KeyFromCdnUrl(effectiveSrc) || undefined;
@@ -56,15 +68,26 @@ async function buildEnrichedImageInventory() {
       id: firestoreSlotId,
       slotId: firestoreSlotId,
       type: mappedType,
-      label: override?.label || s.alt || s.sectionContext || `Slot #${s.slotIndex + 1}`,
+      label:
+        override?.label ||
+        seedMeta?.label ||
+        s.alt ||
+        s.sectionContext ||
+        `Slot #${s.slotIndex + 1}`,
+      sectionContext:
+        override?.sectionContext ||
+        seedMeta?.sectionContext ||
+        s.sectionContext,
       src: effectiveSrc,
-      lightboxHref: isDeleted ? '' : override?.lightboxHref || effectiveSrc || s.lightboxHref,
+      lightboxHref: isDeleted
+        ? ''
+        : override?.lightboxHref || effectiveSrc || s.lightboxHref || '',
       r2Key: effectiveR2Key,
       alt: effectiveAlt,
       assetFilename,
-      isSharedAsset: s.sharedCount > 1,
+      isSharedAsset: false,
       isDeleted,
-      isModified: Boolean(override) || s.isModified,
+      isModified: !isDeleted && Boolean(effectiveSrc),
       updatedAt: override?.updatedAt,
     };
   });
@@ -308,18 +331,18 @@ export async function POST(req: NextRequest) {
 
       if (target === 'all') {
         await resetImageOrSlot({ mode: 'all' });
-        cmsState.sectionGalleryItems = [...INITIAL_FIREBASE_SECTION_IMAGES];
+        cmsState.sectionGalleryItems = [];
         cmsState.imageOverrides = {};
         for (const seedSlot of INITIAL_FIREBASE_SLOT_UPGRADES) {
           cmsState.imageOverrides[seedSlot.slotId] = {
             ...seedSlot,
-            isDeleted: false,
+            src: '',
+            lightboxHref: '',
+            isDeleted: true,
             updatedAt: new Date().toISOString(),
           };
-          if (seedSlot.r2Key) {
-            r2Index.deletedMediaKeys = r2Index.deletedMediaKeys.filter((k) => k !== seedSlot.r2Key);
-          }
         }
+        r2Index.objects = {};
         await saveR2Index(r2Index);
         await saveCmsState(cmsState);
       } else if (target === 'asset' || target === 'media') {
@@ -329,18 +352,19 @@ export async function POST(req: NextRequest) {
           : `assets/media/${path.basename(filename)}`;
         await resetImageOrSlot({ mode: 'media', mediaPath });
       } else if (target === 'page' && body.page) {
-        for (const seedSlot of INITIAL_FIREBASE_SLOT_UPGRADES) {
-          if (seedSlot.page === body.page) {
-            cmsState.imageOverrides[seedSlot.slotId] = {
-              ...seedSlot,
-              isDeleted: false,
+        cmsState.sectionGalleryItems = cmsState.sectionGalleryItems.filter(
+          (item) => item.page !== body.page
+        );
+        for (const [k, ov] of Object.entries(cmsState.imageOverrides)) {
+          if (ov && ov.page === body.page) {
+            cmsState.imageOverrides[k] = {
+              ...ov,
+              src: '',
+              lightboxHref: '',
+              r2Key: undefined,
+              isDeleted: true,
               updatedAt: new Date().toISOString(),
             };
-            if (seedSlot.r2Key) {
-              r2Index.deletedMediaKeys = r2Index.deletedMediaKeys.filter(
-                (k) => k !== seedSlot.r2Key
-              );
-            }
           }
         }
         await saveR2Index(r2Index);
@@ -348,19 +372,21 @@ export async function POST(req: NextRequest) {
       } else if (body.page && typeof body.slotIndex === 'number') {
         const slotId = makeImageSlotId(body.page, body.slotIndex);
         const seedSlot = INITIAL_FIREBASE_SLOT_UPGRADES.find((s) => s.slotId === slotId);
-        if (seedSlot) {
-          cmsState.imageOverrides[slotId] = {
-            ...seedSlot,
-            isDeleted: false,
-            updatedAt: new Date().toISOString(),
-          };
-          if (seedSlot.r2Key) {
-            r2Index.deletedMediaKeys = r2Index.deletedMediaKeys.filter((k) => k !== seedSlot.r2Key);
-            await saveR2Index(r2Index);
-          }
-        } else {
-          delete cmsState.imageOverrides[slotId];
-        }
+        const existingOv = cmsState.imageOverrides[slotId];
+        cmsState.imageOverrides[slotId] = {
+          slotId,
+          page: body.page,
+          slotIndex: body.slotIndex,
+          type: existingOv?.type || seedSlot?.type || 'img',
+          label: existingOv?.label || seedSlot?.label || `Slot #${body.slotIndex + 1}`,
+          sectionContext: existingOv?.sectionContext || seedSlot?.sectionContext || 'Page Section',
+          src: '',
+          lightboxHref: '',
+          r2Key: undefined,
+          alt: existingOv?.alt || seedSlot?.alt || '',
+          isDeleted: true,
+          updatedAt: new Date().toISOString(),
+        };
         await saveCmsState(cmsState);
         await resetImageOrSlot({
           mode: 'slot',

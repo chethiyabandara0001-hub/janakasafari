@@ -476,6 +476,10 @@
 
       if (el.tagName.toLowerCase() === "div") {
         slotElementMap.set(slotId, { type: "hero-bg", element: el, slotIndex: idx });
+        const initStyle = el.getAttribute("style") || "";
+        if (initStyle.includes("empty-slot.svg")) {
+          el.style.backgroundImage = "none";
+        }
         let heroBtn = el.querySelector(".admin-hero-edit-btn");
         if (!heroBtn) {
           heroBtn = document.createElement("button");
@@ -488,7 +492,8 @@
             e.stopPropagation();
             const styleAttr = el.getAttribute("style") || "";
             const match = styleAttr.match(/url\(['"]?([^'")]+)['"]?\)/i);
-            const currentBg = match ? match[1] : "";
+            const rawBg = match ? match[1] : "";
+            const currentBg = rawBg.includes("empty-slot.svg") ? "" : rawBg;
             openInlineEditor({
               slotId,
               slotIndex: idx,
@@ -502,18 +507,30 @@
         }
       } else {
         slotElementMap.set(slotId, { type: "img", element: el, slotIndex: idx });
+        const initSrc = el.getAttribute("src") || "";
+        if (initSrc.includes("empty-slot.svg")) {
+          el.style.display = "none";
+          const holder =
+            el.closest(".galleryImageHolder") ||
+            el.closest("a[data-lightbox]") ||
+            el.closest(".wsite-image");
+          if (holder) {
+            holder.style.display = "none";
+          }
+        }
         el.addEventListener(
           "click",
           (e) => {
             if (!editModeActive) return;
             e.preventDefault();
             e.stopPropagation();
+            const rawSrc = el.getAttribute("src") || el.src || "";
             openInlineEditor({
               slotId,
               slotIndex: idx,
               type: "img",
               label: el.getAttribute("alt") || `Image Slot #${idx + 1}`,
-              src: el.getAttribute("src") || el.src,
+              src: rawSrc.includes("empty-slot.svg") ? "" : rawSrc,
               alt: el.getAttribute("alt") || "",
               element: el,
             });
@@ -787,200 +804,12 @@
   const heroBannerWrapEl = document.querySelector(".banner-wrap");
   const initialHeroStyle = (heroHeaderSectionEl && heroHeaderSectionEl.getAttribute("style")) || "";
   const initialHeroMatch = initialHeroStyle.match(/url\(['"]?([^'")]+)['"]?\)/i);
-  let primaryHeroBannerSrc = initialHeroMatch ? initialHeroMatch[1] : "";
+  const rawInitialHeroBannerSrc = initialHeroMatch ? initialHeroMatch[1] : "";
+  let primaryHeroBannerSrc = rawInitialHeroBannerSrc.includes("empty-slot.svg")
+    ? ""
+    : rawInitialHeroBannerSrc;
 
-  const DEFAULT_HERO_SLIDES_BY_PAGE = {
-    "index.html": [
-      {
-        itemId: "hero_slide_home_2",
-        src: "/assets/r2-bucket/sections/home_hero_1.jpg",
-        r2Key: "sections/home_hero_1.jpg",
-        alt: "Yala Leopard Safari — Sri Lankan Leopard resting on granite rock in Yala National Park",
-        order: 1,
-      },
-      {
-        itemId: "hero_slide_home_3",
-        src: "/assets/r2-bucket/sections/home_parks_1.jpg",
-        r2Key: "sections/home_parks_1.jpg",
-        alt: "Udawalawe National Park Safari — Wild Sri Lankan elephant herd",
-        order: 2,
-      },
-      {
-        itemId: "hero_slide_home_4",
-        src: "/assets/r2-bucket/sections/home_welcome_2.jpg",
-        r2Key: "sections/home_welcome_2.jpg",
-        alt: "Yala National Park Jeep Safari — Custom 4x4 safari jeep in Sri Lanka",
-        order: 3,
-      },
-    ],
-    "yala-safari.html": [
-      {
-        itemId: "hero_slide_yala_2",
-        src: "/assets/r2-bucket/sections/yala_sec_leopard_1.jpg",
-        r2Key: "sections/yala_sec_leopard_1.jpg",
-        alt: "Yala Leopard Safari in Yala National Park Sri Lanka",
-        order: 1,
-      },
-      {
-        itemId: "hero_slide_yala_3",
-        src: "/assets/r2-bucket/sections/yala_sec_packages_3.jpg",
-        r2Key: "sections/yala_sec_packages_3.jpg",
-        alt: "Yala National Park Safari landscape at sunrise",
-        order: 2,
-      },
-      {
-        itemId: "hero_slide_yala_4",
-        src: "/assets/r2-bucket/sections/yala_sec_bear_2.jpg",
-        r2Key: "sections/yala_sec_bear_2.jpg",
-        alt: "Yala Safari Tours — Sloth bear in Yala National Park",
-        order: 3,
-      },
-    ],
-    "udawalawe-safari.html": [
-      {
-        itemId: "hero_slide_udawalawe_2",
-        src: "/assets/r2-bucket/sections/udawalawe_sec_1.jpg",
-        r2Key: "sections/udawalawe_sec_1.jpg",
-        alt: "Udawalawe National Park Safari — Wild elephant herd",
-        order: 1,
-      },
-      {
-        itemId: "hero_slide_udawalawe_3",
-        src: "/assets/r2-bucket/sections/udawalawe_sec_2.jpg",
-        r2Key: "sections/udawalawe_sec_2.jpg",
-        alt: "Udawalawe Safari Tours — Reservoir wildlife",
-        order: 2,
-      },
-    ],
-    "bundala-birding-safari.html": [
-      {
-        itemId: "hero_slide_bundala_2",
-        src: "/assets/r2-bucket/sections/bundala_sec_1.jpg",
-        r2Key: "sections/bundala_sec_1.jpg",
-        alt: "Bundala National Park Safari — Wetland birdlife",
-        order: 1,
-      },
-      {
-        itemId: "hero_slide_bundala_3",
-        src: "/assets/r2-bucket/sections/bundala_sec_2.jpg",
-        r2Key: "sections/bundala_sec_2.jpg",
-        alt: "Bundala Wildlife Safari — Lagoon crocodile",
-        order: 2,
-      },
-    ],
-    "wilpattu-safari.html": [
-      {
-        itemId: "hero_slide_wilpattu_2",
-        src: "/assets/r2-bucket/sections/wilpattu_sec_1.jpg",
-        r2Key: "sections/wilpattu_sec_1.jpg",
-        alt: "Wilpattu National Park Safari — Sri Lankan Leopard",
-        order: 1,
-      },
-      {
-        itemId: "hero_slide_wilpattu_3",
-        src: "/assets/r2-bucket/sections/wilpattu_sec_2.jpg",
-        r2Key: "sections/wilpattu_sec_2.jpg",
-        alt: "Wilpattu Safari Tours — Spotted deer in forest clearing",
-        order: 2,
-      },
-    ],
-    "minneriya-safari.html": [
-      {
-        itemId: "hero_slide_minneriya_2",
-        src: "/assets/r2-bucket/sections/minneriya_sec_1.jpg",
-        r2Key: "sections/minneriya_sec_1.jpg",
-        alt: "Minneriya Elephant Safari — Elephant gathering",
-        order: 1,
-      },
-      {
-        itemId: "hero_slide_minneriya_3",
-        src: "/assets/r2-bucket/sections/minneriya_sec_2.jpg",
-        r2Key: "sections/minneriya_sec_2.jpg",
-        alt: "Minneriya National Park Safari at sunset",
-        order: 2,
-      },
-    ],
-    "kumana-birding-safari.html": [
-      {
-        itemId: "hero_slide_kumana_2",
-        src: "/assets/r2-bucket/sections/kumana_sec_1.jpg",
-        r2Key: "sections/kumana_sec_1.jpg",
-        alt: "Kumana Bird Watching Safari — Waterbirds in Kumana",
-        order: 1,
-      },
-      {
-        itemId: "hero_slide_kumana_3",
-        src: "/assets/r2-bucket/sections/kumana_sec_2.jpg",
-        r2Key: "sections/kumana_sec_2.jpg",
-        alt: "Kumana National Park Safari — Wild elephant on trail",
-        order: 2,
-      },
-    ],
-    "safari-parks.html": [
-      {
-        itemId: "hero_slide_parks_2",
-        src: "/assets/r2-bucket/sections/parks_overview_1.jpg",
-        r2Key: "sections/parks_overview_1.jpg",
-        alt: "Sri Lanka Safari Tours across 6 national parks",
-        order: 1,
-      },
-      {
-        itemId: "hero_slide_parks_3",
-        src: "/assets/r2-bucket/sections/parks_overview_2.jpg",
-        r2Key: "sections/parks_overview_2.jpg",
-        alt: "Sri Lanka Wildlife Safari landscape",
-        order: 2,
-      },
-    ],
-    "about.html": [
-      {
-        itemId: "hero_slide_about_2",
-        src: "/assets/r2-bucket/sections/about_sec_1.jpg",
-        r2Key: "sections/about_sec_1.jpg",
-        alt: "About Nisha Safari Jeep Tours team",
-        order: 1,
-      },
-      {
-        itemId: "hero_slide_about_3",
-        src: "/assets/r2-bucket/sections/about_sec_2.jpg",
-        r2Key: "sections/about_sec_2.jpg",
-        alt: "Sri Lankan leopard wildlife photography with Nisha Safari",
-        order: 2,
-      },
-    ],
-    "gallery.html": [
-      {
-        itemId: "hero_slide_gallery_2",
-        src: "/assets/r2-bucket/sections/gallery_sec_1.jpg",
-        r2Key: "sections/gallery_sec_1.jpg",
-        alt: "Yala Safari Gallery — Leopard in golden light",
-        order: 1,
-      },
-      {
-        itemId: "hero_slide_gallery_3",
-        src: "/assets/r2-bucket/sections/gallery_sec_2.jpg",
-        r2Key: "sections/gallery_sec_2.jpg",
-        alt: "Sri Lanka Safari Gallery — Peacock in Yala",
-        order: 2,
-      },
-    ],
-    "reviews.html": [
-      {
-        itemId: "hero_slide_reviews_2",
-        src: "/assets/r2-bucket/sections/reviews_sec_1.jpg",
-        r2Key: "sections/reviews_sec_1.jpg",
-        alt: "Nisha Safari Guest Reviews — Elephant safari encounter",
-        order: 1,
-      },
-      {
-        itemId: "hero_slide_reviews_3",
-        src: "/assets/r2-bucket/sections/home_welcome_2.jpg",
-        r2Key: "sections/home_welcome_2.jpg",
-        alt: "Nisha Safari custom 4x4 safari jeep",
-        order: 2,
-      },
-    ],
-  };
+  const DEFAULT_HERO_SLIDES_BY_PAGE = {};
 
   function extractR2KeyClient(src, explicitKey) {
     if (explicitKey && String(explicitKey).trim()) {
@@ -1004,10 +833,8 @@
   function normalizeSlideSrc(src, r2Key) {
     if (!src) return "";
     const trimmed = String(src).trim();
-    if (trimmed === "/deleted") return "";
+    if (trimmed === "/deleted" || trimmed.includes("empty-slot.svg")) return "";
     const key = extractR2KeyClient(trimmed, r2Key);
-    // Built-in static R2 bucket folders (sections/* and slots/*) are always present in /assets/r2-bucket/
-    // Using /assets/r2-bucket/<key> directly guarantees instant loading on static Cloudflare Pages, Workers, and Next.js
     if (
       key &&
       (key.startsWith("sections/") || key.startsWith("slots/")) &&
@@ -1077,6 +904,7 @@
     if (validSlides.length === 0) {
       if (stage) stage.remove();
       if (dotsWrap) dotsWrap.remove();
+      heroHeaderSectionEl.style.backgroundImage = "none";
       return;
     }
 
@@ -1183,22 +1011,6 @@
     }
   }
 
-  // Immediately start 4-Second Hero Slideshow on initial render using default slides for this page
-  if (heroHeaderSectionEl && !document.body.classList.contains("janaka-contact")) {
-    const initialSlides = [];
-    if (primaryHeroBannerSrc) {
-      initialSlides.push({
-        src: primaryHeroBannerSrc,
-        alt: document.title || "Sri Lanka Safari Hero Banner",
-      });
-    }
-    const defaultExtraSlides = DEFAULT_HERO_SLIDES_BY_PAGE[currentPageFile] || [];
-    defaultExtraSlides.forEach((s) => initialSlides.push(s));
-    if (initialSlides.length > 0) {
-      initOrUpdateHeroSlideshow(initialSlides);
-    }
-  }
-
   // Direct Firebase Firestore REST API reader so Cloudflare Pages deployments always reflect live /admin edits
   const FIRESTORE_BASE_URL =
     "https://firestore.googleapis.com/v1/projects/gen-lang-client-0113753106/databases/ai-studio-janakasafarijeep-76940b71-abf8-4b59-aaeb-d5237818c8d7/documents";
@@ -1275,41 +1087,27 @@
       if (!cms.imageOverrides) cms.imageOverrides = {};
       if (!Array.isArray(cms.sectionGalleryItems)) cms.sectionGalleryItems = [];
 
-      // Merge default hero slides for this page if not already in cms.sectionGalleryItems
-      const defaultPageSlides = DEFAULT_HERO_SLIDES_BY_PAGE[currentPageFile] || [];
-      const existingSecIds = new Set(cms.sectionGalleryItems.map((i) => i && i.itemId));
-      defaultPageSlides.forEach((ds) => {
-        if (!existingSecIds.has(ds.itemId)) {
-          cms.sectionGalleryItems.push({
-            ...ds,
-            page: currentPageFile,
-            sectionKey: "hero_slideshow",
-            sectionTitle: "Hero Section Slideshow (4s)",
-            title: ds.alt,
-            caption: "",
-          });
-        }
-      });
-
       // Merge live Firestore site_images on top of cms.imageOverrides
       fbSiteImages.forEach((docItem) => {
         if (!docItem || !docItem.slotId) return;
-        if (docItem.src === "/deleted") {
+        if (docItem.src === "/deleted" || docItem.isDeleted) {
           cms.imageOverrides[docItem.slotId] = {
             ...docItem,
             src: "",
             lightboxHref: "",
             isDeleted: true,
           };
-        } else if (docItem.src && !/^data:/i.test(docItem.src)) {
+        } else if (
+          docItem.src &&
+          !/^data:/i.test(docItem.src) &&
+          !String(docItem.src).includes("empty-slot.svg")
+        ) {
           const existingOv = cms.imageOverrides[docItem.slotId];
-          if (!existingOv || !existingOv.isDeleted) {
-            cms.imageOverrides[docItem.slotId] = {
-              ...existingOv,
-              ...docItem,
-              isDeleted: false,
-            };
-          }
+          cms.imageOverrides[docItem.slotId] = {
+            ...existingOv,
+            ...docItem,
+            isDeleted: false,
+          };
         }
       });
 
@@ -1364,7 +1162,12 @@
           const entry = slotElementMap.get(ov.slotId);
           if (!entry) return;
 
-          if (ov.isDeleted || ov.src === "/deleted") {
+          if (
+            ov.isDeleted ||
+            ov.src === "/deleted" ||
+            !ov.src ||
+            String(ov.src).includes("empty-slot.svg")
+          ) {
             if (entry.type === "hero-bg") {
               heroSlotDeleted = true;
               primaryHeroBannerSrc = "";
@@ -1383,8 +1186,9 @@
             return;
           }
 
-          if (!ov.src || /^data:/i.test(ov.src)) return;
+          if (/^data:/i.test(ov.src)) return;
           const resolvedOvSrc = normalizeSlideSrc(ov.src, ov.r2Key);
+          if (!resolvedOvSrc) return;
 
           if (entry.type === "hero-bg") {
             if (/payment-|visa|mastercard/i.test(resolvedOvSrc)) return;
@@ -1426,6 +1230,7 @@
                 item.sectionKey === "hero_slideshow" &&
                 item.src &&
                 item.src !== "/deleted" &&
+                !String(item.src).includes("empty-slot.svg") &&
                 !/^data:/i.test(item.src)
             )
             .sort((a, b) => (a.order || 0) - (b.order || 0))
@@ -1513,6 +1318,7 @@
               item.sectionKey !== "deleted_section_item" &&
               item.src &&
               item.src !== "/deleted" &&
+              !String(item.src).includes("empty-slot.svg") &&
               !/^data:/i.test(item.src)
           )
         : [];
@@ -1575,6 +1381,9 @@
           }
           if (grid) grid.appendChild(card);
         });
+      } else {
+        const existingShowcase = document.getElementById("firebase-section-gallery");
+        if (existingShowcase) existingShowcase.remove();
       }
     } catch (err) {
       console.error("Failed to hydrate Firebase CMS state:", err);

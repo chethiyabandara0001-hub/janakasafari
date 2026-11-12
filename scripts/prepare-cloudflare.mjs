@@ -272,13 +272,19 @@ async function buildInventories() {
       const firestoreSlotId = makeImageSlotId(page.file, m.slotIndex);
       const override = cmsState.imageOverrides[firestoreSlotId];
       const mappedType = m.kind === 'gallery-img' ? 'lightbox-img' : m.kind;
-      const effectiveSrc = override?.src || m.src;
+      const rawSrc = override?.src !== undefined ? override.src : m.src;
+      const isEmptyOrDeleted =
+        Boolean(override?.isDeleted) ||
+        !rawSrc ||
+        rawSrc === '/deleted' ||
+        rawSrc.includes('empty-slot.svg');
+      const effectiveSrc = isEmptyOrDeleted ? '' : rawSrc;
       const effectiveAlt = override?.alt !== undefined ? override.alt : m.alt;
-      const cleanFile = m.src.split('?')[0].replace(/^\/+/, '');
+      const cleanFile = effectiveSrc ? effectiveSrc.split('?')[0].replace(/^\/+/, '') : '';
       const assetFilename = cleanFile.startsWith('assets/media/')
         ? path.basename(cleanFile)
         : cleanFile;
-      const sharedCount = slotCountBySrc.get(m.src.split('?')[0]) || 1;
+      const sharedCount = effectiveSrc ? slotCountBySrc.get(effectiveSrc.split('?')[0]) || 1 : 1;
 
       enrichedSlots.push({
         id: firestoreSlotId,
@@ -291,13 +297,14 @@ async function buildInventories() {
         label: override?.label || m.alt || m.sectionContext || `Slot #${m.slotIndex + 1}`,
         sectionContext: m.sectionContext,
         src: effectiveSrc,
-        lightboxHref: override?.lightboxHref || m.lightboxHref,
-        r2Key: override?.r2Key,
+        lightboxHref: isEmptyOrDeleted ? '' : override?.lightboxHref || effectiveSrc,
+        r2Key: isEmptyOrDeleted ? undefined : override?.r2Key,
         alt: effectiveAlt,
         assetFilename,
         sharedCount,
         isSharedAsset: sharedCount > 1,
-        isModified: Boolean(override),
+        isModified: Boolean(override && !isEmptyOrDeleted),
+        isDeleted: isEmptyOrDeleted,
       });
     }
   }
@@ -317,6 +324,7 @@ async function buildInventories() {
   try {
     const files = await fs.readdir(mediaDir);
     for (const filename of files.sort()) {
+      if (filename === 'empty-slot.svg') continue;
       const fullPath = path.join(mediaDir, filename);
       const stat = await fs.stat(fullPath);
       if (!stat.isFile()) continue;

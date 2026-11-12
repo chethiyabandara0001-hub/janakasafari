@@ -309,9 +309,10 @@ export async function getAllSiteImages(): Promise<{
 
     for (const m of entry.matches) {
       const cleanSrc = m.src.split('?')[0];
+      const isEmptyPlaceholder = cleanSrc.endsWith('empty-slot.svg');
       const defSlot = defMatches[m.slotIndex];
       const srcChangedFromDefault = defSlot ? defSlot.src !== cleanSrc : false;
-      const fileModified = await checkMod(cleanSrc);
+      const fileModified = isEmptyPlaceholder ? false : await checkMod(cleanSrc);
 
       slots.push({
         id: `${page.file}::slot-${m.slotIndex}`,
@@ -320,11 +321,14 @@ export async function getAllSiteImages(): Promise<{
         slotIndex: m.slotIndex,
         kind: m.kind,
         sectionContext: m.sectionContext,
-        src: m.src,
-        lightboxHref: m.lightboxHref,
+        src: isEmptyPlaceholder ? '' : m.src,
+        lightboxHref:
+          m.lightboxHref && !m.lightboxHref.includes('empty-slot.svg')
+            ? m.lightboxHref
+            : undefined,
         alt: m.alt,
-        isModified: srcChangedFromDefault || fileModified,
-        sharedCount: slotCountBySrc.get(cleanSrc) || 1,
+        isModified: isEmptyPlaceholder ? false : srcChangedFromDefault || fileModified,
+        sharedCount: isEmptyPlaceholder ? 1 : slotCountBySrc.get(cleanSrc) || 1,
       });
     }
   }
@@ -335,6 +339,7 @@ export async function getAllSiteImages(): Promise<{
   try {
     const files = await fs.readdir(mediaDir);
     for (const filename of files.sort()) {
+      if (filename === 'empty-slot.svg') continue;
       const fullPath = path.join(mediaDir, filename);
       const stat = await fs.stat(fullPath);
       if (!stat.isFile()) continue;

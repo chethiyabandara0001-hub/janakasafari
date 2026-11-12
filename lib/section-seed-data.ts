@@ -25,603 +25,12 @@ export interface SeedSlotOverrideItem {
 }
 
 /**
- * Curated wildlife & safari images for EVERY section across all 12 pages,
- * stored in the Cloudflare R2 bucket and referenced in Firebase exclusively via R2 CDN links.
+ * Starts empty so the admin can upload fresh hero slideshow and gallery images from scratch.
  */
-export const INITIAL_FIREBASE_SECTION_IMAGES: SeedSectionGalleryItem[] = [
-  {
-    "itemId": "hero_slide_home_2",
-    "page": "index.html",
-    "sectionKey": "hero_slideshow",
-    "sectionTitle": "Hero Section Slideshow (4s)",
-    "title": "Yala National Park Leopard Safari at Golden Hour",
-    "caption": "Private 4x4 Yala Leopard Safari tracking Panthera pardus kotiya across Block 1 and Block 5.",
-    "src": "/assets/r2-bucket/sections/home_hero_1.jpg",
-    "alt": "Yala Leopard Safari — Sri Lankan Leopard resting on granite rock in Yala National Park",
-    "order": 1,
-    "r2Key": "sections/home_hero_1.jpg"
-  },
-  {
-    "itemId": "hero_slide_home_3",
-    "page": "index.html",
-    "sectionKey": "hero_slideshow",
-    "sectionTitle": "Hero Section Slideshow (4s)",
-    "title": "Udawalawe & Minneriya Wild Elephant Safari",
-    "caption": "Wild Asian elephant herds gathering along reservoir grasslands on our Sri Lanka Safari Tours.",
-    "src": "/assets/r2-bucket/sections/home_parks_1.jpg",
-    "alt": "Udawalawe National Park Safari — Wild Sri Lankan elephant herd",
-    "order": 2,
-    "r2Key": "sections/home_parks_1.jpg"
-  },
-  {
-    "itemId": "hero_slide_home_4",
-    "page": "index.html",
-    "sectionKey": "hero_slideshow",
-    "sectionTitle": "Hero Section Slideshow (4s)",
-    "title": "Private 4x4 Safari Jeep Tours Across Six National Parks",
-    "caption": "Custom open-view 4x4 safari jeeps for Yala Morning Safari, Full Day Safari, and Hambantota Shore Excursions.",
-    "src": "/assets/r2-bucket/sections/home_welcome_2.jpg",
-    "alt": "Yala National Park Jeep Safari — Custom 4x4 safari jeep in Sri Lanka",
-    "order": 3,
-    "r2Key": "sections/home_welcome_2.jpg"
-  },
-  {
-    "itemId": "hero_slide_yala_2",
-    "page": "yala-safari.html",
-    "sectionKey": "hero_slideshow",
-    "sectionTitle": "Hero Section Slideshow (4s)",
-    "title": "Yala Leopard Safari — Close Sightings",
-    "caption": "Morning, Afternoon, Full Day, and Share Safari options in Yala National Park.",
-    "src": "/assets/r2-bucket/sections/yala_sec_leopard_1.jpg",
-    "alt": "Yala Leopard Safari in Yala National Park Sri Lanka",
-    "order": 1,
-    "r2Key": "sections/yala_sec_leopard_1.jpg"
-  },
-  {
-    "itemId": "hero_slide_yala_3",
-    "page": "yala-safari.html",
-    "sectionKey": "hero_slideshow",
-    "sectionTitle": "Hero Section Slideshow (4s)",
-    "title": "Yala Full Day & Morning Jeep Safari",
-    "caption": "Scenic watering holes and savannah tracks with pickup from Tissamaharama, Kataragama, and Hambantota Port.",
-    "src": "/assets/r2-bucket/sections/yala_sec_packages_3.jpg",
-    "alt": "Yala National Park Safari landscape at sunrise",
-    "order": 2,
-    "r2Key": "sections/yala_sec_packages_3.jpg"
-  },
-  {
-    "itemId": "hero_slide_yala_4",
-    "page": "yala-safari.html",
-    "sectionKey": "hero_slideshow",
-    "sectionTitle": "Hero Section Slideshow (4s)",
-    "title": "Sri Lankan Sloth Bear & Wildlife Encounters",
-    "caption": "Track leopards, sloth bears, and wild tuskers across Yala National Park.",
-    "src": "/assets/r2-bucket/sections/yala_sec_bear_2.jpg",
-    "alt": "Yala Safari Tours — Sloth bear in Yala National Park",
-    "order": 3,
-    "r2Key": "sections/yala_sec_bear_2.jpg"
-  },
-  {
-    "itemId": "hero_slide_udawalawe_2",
-    "page": "udawalawe-safari.html",
-    "sectionKey": "hero_slideshow",
-    "sectionTitle": "Hero Section Slideshow (4s)",
-    "title": "Udawalawe Elephant Herds & Calf Sightings",
-    "caption": "Private 4x4 Udawalawe National Park Safari across open grasslands and reservoir shores.",
-    "src": "/assets/r2-bucket/sections/udawalawe_sec_1.jpg",
-    "alt": "Udawalawe National Park Safari — Wild elephant herd",
-    "order": 1,
-    "r2Key": "sections/udawalawe_sec_1.jpg"
-  },
-  {
-    "itemId": "hero_slide_udawalawe_3",
-    "page": "udawalawe-safari.html",
-    "sectionKey": "hero_slideshow",
-    "sectionTitle": "Hero Section Slideshow (4s)",
-    "title": "Udawalawe Reservoir Raptors & Wildlife",
-    "caption": "Morning and afternoon private jeep safaris in Udawalawe National Park.",
-    "src": "/assets/r2-bucket/sections/udawalawe_sec_2.jpg",
-    "alt": "Udawalawe Safari Tours — Reservoir wildlife",
-    "order": 2,
-    "r2Key": "sections/udawalawe_sec_2.jpg"
-  },
-  {
-    "itemId": "hero_slide_bundala_2",
-    "page": "bundala-birding-safari.html",
-    "sectionKey": "hero_slideshow",
-    "sectionTitle": "Hero Section Slideshow (4s)",
-    "title": "Bundala Ramsar Wetland Birding Sanctuary",
-    "caption": "Flamingos, storks, kingfishers, and 197+ bird species on a private Bundala Bird Watching Safari.",
-    "src": "/assets/r2-bucket/sections/bundala_sec_1.jpg",
-    "alt": "Bundala National Park Safari — Wetland birdlife",
-    "order": 1,
-    "r2Key": "sections/bundala_sec_1.jpg"
-  },
-  {
-    "itemId": "hero_slide_bundala_3",
-    "page": "bundala-birding-safari.html",
-    "sectionKey": "hero_slideshow",
-    "sectionTitle": "Hero Section Slideshow (4s)",
-    "title": "Bundala Coastal Lagoons & Crocodiles",
-    "caption": "Half-day and full-day birding safaris from Tissamaharama and Hambantota Port.",
-    "src": "/assets/r2-bucket/sections/bundala_sec_2.jpg",
-    "alt": "Bundala Wildlife Safari — Lagoon crocodile",
-    "order": 2,
-    "r2Key": "sections/bundala_sec_2.jpg"
-  },
-  {
-    "itemId": "hero_slide_wilpattu_2",
-    "page": "wilpattu-safari.html",
-    "sectionKey": "hero_slideshow",
-    "sectionTitle": "Hero Section Slideshow (4s)",
-    "title": "Wilpattu Natural Villu Lakes & Leopards",
-    "caption": "Explore Sri Lanka's largest national park on a private Wilpattu Leopard Safari.",
-    "src": "/assets/r2-bucket/sections/wilpattu_sec_1.jpg",
-    "alt": "Wilpattu National Park Safari — Sri Lankan Leopard",
-    "order": 1,
-    "r2Key": "sections/wilpattu_sec_1.jpg"
-  },
-  {
-    "itemId": "hero_slide_wilpattu_3",
-    "page": "wilpattu-safari.html",
-    "sectionKey": "hero_slideshow",
-    "sectionTitle": "Hero Section Slideshow (4s)",
-    "title": "Wilpattu Forest Trails & Spotted Deer",
-    "caption": "Full-day and half-day private 4x4 jeep tours across Wilpattu National Park.",
-    "src": "/assets/r2-bucket/sections/wilpattu_sec_2.jpg",
-    "alt": "Wilpattu Safari Tours — Spotted deer in forest clearing",
-    "order": 2,
-    "r2Key": "sections/wilpattu_sec_2.jpg"
-  },
-  {
-    "itemId": "hero_slide_minneriya_2",
-    "page": "minneriya-safari.html",
-    "sectionKey": "hero_slideshow",
-    "sectionTitle": "Hero Section Slideshow (4s)",
-    "title": "The Great Minneriya Elephant Gathering",
-    "caption": "Witness hundreds of wild Asian elephants gathering along Minneriya Tank.",
-    "src": "/assets/r2-bucket/sections/minneriya_sec_1.jpg",
-    "alt": "Minneriya Elephant Safari — Elephant gathering",
-    "order": 1,
-    "r2Key": "sections/minneriya_sec_1.jpg"
-  },
-  {
-    "itemId": "hero_slide_minneriya_3",
-    "page": "minneriya-safari.html",
-    "sectionKey": "hero_slideshow",
-    "sectionTitle": "Hero Section Slideshow (4s)",
-    "title": "Golden Sunset Over Minneriya Reservoir",
-    "caption": "Afternoon and morning private 4x4 jeep safaris in Minneriya National Park.",
-    "src": "/assets/r2-bucket/sections/minneriya_sec_2.jpg",
-    "alt": "Minneriya National Park Safari at sunset",
-    "order": 2,
-    "r2Key": "sections/minneriya_sec_2.jpg"
-  },
-  {
-    "itemId": "hero_slide_kumana_2",
-    "page": "kumana-birding-safari.html",
-    "sectionKey": "hero_slideshow",
-    "sectionTitle": "Hero Section Slideshow (4s)",
-    "title": "Kumana Villu Waterbird Sanctuary",
-    "caption": "Discover rare migratory and endemic birdlife in Kumana National Park (Yala East).",
-    "src": "/assets/r2-bucket/sections/kumana_sec_1.jpg",
-    "alt": "Kumana Bird Watching Safari — Waterbirds in Kumana",
-    "order": 1,
-    "r2Key": "sections/kumana_sec_1.jpg"
-  },
-  {
-    "itemId": "hero_slide_kumana_3",
-    "page": "kumana-birding-safari.html",
-    "sectionKey": "hero_slideshow",
-    "sectionTitle": "Hero Section Slideshow (4s)",
-    "title": "Kumana Wilderness & Leopard Tracks",
-    "caption": "Private 4x4 safaris through remote riverine forests and lagoons in Kumana.",
-    "src": "/assets/r2-bucket/sections/kumana_sec_2.jpg",
-    "alt": "Kumana National Park Safari — Wild elephant on trail",
-    "order": 2,
-    "r2Key": "sections/kumana_sec_2.jpg"
-  },
-  {
-    "itemId": "hero_slide_parks_2",
-    "page": "safari-parks.html",
-    "sectionKey": "hero_slideshow",
-    "sectionTitle": "Hero Section Slideshow (4s)",
-    "title": "Six Premier Wildlife National Parks in Sri Lanka",
-    "caption": "Yala, Udawalawe, Bundala, Wilpattu, Minneriya, and Kumana private 4x4 safari tours.",
-    "src": "/assets/r2-bucket/sections/parks_overview_1.jpg",
-    "alt": "Sri Lanka Safari Tours across 6 national parks",
-    "order": 1,
-    "r2Key": "sections/parks_overview_1.jpg"
-  },
-  {
-    "itemId": "hero_slide_parks_3",
-    "page": "safari-parks.html",
-    "sectionKey": "hero_slideshow",
-    "sectionTitle": "Hero Section Slideshow (4s)",
-    "title": "Tailored Leopard, Elephant & Birding Game Drives",
-    "caption": "Compare Sri Lanka's top national parks and book your private 4x4 jeep with Nisha Safari.",
-    "src": "/assets/r2-bucket/sections/parks_overview_2.jpg",
-    "alt": "Sri Lanka Wildlife Safari landscape",
-    "order": 2,
-    "r2Key": "sections/parks_overview_2.jpg"
-  },
-  {
-    "itemId": "hero_slide_about_2",
-    "page": "about.html",
-    "sectionKey": "hero_slideshow",
-    "sectionTitle": "Hero Section Slideshow (4s)",
-    "title": "15+ Years Guiding Safaris Across Yala & Southern Sri Lanka",
-    "caption": "Locally owned and operated private 4x4 safari jeep fleet based in Tissamaharama.",
-    "src": "/assets/r2-bucket/sections/about_sec_1.jpg",
-    "alt": "About Nisha Safari Jeep Tours team",
-    "order": 1,
-    "r2Key": "sections/about_sec_1.jpg"
-  },
-  {
-    "itemId": "hero_slide_about_3",
-    "page": "about.html",
-    "sectionKey": "hero_slideshow",
-    "sectionTitle": "Hero Section Slideshow (4s)",
-    "title": "Ethical Wildlife Tracking & Conservation First",
-    "caption": "Respectful wildlife distances and unhurried photography sightings in every park.",
-    "src": "/assets/r2-bucket/sections/about_sec_2.jpg",
-    "alt": "Sri Lankan leopard wildlife photography with Nisha Safari",
-    "order": 2,
-    "r2Key": "sections/about_sec_2.jpg"
-  },
-  {
-    "itemId": "hero_slide_gallery_2",
-    "page": "gallery.html",
-    "sectionKey": "hero_slideshow",
-    "sectionTitle": "Hero Section Slideshow (4s)",
-    "title": "Sri Lanka Wildlife & Safari Photography Gallery",
-    "caption": "Real sightings of leopards, tuskers, sloth bears, and birds captured on Nisha Safari tours.",
-    "src": "/assets/r2-bucket/sections/gallery_sec_1.jpg",
-    "alt": "Yala Safari Gallery — Leopard in golden light",
-    "order": 1,
-    "r2Key": "sections/gallery_sec_1.jpg"
-  },
-  {
-    "itemId": "hero_slide_gallery_3",
-    "page": "gallery.html",
-    "sectionKey": "hero_slideshow",
-    "sectionTitle": "Hero Section Slideshow (4s)",
-    "title": "Vibrant Birdlife & Wilderness Moments",
-    "caption": "Captured across Yala, Udawalawe, Bundala, Wilpattu, Minneriya, and Kumana.",
-    "src": "/assets/r2-bucket/sections/gallery_sec_2.jpg",
-    "alt": "Sri Lanka Safari Gallery — Peacock in Yala",
-    "order": 2,
-    "r2Key": "sections/gallery_sec_2.jpg"
-  },
-  {
-    "itemId": "hero_slide_reviews_2",
-    "page": "reviews.html",
-    "sectionKey": "hero_slideshow",
-    "sectionTitle": "Hero Section Slideshow (4s)",
-    "title": "Rated 4.9/5 by International Safari Travelers",
-    "caption": "Read verified TripAdvisor Travelers' Choice and Google reviews from our guests.",
-    "src": "/assets/r2-bucket/sections/reviews_sec_1.jpg",
-    "alt": "Nisha Safari Guest Reviews — Elephant safari encounter",
-    "order": 1,
-    "r2Key": "sections/reviews_sec_1.jpg"
-  },
-  {
-    "itemId": "hero_slide_reviews_3",
-    "page": "reviews.html",
-    "sectionKey": "hero_slideshow",
-    "sectionTitle": "Hero Section Slideshow (4s)",
-    "title": "Private 4x4 Jeep Tours Recommended Worldwide",
-    "caption": "Trusted by families, wildlife photographers, and cruise ship shore excursion guests.",
-    "src": "/assets/r2-bucket/sections/home_welcome_2.jpg",
-    "alt": "Nisha Safari custom 4x4 safari jeep",
-    "order": 2,
-    "r2Key": "sections/home_welcome_2.jpg"
-  },
-  {
-    "itemId": "home_hero_1",
-    "page": "index.html",
-    "sectionKey": "home_welcome_section",
-    "sectionTitle": "Welcome & Private Jeep Fleet",
-    "title": "Golden Hour Leopard Tracking in Block 1",
-    "caption": "Early morning 5:00 AM entry into Yala National Park aboard our custom-built 4x4 Toyota Hilux safari jeeps.",
-    "src": "/api/r2/file/sections/home_hero_1.jpg",
-    "alt": "Sri Lankan Leopard resting on granite outcrop at golden hour in Yala",
-    "order": 4,
-    "r2Key": "sections/home_hero_1.jpg"
-  },
-  {
-    "itemId": "home_welcome_2",
-    "page": "index.html",
-    "sectionKey": "home_welcome_section",
-    "sectionTitle": "Welcome & Private Jeep Fleet",
-    "title": "Elevated 6-Seat Viewing Deck",
-    "caption": "Forward-facing cushioned bucket seats with unobstructed 360-degree photography angles and roll-up canvas sides.",
-    "src": "/api/r2/file/sections/home_welcome_2.jpg",
-    "alt": "Custom 4x4 safari jeep traversing Sri Lankan national park trail",
-    "order": 5,
-    "r2Key": "sections/home_welcome_2.jpg"
-  },
-  {
-    "itemId": "home_parks_1",
-    "page": "index.html",
-    "sectionKey": "home_parks_section",
-    "sectionTitle": "Featured National Parks",
-    "title": "Udawalawe Wild Elephant Herd",
-    "caption": "Multi-generational Asian elephant families gathering along the Udawalawe reservoir shoreline.",
-    "src": "/api/r2/file/sections/home_parks_1.jpg",
-    "alt": "Asian elephant family walking across grasslands in Udawalawe National Park",
-    "order": 6,
-    "r2Key": "sections/home_parks_1.jpg"
-  },
-  {
-    "itemId": "home_parks_2",
-    "page": "index.html",
-    "sectionKey": "home_parks_section",
-    "sectionTitle": "Featured National Parks",
-    "title": "Bundala & Kumana Coastal Wetlands",
-    "caption": "Migratory Greater Flamingos, Painted Storks, and Bee-eaters feeding in shallow brackish lagoons.",
-    "src": "/api/r2/file/sections/home_parks_2.jpg",
-    "alt": "Flock of flamingos wading in Bundala coastal lagoon at sunrise",
-    "order": 7,
-    "r2Key": "sections/home_parks_2.jpg"
-  },
-  {
-    "itemId": "yala_sec_leopard_1",
-    "page": "yala-safari.html",
-    "sectionKey": "yala_wildlife_section",
-    "sectionTitle": "Yala Leopard & Big Game Highlights",
-    "title": "Panthera pardus kotiya — Sri Lankan Leopard",
-    "caption": "Yala Block 1 and Block 5 hold one of the highest leopard densities in the world.",
-    "src": "/api/r2/file/sections/yala_sec_leopard_1.jpg",
-    "alt": "Close-up of a Sri Lankan leopard in Yala National Park",
-    "order": 1,
-    "r2Key": "sections/yala_sec_leopard_1.jpg"
-  },
-  {
-    "itemId": "yala_sec_bear_2",
-    "page": "yala-safari.html",
-    "sectionKey": "yala_wildlife_section",
-    "sectionTitle": "Yala Leopard & Big Game Highlights",
-    "title": "Sri Lankan Sloth Bear During Palu Season",
-    "caption": "May to July brings sloth bears out to feast on ripe golden Palu berries across rocky scrubland.",
-    "src": "/api/r2/file/sections/yala_sec_bear_2.jpg",
-    "alt": "Sloth bear foraging in Yala forest scrub",
-    "order": 2,
-    "r2Key": "sections/yala_sec_bear_2.jpg"
-  },
-  {
-    "itemId": "yala_sec_packages_3",
-    "page": "yala-safari.html",
-    "sectionKey": "yala_packages_section",
-    "sectionTitle": "Yala Full-Day & Half-Day Packages",
-    "title": "Full-Day Bush Picnic by Menik Ganga",
-    "caption": "Full-day safaris include freshly prepared breakfast and lunch served at shaded riverside rest stops.",
-    "src": "/api/r2/file/sections/yala_sec_packages_3.jpg",
-    "alt": "Scenic golden savannah and watering hole in Yala National Park",
-    "order": 3,
-    "r2Key": "sections/yala_sec_packages_3.jpg"
-  },
-  {
-    "itemId": "udawalawe_sec_1",
-    "page": "udawalawe-safari.html",
-    "sectionKey": "udawalawe_elephants_section",
-    "sectionTitle": "Udawalawe Elephant Herds & Reservoir",
-    "title": "Iconic Tuskers & Calf Herds",
-    "caption": "Guaranteed close-range sightings of wild elephant herds grazing across open Patana grasslands.",
-    "src": "/api/r2/file/sections/udawalawe_sec_1.jpg",
-    "alt": "Herd of wild elephants with calves in Udawalawe National Park",
-    "order": 1,
-    "r2Key": "sections/udawalawe_sec_1.jpg"
-  },
-  {
-    "itemId": "udawalawe_sec_2",
-    "page": "udawalawe-safari.html",
-    "sectionKey": "udawalawe_elephants_section",
-    "sectionTitle": "Udawalawe Elephant Herds & Reservoir",
-    "title": "Crested Hawk-Eagle & Raptors",
-    "caption": "Dead trees emerging from the Udawalawe reservoir serve as perches for White-bellied Sea Eagles and Changeable Hawk-Eagles.",
-    "src": "/api/r2/file/sections/udawalawe_sec_2.jpg",
-    "alt": "Raptor perched on deadwood branch overlooking Udawalawe reservoir",
-    "order": 2,
-    "r2Key": "sections/udawalawe_sec_2.jpg"
-  },
-  {
-    "itemId": "bundala_sec_1",
-    "page": "bundala-birding-safari.html",
-    "sectionKey": "bundala_wetlands_section",
-    "sectionTitle": "Bundala Lagoon Birding & Crocodiles",
-    "title": "Ramsar Wetland Sanctuary — 197+ Bird Species",
-    "caption": "Quiet coastal lagoons hosting Greater Flamingos, Black-necked Storks, Spoonbills, and Blue-tailed Bee-eaters.",
-    "src": "/api/r2/file/sections/bundala_sec_1.jpg",
-    "alt": "Waterbirds wading in Bundala National Park lagoon",
-    "order": 1,
-    "r2Key": "sections/bundala_sec_1.jpg"
-  },
-  {
-    "itemId": "bundala_sec_2",
-    "page": "bundala-birding-safari.html",
-    "sectionKey": "bundala_wetlands_section",
-    "sectionTitle": "Bundala Lagoon Birding & Crocodiles",
-    "title": "Estuarine & Mugger Crocodiles Basking",
-    "caption": "Both saltwater and freshwater crocodiles bask along Bundala’s sunlit sandbars and channels.",
-    "src": "/api/r2/file/sections/bundala_sec_2.jpg",
-    "alt": "Crocodile basking on bank of Bundala lagoon",
-    "order": 2,
-    "r2Key": "sections/bundala_sec_2.jpg"
-  },
-  {
-    "itemId": "wilpattu_sec_1",
-    "page": "wilpattu-safari.html",
-    "sectionKey": "wilpattu_villus_section",
-    "sectionTitle": "Wilpattu Natural Villu Lakes & Leopards",
-    "title": "Leopard Patrol Along Natural Sand-Rimmed Villus",
-    "caption": "Sri Lanka’s largest national park features serene natural lakes (Villus) where leopards stalk spotted deer.",
-    "src": "/api/r2/file/sections/wilpattu_sec_1.jpg",
-    "alt": "Leopard walking along sandy forest track in Wilpattu National Park",
-    "order": 1,
-    "r2Key": "sections/wilpattu_sec_1.jpg"
-  },
-  {
-    "itemId": "wilpattu_sec_2",
-    "page": "wilpattu-safari.html",
-    "sectionKey": "wilpattu_villus_section",
-    "sectionTitle": "Wilpattu Natural Villu Lakes & Leopards",
-    "title": "Spotted Deer (Axis axis) & Ceylon Junglefowl",
-    "caption": "Morning mist rising over Kokkare Villu with herds of spotted deer and barking deer.",
-    "src": "/api/r2/file/sections/wilpattu_sec_2.jpg",
-    "alt": "Spotted deer alert in forest clearing in Wilpattu",
-    "order": 2,
-    "r2Key": "sections/wilpattu_sec_2.jpg"
-  },
-  {
-    "itemId": "minneriya_sec_1",
-    "page": "minneriya-safari.html",
-    "sectionKey": "minneriya_gathering_section",
-    "sectionTitle": "The Great Asian Elephant Gathering",
-    "title": "Over 300 Elephants at Ancient Minneriya Tank",
-    "caption": "During the dry season, herds from across the North Central Province converge on Minneriya’s receding grassy shores.",
-    "src": "/api/r2/file/sections/minneriya_sec_1.jpg",
-    "alt": "Large gathering of Asian elephants by Minneriya tank water edge",
-    "order": 1,
-    "r2Key": "sections/minneriya_sec_1.jpg"
-  },
-  {
-    "itemId": "minneriya_sec_2",
-    "page": "minneriya-safari.html",
-    "sectionKey": "minneriya_gathering_section",
-    "sectionTitle": "The Great Asian Elephant Gathering",
-    "title": "Sunset Over Minneriya Wewa",
-    "caption": "Afternoon safaris culminate in golden silhouettes of bathing elephants and flocks of cormorants.",
-    "src": "/api/r2/file/sections/minneriya_sec_2.jpg",
-    "alt": "Elephants silhouetted against golden sunset at Minneriya reservoir",
-    "order": 2,
-    "r2Key": "sections/minneriya_sec_2.jpg"
-  },
-  {
-    "itemId": "kumana_sec_1",
-    "page": "kumana-birding-safari.html",
-    "sectionKey": "kumana_villu_section",
-    "sectionTitle": "Kumana Villu Mangrove Heronry",
-    "title": "200-Hectare Kumana Villu Nesting Sanctuary",
-    "caption": "Thousands of Pelicans, Painted Storks, Spoonbills, and Purple Herons nest in the mangrove swamps from April to July.",
-    "src": "/api/r2/file/sections/kumana_sec_1.jpg",
-    "alt": "Colorful kingfisher and waterbirds in Kumana National Park",
-    "order": 1,
-    "r2Key": "sections/kumana_sec_1.jpg"
-  },
-  {
-    "itemId": "kumana_sec_2",
-    "page": "kumana-birding-safari.html",
-    "sectionKey": "kumana_villu_section",
-    "sectionTitle": "Kumana Villu Mangrove Heronry",
-    "title": "Untamed Yala East Leopard & Tusker Trails",
-    "caption": "Remote tracks along the Kumbukkan Oya river offer tranquil leopard and elephant encounters away from crowds.",
-    "src": "/api/r2/file/sections/kumana_sec_2.jpg",
-    "alt": "Wild elephant crossing river trail in Kumana Yala East",
-    "order": 2,
-    "r2Key": "sections/kumana_sec_2.jpg"
-  },
-  {
-    "itemId": "parks_overview_1",
-    "page": "safari-parks.html",
-    "sectionKey": "parks_comparison_section",
-    "sectionTitle": "Sri Lanka National Parks Comparison",
-    "title": "Southern & Dry-Zone Wildlife Corridor",
-    "caption": "We operate across Yala, Udawalawe, Bundala, Kumana, Lunugamvehera, Minneriya, Kaudulla, and Wilpattu.",
-    "src": "/api/r2/file/sections/parks_overview_1.jpg",
-    "alt": "Safari 4x4 jeep on scenic dry-zone wilderness track",
-    "order": 1,
-    "r2Key": "sections/parks_overview_1.jpg"
-  },
-  {
-    "itemId": "parks_overview_2",
-    "page": "safari-parks.html",
-    "sectionKey": "parks_comparison_section",
-    "sectionTitle": "Sri Lanka National Parks Comparison",
-    "title": "Tailored Photography & Family Game Drives",
-    "caption": "Whether tracking elusive leopards or watching baby elephants at play, every route is customized to the season.",
-    "src": "/api/r2/file/sections/parks_overview_2.jpg",
-    "alt": "Panoramic wildlife landscape in southern Sri Lanka",
-    "order": 2,
-    "r2Key": "sections/parks_overview_2.jpg"
-  },
-  {
-    "itemId": "about_sec_1",
-    "page": "about.html",
-    "sectionKey": "about_team_section",
-    "sectionTitle": "Nisha & Experienced Tracker Team",
-    "title": "15+ Years Born & Raised Beside Yala",
-    "caption": "Deep local knowledge of animal behavior, alarm calls, and territorial tracks across all five blocks of Yala.",
-    "src": "/api/r2/file/sections/about_sec_1.jpg",
-    "alt": "Safari tracker guiding guests from open-top 4x4 jeep",
-    "order": 1,
-    "r2Key": "sections/about_sec_1.jpg"
-  },
-  {
-    "itemId": "about_sec_2",
-    "page": "about.html",
-    "sectionKey": "about_team_section",
-    "sectionTitle": "Nisha & Experienced Tracker Team",
-    "title": "Ethical Wildlife Distance & Conservation First",
-    "caption": "We respect park speed limits, never crowd resting animals, and position our jeeps thoughtfully for natural sightings.",
-    "src": "/api/r2/file/sections/about_sec_2.jpg",
-    "alt": "Respectful wildlife photography of a leopard in natural habitat",
-    "order": 2,
-    "r2Key": "sections/about_sec_2.jpg"
-  },
-  {
-    "itemId": "gallery_sec_1",
-    "page": "gallery.html",
-    "sectionKey": "gallery_featured_section",
-    "sectionTitle": "Recent Guest Sightings & Field Moments",
-    "title": "Morning Mist & Golden Light in Block 1",
-    "caption": "Captured during our 5:30 AM gate entry drive with guests from Europe and Australia.",
-    "src": "/api/r2/file/sections/gallery_sec_1.jpg",
-    "alt": "Leopard photographed in morning golden light",
-    "order": 1,
-    "r2Key": "sections/gallery_sec_1.jpg"
-  },
-  {
-    "itemId": "gallery_sec_2",
-    "page": "gallery.html",
-    "sectionKey": "gallery_featured_section",
-    "sectionTitle": "Recent Guest Sightings & Field Moments",
-    "title": "Indian Peafowl Full Plumage Display",
-    "caption": "Vibrant male peacock dancing along the Palatupana coastal track in Yala.",
-    "src": "/api/r2/file/sections/gallery_sec_2.jpg",
-    "alt": "Peacock displaying iridescent feathers in Sri Lanka",
-    "order": 2,
-    "r2Key": "sections/gallery_sec_2.jpg"
-  },
-  {
-    "itemId": "reviews_sec_1",
-    "page": "reviews.html",
-    "sectionKey": "reviews_highlights_section",
-    "sectionTitle": "Travelers’ Choice Safari Memories",
-    "title": "Unforgettable Family & Private Photography Tours",
-    "caption": "Rated 4.9/5 across Tripadvisor and Google Reviews by hundreds of international wildlife travelers.",
-    "src": "/api/r2/file/sections/reviews_sec_1.jpg",
-    "alt": "Happy safari wildlife encounter with elephants in Sri Lanka",
-    "order": 1,
-    "r2Key": "sections/reviews_sec_1.jpg"
-  },
-  {
-    "itemId": "contact_sec_1",
-    "page": "contact.html",
-    "sectionKey": "contact_pickup_section",
-    "sectionTitle": "Tissamaharama, Kirinda & Kataragama Pickup Hub",
-    "title": "Complimentary Door-to-Door Hotel Pickup",
-    "caption": "Direct 4x4 jeep pickup from hotels in Tissamaharama, Yala, Kirinda, Weerawila, Kataragama, and Hambantota.",
-    "src": "/api/r2/file/sections/contact_sec_1.jpg",
-    "alt": "Safari jeep ready for morning hotel pickup in Tissamaharama",
-    "order": 1,
-    "r2Key": "sections/contact_sec_1.jpg"
-  }
-];
+export const INITIAL_FIREBASE_SECTION_IMAGES: SeedSectionGalleryItem[] = [];
 
 /**
- * Curated hero banner & key section slot images across all 12 pages,
- * stored in the Cloudflare R2 bucket and referenced in Firebase exclusively via R2 CDN links.
+ * Slot definitions across all 12 pages (starting empty with src: "" so all slots start fresh).
  */
 export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
   {
@@ -631,10 +40,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Nisha Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "/api/r2/file/slots/index_html__slot_0.svg",
-    "alt": "Nisha Safari",
-    "lightboxHref": "/api/r2/file/slots/index_html__slot_0.svg",
-    "r2Key": "slots/index_html__slot_0.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha Safari"
   },
   {
     "slotId": "index_html__slot_1",
@@ -643,10 +51,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "hero-bg",
     "label": "Discover the Wild Side of Sri Lanka",
     "sectionContext": "Hero Banner (Discover the Wild Side of Sri Lanka)",
-    "src": "/api/r2/file/slots/index_html__slot_1.jpg",
-    "alt": "Discover the Wild Side of Sri Lanka",
-    "lightboxHref": "/api/r2/file/slots/index_html__slot_1.jpg",
-    "r2Key": "slots/index_html__slot_1.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Discover the Wild Side of Sri Lanka"
   },
   {
     "slotId": "index_html__slot_2",
@@ -655,10 +62,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Visa",
     "sectionContext": "Payment Badge — Visa",
-    "src": "/api/r2/file/slots/index_html__slot_2.svg",
-    "alt": "Visa",
-    "lightboxHref": "/api/r2/file/slots/index_html__slot_2.svg",
-    "r2Key": "slots/index_html__slot_2.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Visa"
   },
   {
     "slotId": "index_html__slot_3",
@@ -667,10 +73,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Mastercard",
     "sectionContext": "Payment Badge — Mastercard",
-    "src": "/api/r2/file/slots/index_html__slot_3.svg",
-    "alt": "Mastercard",
-    "lightboxHref": "/api/r2/file/slots/index_html__slot_3.svg",
-    "r2Key": "slots/index_html__slot_3.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Mastercard"
   },
   {
     "slotId": "index_html__slot_4",
@@ -679,10 +84,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Why Choose Us — Sri Lankan Leopard Portrait",
     "sectionContext": "Why Choose Us for Your Safari Tours?",
-    "src": "/api/r2/file/slots/index_html__slot_4.jpg",
-    "alt": "Sri Lankan Leopard in Yala National Park",
-    "lightboxHref": "/api/r2/file/slots/index_html__slot_4.jpg",
-    "r2Key": "slots/index_html__slot_4.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Sri Lankan Leopard in Yala National Park"
   },
   {
     "slotId": "index_html__slot_5",
@@ -691,10 +95,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Yala Safari",
     "sectionContext": "Your Sri Lankan Safari Starts Here · Yala Safari",
-    "src": "/api/r2/file/slots/index_html__slot_5.jpg",
-    "alt": "Yala Safari — Sri Lankan Leopard",
-    "lightboxHref": "/api/r2/file/slots/index_html__slot_5.jpg",
-    "r2Key": "slots/index_html__slot_5.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Yala Safari — Sri Lankan Leopard"
   },
   {
     "slotId": "index_html__slot_6",
@@ -703,10 +106,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Udawalawe Safari",
     "sectionContext": "Your Sri Lankan Safari Starts Here · Udawalawe Safari",
-    "src": "/api/r2/file/slots/index_html__slot_6.jpg",
-    "alt": "Udawalawe Safari — Wild Elephant Herd",
-    "lightboxHref": "/api/r2/file/slots/index_html__slot_6.jpg",
-    "r2Key": "slots/index_html__slot_6.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Udawalawe Safari — Wild Elephant Herd"
   },
   {
     "slotId": "index_html__slot_7",
@@ -715,10 +117,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Bundala Birding Safari",
     "sectionContext": "Your Sri Lankan Safari Starts Here · Bundala Birding Safari",
-    "src": "/api/r2/file/slots/index_html__slot_7.jpg",
-    "alt": "Bundala Birding Safari — Wetland Birds",
-    "lightboxHref": "/api/r2/file/slots/index_html__slot_7.jpg",
-    "r2Key": "slots/index_html__slot_7.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Bundala Birding Safari — Wetland Birds"
   },
   {
     "slotId": "index_html__slot_8",
@@ -727,10 +128,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Wilpattu Safari",
     "sectionContext": "Your Sri Lankan Safari Starts Here · Wilpattu Safari",
-    "src": "/api/r2/file/slots/index_html__slot_8.jpg",
-    "alt": "Wilpattu Safari — Leopard by Natural Villu Lake",
-    "lightboxHref": "/api/r2/file/slots/index_html__slot_8.jpg",
-    "r2Key": "slots/index_html__slot_8.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Wilpattu Safari — Leopard by Natural Villu Lake"
   },
   {
     "slotId": "index_html__slot_9",
@@ -739,10 +139,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Minneriya Safari",
     "sectionContext": "Your Sri Lankan Safari Starts Here · Minneriya Safari",
-    "src": "/api/r2/file/slots/index_html__slot_9.jpg",
-    "alt": "Minneriya Safari — Great Elephant Gathering",
-    "lightboxHref": "/api/r2/file/slots/index_html__slot_9.jpg",
-    "r2Key": "slots/index_html__slot_9.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Minneriya Safari — Great Elephant Gathering"
   },
   {
     "slotId": "index_html__slot_10",
@@ -751,10 +150,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Kumana Safari",
     "sectionContext": "Your Sri Lankan Safari Starts Here · Kumana Safari",
-    "src": "/api/r2/file/slots/index_html__slot_10.jpg",
-    "alt": "Kumana Birding Safari — Waterbird Sanctuary",
-    "lightboxHref": "/api/r2/file/slots/index_html__slot_10.jpg",
-    "r2Key": "slots/index_html__slot_10.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Kumana Birding Safari — Waterbird Sanctuary"
   },
   {
     "slotId": "index_html__slot_11",
@@ -763,10 +161,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Sri Lankan leopard resting on a granite rock",
     "sectionContext": "Yala - At the Heart of Our Safari Journey",
-    "src": "/api/r2/file/slots/index_html__slot_11.jpg",
-    "alt": "Sri Lankan leopard resting on a granite rock",
-    "lightboxHref": "/api/r2/file/slots/index_html__slot_11.jpg",
-    "r2Key": "slots/index_html__slot_11.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Sri Lankan leopard resting on a granite rock"
   },
   {
     "slotId": "index_html__slot_12",
@@ -775,10 +172,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Sri Lankan Leopards",
     "sectionContext": "Wildlife You May Encounter · Sri Lankan Leopards",
-    "src": "/api/r2/file/slots/index_html__slot_12.jpg",
-    "alt": "Sri Lankan Leopards",
-    "lightboxHref": "/api/r2/file/slots/index_html__slot_12.jpg",
-    "r2Key": "slots/index_html__slot_12.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Sri Lankan Leopards"
   },
   {
     "slotId": "index_html__slot_13",
@@ -787,10 +183,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Sri Lankan Elephants",
     "sectionContext": "Wildlife You May Encounter · Sri Lankan Elephants",
-    "src": "/api/r2/file/slots/index_html__slot_13.jpg",
-    "alt": "Sri Lankan Elephants",
-    "lightboxHref": "/api/r2/file/slots/index_html__slot_13.jpg",
-    "r2Key": "slots/index_html__slot_13.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Sri Lankan Elephants"
   },
   {
     "slotId": "index_html__slot_14",
@@ -799,10 +194,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Sloth Bears",
     "sectionContext": "Wildlife You May Encounter · Sloth Bears",
-    "src": "/api/r2/file/slots/index_html__slot_14.jpg",
-    "alt": "Sloth Bears",
-    "lightboxHref": "/api/r2/file/slots/index_html__slot_14.jpg",
-    "r2Key": "slots/index_html__slot_14.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Sloth Bears"
   },
   {
     "slotId": "index_html__slot_15",
@@ -811,10 +205,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Birdlife & Wetland Wildlife",
     "sectionContext": "Wildlife You May Encounter · Birdlife & Wetland Wildlife",
-    "src": "/api/r2/file/slots/index_html__slot_15.jpg",
-    "alt": "Birdlife & Wetland Wildlife",
-    "lightboxHref": "/api/r2/file/slots/index_html__slot_15.jpg",
-    "r2Key": "slots/index_html__slot_15.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Birdlife & Wetland Wildlife"
   },
   {
     "slotId": "index_html__slot_16",
@@ -823,10 +216,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Nisha with safari guests beside a jeep at Yala National Park",
     "sectionContext": "Meet Nisha & the Team",
-    "src": "/api/r2/file/slots/index_html__slot_16.jpg",
-    "alt": "Nisha with safari guests beside a jeep at Yala National Park",
-    "lightboxHref": "/api/r2/file/slots/index_html__slot_16.jpg",
-    "r2Key": "slots/index_html__slot_16.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha with safari guests beside a jeep at Yala National Park"
   },
   {
     "slotId": "index_html__slot_17",
@@ -835,10 +227,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "TripAdvisor",
     "sectionContext": "What Our Guests Say · Travelers’ Choice 2024",
-    "src": "/api/r2/file/slots/index_html__slot_17.png",
-    "alt": "TripAdvisor Travellers Choice Awards 2022-2025",
-    "lightboxHref": "/api/r2/file/slots/index_html__slot_17.png",
-    "r2Key": "slots/index_html__slot_17.png"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "TripAdvisor Travellers Choice Awards 2022-2025"
   },
   {
     "slotId": "index_html__slot_18",
@@ -847,10 +238,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Tripadvisor",
     "sectionContext": "What Our Guests Say · Travelers’ Choice 2024",
-    "src": "/api/r2/file/slots/index_html__slot_18.svg",
-    "alt": "Tripadvisor",
-    "lightboxHref": "/api/r2/file/slots/index_html__slot_18.svg",
-    "r2Key": "slots/index_html__slot_18.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Tripadvisor"
   },
   {
     "slotId": "index_html__slot_19",
@@ -859,10 +249,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Yala Safari (Hambantota Port Excursion)",
     "sectionContext": "Arriving at Hambantota Port? · Yala Safari",
-    "src": "/api/r2/file/slots/index_html__slot_19.jpg",
-    "alt": "Yala Safari from Hambantota Port",
-    "lightboxHref": "/api/r2/file/slots/index_html__slot_19.jpg",
-    "r2Key": "slots/index_html__slot_19.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Yala Safari from Hambantota Port"
   },
   {
     "slotId": "index_html__slot_20",
@@ -871,10 +260,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Bundala Safari (Hambantota Port Excursion)",
     "sectionContext": "Arriving at Hambantota Port? · Bundala Safari",
-    "src": "/api/r2/file/slots/index_html__slot_20.jpg",
-    "alt": "Bundala Birding Safari from Hambantota Port",
-    "lightboxHref": "/api/r2/file/slots/index_html__slot_20.jpg",
-    "r2Key": "slots/index_html__slot_20.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Bundala Birding Safari from Hambantota Port"
   },
   {
     "slotId": "index_html__slot_21",
@@ -883,10 +271,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Udawalawe Safari (Hambantota Port Excursion)",
     "sectionContext": "Arriving at Hambantota Port? · Udawalawe Safari",
-    "src": "/api/r2/file/slots/index_html__slot_21.jpg",
-    "alt": "Udawalawe Elephant Safari from Hambantota Port",
-    "lightboxHref": "/api/r2/file/slots/index_html__slot_21.jpg",
-    "r2Key": "slots/index_html__slot_21.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Udawalawe Elephant Safari from Hambantota Port"
   },
   {
     "slotId": "index_html__slot_22",
@@ -895,10 +282,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Safari Nisha Taxi Service",
     "sectionContext": "Transfers & Stays with Nisha · Safari Nisha Taxi Service",
-    "src": "/api/r2/file/slots/index_html__slot_22.jpg",
-    "alt": "Safari Nisha Taxi Service",
-    "lightboxHref": "/api/r2/file/slots/index_html__slot_22.jpg",
-    "r2Key": "slots/index_html__slot_22.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Safari Nisha Taxi Service"
   },
   {
     "slotId": "index_html__slot_23",
@@ -907,10 +293,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "My Resort Yala",
     "sectionContext": "Transfers & Stays with Nisha · My Resort Yala",
-    "src": "/api/r2/file/slots/index_html__slot_23.jpg",
-    "alt": "My Resort Yala",
-    "lightboxHref": "/api/r2/file/slots/index_html__slot_23.jpg",
-    "r2Key": "slots/index_html__slot_23.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "My Resort Yala"
   },
   {
     "slotId": "index_html__slot_24",
@@ -919,10 +304,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Lake Face Cabana",
     "sectionContext": "Transfers & Stays with Nisha · Lake Face Cabana",
-    "src": "/api/r2/file/slots/index_html__slot_24.jpg",
-    "alt": "Lake Face Cabana",
-    "lightboxHref": "/api/r2/file/slots/index_html__slot_24.jpg",
-    "r2Key": "slots/index_html__slot_24.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Lake Face Cabana"
   },
   {
     "slotId": "index_html__slot_25",
@@ -931,10 +315,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Nisha Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "/api/r2/file/slots/index_html__slot_25.svg",
-    "alt": "Nisha Safari Logo",
-    "lightboxHref": "/api/r2/file/slots/index_html__slot_25.svg",
-    "r2Key": "slots/index_html__slot_25.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha Safari Logo"
   },
   {
     "slotId": "about_html__slot_0",
@@ -943,10 +326,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Nisha Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "/api/r2/file/slots/about_html__slot_0.svg",
-    "alt": "Nisha Safari",
-    "lightboxHref": "/api/r2/file/slots/about_html__slot_0.svg",
-    "r2Key": "slots/about_html__slot_0.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha Safari"
   },
   {
     "slotId": "about_html__slot_1",
@@ -955,10 +337,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "hero-bg",
     "label": "About Nisha Safari Jeep Tours",
     "sectionContext": "Hero Banner (About Nisha Safari Jeep Tours)",
-    "src": "/api/r2/file/slots/about_html__slot_1.jpg",
-    "alt": "About Nisha Safari Jeep Tours",
-    "lightboxHref": "/api/r2/file/slots/about_html__slot_1.jpg",
-    "r2Key": "slots/about_html__slot_1.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "About Nisha Safari Jeep Tours"
   },
   {
     "slotId": "about_html__slot_2",
@@ -967,10 +348,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Nisha with German visitors",
     "sectionContext": "About Nisha Safari Jeep Tours",
-    "src": "/api/r2/file/slots/about_html__slot_2.jpg",
-    "alt": "Nisha with German visitors",
-    "lightboxHref": "/api/r2/file/slots/about_html__slot_2.jpg",
-    "r2Key": "slots/about_html__slot_2.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha with German visitors"
   },
   {
     "slotId": "about_html__slot_3",
@@ -979,10 +359,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Wild elephants at Yala National Park",
     "sectionContext": "Explore with Us · Yala • Udawalawe • Bundala • Wilpattu • Minneriya • Kumana",
-    "src": "/api/r2/file/slots/about_html__slot_3.jpg",
-    "alt": "Wild elephants at Yala National Park",
-    "lightboxHref": "/api/r2/file/slots/about_html__slot_3.jpg",
-    "r2Key": "slots/about_html__slot_3.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Wild elephants at Yala National Park"
   },
   {
     "slotId": "about_html__slot_4",
@@ -991,10 +370,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Nisha Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "/api/r2/file/slots/about_html__slot_4.svg",
-    "alt": "Nisha Safari Logo",
-    "lightboxHref": "/api/r2/file/slots/about_html__slot_4.svg",
-    "r2Key": "slots/about_html__slot_4.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha Safari Logo"
   },
   {
     "slotId": "safari-parks_html__slot_0",
@@ -1003,10 +381,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Nisha Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "/api/r2/file/slots/safari-parks_html__slot_0.svg",
-    "alt": "Nisha Safari",
-    "lightboxHref": "/api/r2/file/slots/safari-parks_html__slot_0.svg",
-    "r2Key": "slots/safari-parks_html__slot_0.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha Safari"
   },
   {
     "slotId": "safari-parks_html__slot_1",
@@ -1015,10 +392,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "hero-bg",
     "label": "Sri Lanka Safari Parks",
     "sectionContext": "Hero Banner (Sri Lanka Safari Parks)",
-    "src": "/api/r2/file/slots/safari-parks_html__slot_1.jpg",
-    "alt": "Sri Lanka Safari Parks",
-    "lightboxHref": "/api/r2/file/slots/safari-parks_html__slot_1.jpg",
-    "r2Key": "slots/safari-parks_html__slot_1.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Sri Lanka Safari Parks"
   },
   {
     "slotId": "safari-parks_html__slot_2",
@@ -1027,10 +403,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Kumana Safari",
     "sectionContext": "Find Your Sri Lankan Safari · Kumana Safari",
-    "src": "/api/r2/file/slots/safari-parks_html__slot_2.jpg",
-    "alt": "Kumana Safari",
-    "lightboxHref": "/api/r2/file/slots/safari-parks_html__slot_2.jpg",
-    "r2Key": "slots/safari-parks_html__slot_2.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Kumana Safari"
   },
   {
     "slotId": "safari-parks_html__slot_3",
@@ -1039,10 +414,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Yala Safari",
     "sectionContext": "Find Your Sri Lankan Safari · Yala Safari",
-    "src": "/api/r2/file/slots/safari-parks_html__slot_3.jpg",
-    "alt": "Yala Safari",
-    "lightboxHref": "/api/r2/file/slots/safari-parks_html__slot_3.jpg",
-    "r2Key": "slots/safari-parks_html__slot_3.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Yala Safari"
   },
   {
     "slotId": "safari-parks_html__slot_4",
@@ -1051,10 +425,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Udawalawe Safari",
     "sectionContext": "Find Your Sri Lankan Safari · Udawalawe Safari",
-    "src": "/api/r2/file/slots/safari-parks_html__slot_4.jpg",
-    "alt": "Udawalawe Safari",
-    "lightboxHref": "/api/r2/file/slots/safari-parks_html__slot_4.jpg",
-    "r2Key": "slots/safari-parks_html__slot_4.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Udawalawe Safari"
   },
   {
     "slotId": "safari-parks_html__slot_5",
@@ -1063,10 +436,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Bundala Birding Safari",
     "sectionContext": "Find Your Sri Lankan Safari · Bundala Birding Safari",
-    "src": "/api/r2/file/slots/safari-parks_html__slot_5.jpg",
-    "alt": "Bundala Birding Safari",
-    "lightboxHref": "/api/r2/file/slots/safari-parks_html__slot_5.jpg",
-    "r2Key": "slots/safari-parks_html__slot_5.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Bundala Birding Safari"
   },
   {
     "slotId": "safari-parks_html__slot_6",
@@ -1075,10 +447,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Wilpattu Safari",
     "sectionContext": "Find Your Sri Lankan Safari · Wilpattu Safari",
-    "src": "/api/r2/file/slots/safari-parks_html__slot_6.jpg",
-    "alt": "Wilpattu Safari",
-    "lightboxHref": "/api/r2/file/slots/safari-parks_html__slot_6.jpg",
-    "r2Key": "slots/safari-parks_html__slot_6.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Wilpattu Safari"
   },
   {
     "slotId": "safari-parks_html__slot_7",
@@ -1087,10 +458,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Minneriya Safari",
     "sectionContext": "Find Your Sri Lankan Safari · Minneriya Safari",
-    "src": "/api/r2/file/slots/safari-parks_html__slot_7.jpg",
-    "alt": "Minneriya Safari",
-    "lightboxHref": "/api/r2/file/slots/safari-parks_html__slot_7.jpg",
-    "r2Key": "slots/safari-parks_html__slot_7.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Minneriya Safari"
   },
   {
     "slotId": "safari-parks_html__slot_8",
@@ -1099,10 +469,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Nisha Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "/api/r2/file/slots/safari-parks_html__slot_8.svg",
-    "alt": "Nisha Safari Logo",
-    "lightboxHref": "/api/r2/file/slots/safari-parks_html__slot_8.svg",
-    "r2Key": "slots/safari-parks_html__slot_8.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha Safari Logo"
   },
   {
     "slotId": "yala-safari_html__slot_0",
@@ -1111,10 +480,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Nisha Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "/api/r2/file/slots/yala-safari_html__slot_0.svg",
-    "alt": "Nisha Safari",
-    "lightboxHref": "/api/r2/file/slots/yala-safari_html__slot_0.svg",
-    "r2Key": "slots/yala-safari_html__slot_0.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha Safari"
   },
   {
     "slotId": "yala-safari_html__slot_1",
@@ -1123,10 +491,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "hero-bg",
     "label": "Yala National Park Safari",
     "sectionContext": "Hero Banner (Yala National Park Safari)",
-    "src": "/api/r2/file/slots/yala-safari_html__slot_1.jpg",
-    "alt": "Yala National Park Safari",
-    "lightboxHref": "/api/r2/file/slots/yala-safari_html__slot_1.jpg",
-    "r2Key": "slots/yala-safari_html__slot_1.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Yala National Park Safari"
   },
   {
     "slotId": "yala-safari_html__slot_2",
@@ -1135,10 +502,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Yala Full Day Safari",
     "sectionContext": "Choose Your Yala Safari · Full Day Safari",
-    "src": "/api/r2/file/slots/yala-safari_html__slot_2.jpg",
-    "alt": "Yala Full Day Safari",
-    "lightboxHref": "/api/r2/file/slots/yala-safari_html__slot_2.jpg",
-    "r2Key": "slots/yala-safari_html__slot_2.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Yala Full Day Safari"
   },
   {
     "slotId": "yala-safari_html__slot_3",
@@ -1147,10 +513,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Special Leopard and Elephants Safari",
     "sectionContext": "Choose Your Yala Safari · Special Leopard & Elephants Safari",
-    "src": "/api/r2/file/slots/yala-safari_html__slot_3.jpg",
-    "alt": "Special Leopard Safari",
-    "lightboxHref": "/api/r2/file/slots/yala-safari_html__slot_3.jpg",
-    "r2Key": "slots/yala-safari_html__slot_3.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Special Leopard Safari"
   },
   {
     "slotId": "yala-safari_html__slot_4",
@@ -1159,10 +524,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Yala Evening Safari",
     "sectionContext": "Choose Your Yala Safari · Evening Safari",
-    "src": "/api/r2/file/slots/yala-safari_html__slot_4.jpg",
-    "alt": "Yala Evening Safari",
-    "lightboxHref": "/api/r2/file/slots/yala-safari_html__slot_4.jpg",
-    "r2Key": "slots/yala-safari_html__slot_4.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Yala Evening Safari"
   },
   {
     "slotId": "yala-safari_html__slot_5",
@@ -1171,10 +535,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Visa",
     "sectionContext": "Payment Badge — Visa",
-    "src": "/api/r2/file/slots/yala-safari_html__slot_5.svg",
-    "alt": "Visa",
-    "lightboxHref": "/api/r2/file/slots/yala-safari_html__slot_5.svg",
-    "r2Key": "slots/yala-safari_html__slot_5.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Visa"
   },
   {
     "slotId": "yala-safari_html__slot_6",
@@ -1183,10 +546,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Mastercard",
     "sectionContext": "Payment Badge — Mastercard",
-    "src": "/api/r2/file/slots/yala-safari_html__slot_6.svg",
-    "alt": "Mastercard",
-    "lightboxHref": "/api/r2/file/slots/yala-safari_html__slot_6.svg",
-    "r2Key": "slots/yala-safari_html__slot_6.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Mastercard"
   },
   {
     "slotId": "yala-safari_html__slot_7",
@@ -1195,10 +557,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Sri Lankan Leopard on the rock at Yala",
     "sectionContext": "Discover Yala National Park · Sri Lankan Leopards",
-    "src": "/api/r2/file/slots/yala-safari_html__slot_7.jpg",
-    "alt": "Sri Lankan Leopard on the rock at Yala",
-    "lightboxHref": "/api/r2/file/slots/yala-safari_html__slot_7.jpg",
-    "r2Key": "slots/yala-safari_html__slot_7.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Sri Lankan Leopard on the rock at Yala"
   },
   {
     "slotId": "yala-safari_html__slot_8",
@@ -1207,10 +568,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Wild Elephants",
     "sectionContext": "Discover Yala National Park · Wild Elephants",
-    "src": "/api/r2/file/slots/yala-safari_html__slot_8.jpg",
-    "alt": "Wild Elephants",
-    "lightboxHref": "/api/r2/file/slots/yala-safari_html__slot_8.jpg",
-    "r2Key": "slots/yala-safari_html__slot_8.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Wild Elephants"
   },
   {
     "slotId": "yala-safari_html__slot_9",
@@ -1219,10 +579,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Sloth Bears",
     "sectionContext": "Discover Yala National Park · Sloth Bears",
-    "src": "/api/r2/file/slots/yala-safari_html__slot_9.jpg",
-    "alt": "Sloth Bears",
-    "lightboxHref": "/api/r2/file/slots/yala-safari_html__slot_9.jpg",
-    "r2Key": "slots/yala-safari_html__slot_9.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Sloth Bears"
   },
   {
     "slotId": "yala-safari_html__slot_10",
@@ -1231,10 +590,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Tuskers",
     "sectionContext": "Discover Yala National Park · Tuskers",
-    "src": "/api/r2/file/slots/yala-safari_html__slot_10.jpg",
-    "alt": "Tuskers",
-    "lightboxHref": "/api/r2/file/slots/yala-safari_html__slot_10.jpg",
-    "r2Key": "slots/yala-safari_html__slot_10.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Tuskers"
   },
   {
     "slotId": "yala-safari_html__slot_11",
@@ -1243,10 +601,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Birds",
     "sectionContext": "Discover Yala National Park · Birdlife",
-    "src": "/api/r2/file/slots/yala-safari_html__slot_11.jpg",
-    "alt": "Birds",
-    "lightboxHref": "/api/r2/file/slots/yala-safari_html__slot_11.jpg",
-    "r2Key": "slots/yala-safari_html__slot_11.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Birds"
   },
   {
     "slotId": "yala-safari_html__slot_12",
@@ -1255,10 +612,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "National park location map",
     "sectionContext": "Yala National Park — Location & Safari Access",
-    "src": "/api/r2/file/slots/yala-safari_html__slot_12.jpg",
-    "lightboxHref": "/api/r2/file/slots/yala-safari_html__slot_12.jpg",
-    "alt": "National park location map",
-    "r2Key": "slots/yala-safari_html__slot_12.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "National park location map"
   },
   {
     "slotId": "yala-safari_html__slot_13",
@@ -1267,10 +623,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Mr. Nisha with guests and a safari jeep.",
     "sectionContext": "Your Safari Experience",
-    "src": "/api/r2/file/slots/yala-safari_html__slot_13.jpg",
-    "alt": "Mr. Nisha with guests and a safari jeep.",
-    "lightboxHref": "/api/r2/file/slots/yala-safari_html__slot_13.jpg",
-    "r2Key": "slots/yala-safari_html__slot_13.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Mr. Nisha with guests and a safari jeep."
   },
   {
     "slotId": "yala-safari_html__slot_14",
@@ -1279,10 +634,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Nisha Safari Jeep in Yala",
     "sectionContext": "Your Safari Experience",
-    "src": "/api/r2/file/slots/yala-safari_html__slot_14.jpg",
-    "lightboxHref": "/api/r2/file/slots/yala-safari_html__slot_14.jpg",
-    "alt": "Nisha Safari Jeep in Yala",
-    "r2Key": "slots/yala-safari_html__slot_14.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha Safari Jeep in Yala"
   },
   {
     "slotId": "yala-safari_html__slot_15",
@@ -1291,10 +645,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Nisha Safari Guests on Game Drive",
     "sectionContext": "Your Safari Experience",
-    "src": "/api/r2/file/slots/yala-safari_html__slot_15.jpg",
-    "lightboxHref": "/api/r2/file/slots/yala-safari_html__slot_15.jpg",
-    "alt": "Nisha Safari Guests on Game Drive",
-    "r2Key": "slots/yala-safari_html__slot_15.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha Safari Guests on Game Drive"
   },
   {
     "slotId": "yala-safari_html__slot_16",
@@ -1303,10 +656,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Nisha Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "/api/r2/file/slots/yala-safari_html__slot_16.svg",
-    "alt": "Nisha Safari Logo",
-    "lightboxHref": "/api/r2/file/slots/yala-safari_html__slot_16.svg",
-    "r2Key": "slots/yala-safari_html__slot_16.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha Safari Logo"
   },
   {
     "slotId": "udawalawe-safari_html__slot_0",
@@ -1315,10 +667,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Nisha Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "/api/r2/file/slots/udawalawe-safari_html__slot_0.svg",
-    "alt": "Nisha Safari",
-    "lightboxHref": "/api/r2/file/slots/udawalawe-safari_html__slot_0.svg",
-    "r2Key": "slots/udawalawe-safari_html__slot_0.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha Safari"
   },
   {
     "slotId": "udawalawe-safari_html__slot_1",
@@ -1327,10 +678,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "hero-bg",
     "label": "Udawalawe National Park Safari",
     "sectionContext": "Hero Banner (Udawalawe National Park Safari)",
-    "src": "/api/r2/file/slots/udawalawe-safari_html__slot_1.jpg",
-    "alt": "Udawalawe National Park Safari",
-    "lightboxHref": "/api/r2/file/slots/udawalawe-safari_html__slot_1.jpg",
-    "r2Key": "slots/udawalawe-safari_html__slot_1.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Udawalawe National Park Safari"
   },
   {
     "slotId": "udawalawe-safari_html__slot_2",
@@ -1339,10 +689,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Udawalawe Full Day Safari",
     "sectionContext": "Choose Your Udawalawe Safari · Full Day Safari",
-    "src": "/api/r2/file/slots/udawalawe-safari_html__slot_2.jpg",
-    "alt": "Udawalawe Full Day Safari",
-    "lightboxHref": "/api/r2/file/slots/udawalawe-safari_html__slot_2.jpg",
-    "r2Key": "slots/udawalawe-safari_html__slot_2.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Udawalawe Full Day Safari"
   },
   {
     "slotId": "udawalawe-safari_html__slot_3",
@@ -1351,10 +700,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Udawalawe Morning Safari",
     "sectionContext": "Choose Your Udawalawe Safari · Morning Safari",
-    "src": "/api/r2/file/slots/udawalawe-safari_html__slot_3.jpg",
-    "alt": "Udawalawe Morning Safari",
-    "lightboxHref": "/api/r2/file/slots/udawalawe-safari_html__slot_3.jpg",
-    "r2Key": "slots/udawalawe-safari_html__slot_3.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Udawalawe Morning Safari"
   },
   {
     "slotId": "udawalawe-safari_html__slot_4",
@@ -1363,10 +711,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Udawalawe Evening Safari",
     "sectionContext": "Choose Your Udawalawe Safari · Evening Safari",
-    "src": "/api/r2/file/slots/udawalawe-safari_html__slot_4.jpg",
-    "alt": "Udawalawe Evening Safari",
-    "lightboxHref": "/api/r2/file/slots/udawalawe-safari_html__slot_4.jpg",
-    "r2Key": "slots/udawalawe-safari_html__slot_4.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Udawalawe Evening Safari"
   },
   {
     "slotId": "udawalawe-safari_html__slot_5",
@@ -1375,10 +722,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Sri Lankan Elephants at Udawalawe National Park",
     "sectionContext": "Discover Udawalawe National Park · Sri Lankan Elephants",
-    "src": "/api/r2/file/slots/udawalawe-safari_html__slot_5.jpg",
-    "alt": "Sri Lankan Elephants at Udawalawe National Park",
-    "lightboxHref": "/api/r2/file/slots/udawalawe-safari_html__slot_5.jpg",
-    "r2Key": "slots/udawalawe-safari_html__slot_5.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Sri Lankan Elephants at Udawalawe National Park"
   },
   {
     "slotId": "udawalawe-safari_html__slot_6",
@@ -1387,10 +733,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Water Buffalo at Udawalawe",
     "sectionContext": "Discover Udawalawe National Park · Water Buffalo",
-    "src": "/api/r2/file/slots/udawalawe-safari_html__slot_6.jpg",
-    "alt": "Water Buffalo at Udawalawe",
-    "lightboxHref": "/api/r2/file/slots/udawalawe-safari_html__slot_6.jpg",
-    "r2Key": "slots/udawalawe-safari_html__slot_6.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Water Buffalo at Udawalawe"
   },
   {
     "slotId": "udawalawe-safari_html__slot_7",
@@ -1399,10 +744,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Spotted Deer",
     "sectionContext": "Discover Udawalawe National Park · Spotted Deer",
-    "src": "/api/r2/file/slots/udawalawe-safari_html__slot_7.jpg",
-    "alt": "Spotted Deer",
-    "lightboxHref": "/api/r2/file/slots/udawalawe-safari_html__slot_7.jpg",
-    "r2Key": "slots/udawalawe-safari_html__slot_7.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Spotted Deer"
   },
   {
     "slotId": "udawalawe-safari_html__slot_8",
@@ -1411,10 +755,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Crocodiles",
     "sectionContext": "Discover Udawalawe National Park · Crocodiles",
-    "src": "/api/r2/file/slots/udawalawe-safari_html__slot_8.jpg",
-    "alt": "Crocodiles",
-    "lightboxHref": "/api/r2/file/slots/udawalawe-safari_html__slot_8.jpg",
-    "r2Key": "slots/udawalawe-safari_html__slot_8.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Crocodiles"
   },
   {
     "slotId": "udawalawe-safari_html__slot_9",
@@ -1423,10 +766,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Stork-billed Kingfisher",
     "sectionContext": "Discover Udawalawe National Park · Birdlife",
-    "src": "/api/r2/file/slots/udawalawe-safari_html__slot_9.jpg",
-    "alt": "Stork-billed Kingfisher",
-    "lightboxHref": "/api/r2/file/slots/udawalawe-safari_html__slot_9.jpg",
-    "r2Key": "slots/udawalawe-safari_html__slot_9.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Stork-billed Kingfisher"
   },
   {
     "slotId": "udawalawe-safari_html__slot_10",
@@ -1435,10 +777,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "National park location map",
     "sectionContext": "Udawalawe — Location & Safari Access",
-    "src": "/api/r2/file/slots/udawalawe-safari_html__slot_10.jpg",
-    "lightboxHref": "/api/r2/file/slots/udawalawe-safari_html__slot_10.jpg",
-    "alt": "National park location map",
-    "r2Key": "slots/udawalawe-safari_html__slot_10.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "National park location map"
   },
   {
     "slotId": "udawalawe-safari_html__slot_11",
@@ -1447,10 +788,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Mr. Nisha with guests and a safari jeep.",
     "sectionContext": "Your Safari Experience",
-    "src": "/api/r2/file/slots/udawalawe-safari_html__slot_11.jpg",
-    "alt": "Mr. Nisha with guests and a safari jeep.",
-    "lightboxHref": "/api/r2/file/slots/udawalawe-safari_html__slot_11.jpg",
-    "r2Key": "slots/udawalawe-safari_html__slot_11.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Mr. Nisha with guests and a safari jeep."
   },
   {
     "slotId": "udawalawe-safari_html__slot_12",
@@ -1459,10 +799,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Safari Nisha and Team in Udawalawe",
     "sectionContext": "Your Safari Experience",
-    "src": "/api/r2/file/slots/udawalawe-safari_html__slot_12.jpg",
-    "lightboxHref": "/api/r2/file/slots/udawalawe-safari_html__slot_12.jpg",
-    "alt": "Safari Nisha and Team",
-    "r2Key": "slots/udawalawe-safari_html__slot_12.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Safari Nisha and Team"
   },
   {
     "slotId": "udawalawe-safari_html__slot_13",
@@ -1471,10 +810,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Udawalawe 4x4 Jeep Adventure",
     "sectionContext": "Your Safari Experience",
-    "src": "/api/r2/file/slots/udawalawe-safari_html__slot_13.jpg",
-    "lightboxHref": "/api/r2/file/slots/udawalawe-safari_html__slot_13.jpg",
-    "alt": "Safari Nisha and Team",
-    "r2Key": "slots/udawalawe-safari_html__slot_13.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Safari Nisha and Team"
   },
   {
     "slotId": "udawalawe-safari_html__slot_14",
@@ -1483,10 +821,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Nisha Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "/api/r2/file/slots/udawalawe-safari_html__slot_14.svg",
-    "alt": "Nisha Safari Logo",
-    "lightboxHref": "/api/r2/file/slots/udawalawe-safari_html__slot_14.svg",
-    "r2Key": "slots/udawalawe-safari_html__slot_14.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha Safari Logo"
   },
   {
     "slotId": "bundala-birding-safari_html__slot_0",
@@ -1495,10 +832,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Nisha Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "/api/r2/file/slots/bundala-birding-safari_html__slot_0.svg",
-    "alt": "Nisha Safari",
-    "lightboxHref": "/api/r2/file/slots/bundala-birding-safari_html__slot_0.svg",
-    "r2Key": "slots/bundala-birding-safari_html__slot_0.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha Safari"
   },
   {
     "slotId": "bundala-birding-safari_html__slot_1",
@@ -1507,10 +843,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "hero-bg",
     "label": "Bundala Birding Safari",
     "sectionContext": "Hero Banner (Bundala Birding Safari)",
-    "src": "/api/r2/file/slots/bundala-birding-safari_html__slot_1.jpg",
-    "alt": "Bundala Birding Safari",
-    "lightboxHref": "/api/r2/file/slots/bundala-birding-safari_html__slot_1.jpg",
-    "r2Key": "slots/bundala-birding-safari_html__slot_1.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Bundala Birding Safari"
   },
   {
     "slotId": "bundala-birding-safari_html__slot_2",
@@ -1519,10 +854,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Bundala Morning Birding Safari",
     "sectionContext": "Choose Your Bundala Safari · Morning Safari",
-    "src": "/api/r2/file/slots/bundala-birding-safari_html__slot_2.jpg",
-    "alt": "Bundala Morning Birding Safari",
-    "lightboxHref": "/api/r2/file/slots/bundala-birding-safari_html__slot_2.jpg",
-    "r2Key": "slots/bundala-birding-safari_html__slot_2.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Bundala Morning Birding Safari"
   },
   {
     "slotId": "bundala-birding-safari_html__slot_3",
@@ -1531,10 +865,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Bundala Evening Birding Safari",
     "sectionContext": "Choose Your Bundala Safari · Evening Safari",
-    "src": "/api/r2/file/slots/bundala-birding-safari_html__slot_3.jpg",
-    "alt": "Bundala Evening Birding Safari",
-    "lightboxHref": "/api/r2/file/slots/bundala-birding-safari_html__slot_3.jpg",
-    "r2Key": "slots/bundala-birding-safari_html__slot_3.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Bundala Evening Birding Safari"
   },
   {
     "slotId": "bundala-birding-safari_html__slot_4",
@@ -1543,10 +876,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Visa",
     "sectionContext": "Payment Badge — Visa",
-    "src": "/api/r2/file/slots/bundala-birding-safari_html__slot_4.svg",
-    "alt": "Visa",
-    "lightboxHref": "/api/r2/file/slots/bundala-birding-safari_html__slot_4.svg",
-    "r2Key": "slots/bundala-birding-safari_html__slot_4.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Visa"
   },
   {
     "slotId": "bundala-birding-safari_html__slot_5",
@@ -1555,10 +887,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Mastercard",
     "sectionContext": "Payment Badge — Mastercard",
-    "src": "/api/r2/file/slots/bundala-birding-safari_html__slot_5.svg",
-    "alt": "Mastercard",
-    "lightboxHref": "/api/r2/file/slots/bundala-birding-safari_html__slot_5.svg",
-    "r2Key": "slots/bundala-birding-safari_html__slot_5.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Mastercard"
   },
   {
     "slotId": "bundala-birding-safari_html__slot_6",
@@ -1567,10 +898,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Waterbirds & Wetland Life",
     "sectionContext": "Discover Bundala National Park · Waterbirds & Wetland Life",
-    "src": "/api/r2/file/slots/bundala-birding-safari_html__slot_6.jpg",
-    "alt": "Waterbirds & Wetland Life in Bundala",
-    "lightboxHref": "/api/r2/file/slots/bundala-birding-safari_html__slot_6.jpg",
-    "r2Key": "slots/bundala-birding-safari_html__slot_6.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Waterbirds & Wetland Life in Bundala"
   },
   {
     "slotId": "bundala-birding-safari_html__slot_7",
@@ -1579,10 +909,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Sri Lankan Elephants in Bundala",
     "sectionContext": "Discover Bundala National Park · Sri Lankan Elephants",
-    "src": "/api/r2/file/slots/bundala-birding-safari_html__slot_7.jpg",
-    "alt": "Sri Lankan Elephants in Bundala",
-    "lightboxHref": "/api/r2/file/slots/bundala-birding-safari_html__slot_7.jpg",
-    "r2Key": "slots/bundala-birding-safari_html__slot_7.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Sri Lankan Elephants in Bundala"
   },
   {
     "slotId": "bundala-birding-safari_html__slot_8",
@@ -1591,10 +920,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Spotted Deer in Bundala",
     "sectionContext": "Discover Bundala National Park · Spotted Deer",
-    "src": "/api/r2/file/slots/bundala-birding-safari_html__slot_8.jpg",
-    "alt": "Spotted Deer in Bundala",
-    "lightboxHref": "/api/r2/file/slots/bundala-birding-safari_html__slot_8.jpg",
-    "r2Key": "slots/bundala-birding-safari_html__slot_8.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Spotted Deer in Bundala"
   },
   {
     "slotId": "bundala-birding-safari_html__slot_9",
@@ -1603,10 +931,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Crocodiles in Bundala Lagoon",
     "sectionContext": "Discover Bundala National Park · Crocodiles",
-    "src": "/api/r2/file/slots/bundala-birding-safari_html__slot_9.jpg",
-    "alt": "Crocodiles in Bundala Lagoon",
-    "lightboxHref": "/api/r2/file/slots/bundala-birding-safari_html__slot_9.jpg",
-    "r2Key": "slots/bundala-birding-safari_html__slot_9.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Crocodiles in Bundala Lagoon"
   },
   {
     "slotId": "bundala-birding-safari_html__slot_10",
@@ -1615,10 +942,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Seasonal Migratory Birds",
     "sectionContext": "Discover Bundala National Park · Seasonal Migratory Birds",
-    "src": "/api/r2/file/slots/bundala-birding-safari_html__slot_10.jpg",
-    "alt": "Seasonal Migratory Birds in Bundala",
-    "lightboxHref": "/api/r2/file/slots/bundala-birding-safari_html__slot_10.jpg",
-    "r2Key": "slots/bundala-birding-safari_html__slot_10.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Seasonal Migratory Birds in Bundala"
   },
   {
     "slotId": "bundala-birding-safari_html__slot_11",
@@ -1627,10 +953,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "National park location map",
     "sectionContext": "Bundala — Location & Safari Access",
-    "src": "/api/r2/file/slots/bundala-birding-safari_html__slot_11.jpg",
-    "lightboxHref": "/api/r2/file/slots/bundala-birding-safari_html__slot_11.jpg",
-    "alt": "National park location map",
-    "r2Key": "slots/bundala-birding-safari_html__slot_11.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "National park location map"
   },
   {
     "slotId": "bundala-birding-safari_html__slot_12",
@@ -1639,10 +964,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Bundala Birding Guide with Binoculars",
     "sectionContext": "Your Safari Experience",
-    "src": "/api/r2/file/slots/bundala-birding-safari_html__slot_12.jpg",
-    "alt": "Bundala Safari Guide & Jeep",
-    "lightboxHref": "/api/r2/file/slots/bundala-birding-safari_html__slot_12.jpg",
-    "r2Key": "slots/bundala-birding-safari_html__slot_12.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Bundala Safari Guide & Jeep"
   },
   {
     "slotId": "bundala-birding-safari_html__slot_13",
@@ -1651,10 +975,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Bundala Safari Jeep on Lagoon Track",
     "sectionContext": "Your Safari Experience",
-    "src": "/api/r2/file/slots/bundala-birding-safari_html__slot_13.jpg",
-    "lightboxHref": "/api/r2/file/slots/bundala-birding-safari_html__slot_13.jpg",
-    "alt": "Bundala Safari Jeep on Lagoon Track",
-    "r2Key": "slots/bundala-birding-safari_html__slot_13.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Bundala Safari Jeep on Lagoon Track"
   },
   {
     "slotId": "bundala-birding-safari_html__slot_14",
@@ -1663,10 +986,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Bundala Birdwatching Jeep Tour",
     "sectionContext": "Your Safari Experience",
-    "src": "/api/r2/file/slots/bundala-birding-safari_html__slot_14.jpg",
-    "lightboxHref": "/api/r2/file/slots/bundala-birding-safari_html__slot_14.jpg",
-    "alt": "Bundala Birdwatching Jeep Tour",
-    "r2Key": "slots/bundala-birding-safari_html__slot_14.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Bundala Birdwatching Jeep Tour"
   },
   {
     "slotId": "bundala-birding-safari_html__slot_15",
@@ -1675,10 +997,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Nisha Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "/api/r2/file/slots/bundala-birding-safari_html__slot_15.svg",
-    "alt": "Nisha Safari Logo",
-    "lightboxHref": "/api/r2/file/slots/bundala-birding-safari_html__slot_15.svg",
-    "r2Key": "slots/bundala-birding-safari_html__slot_15.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha Safari Logo"
   },
   {
     "slotId": "wilpattu-safari_html__slot_0",
@@ -1687,10 +1008,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Nisha Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "/api/r2/file/slots/wilpattu-safari_html__slot_0.svg",
-    "alt": "Nisha Safari",
-    "lightboxHref": "/api/r2/file/slots/wilpattu-safari_html__slot_0.svg",
-    "r2Key": "slots/wilpattu-safari_html__slot_0.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha Safari"
   },
   {
     "slotId": "wilpattu-safari_html__slot_1",
@@ -1699,10 +1019,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "hero-bg",
     "label": "Wilpattu National Park Safari",
     "sectionContext": "Hero Banner (Wilpattu National Park Safari)",
-    "src": "/api/r2/file/slots/wilpattu-safari_html__slot_1.jpg",
-    "alt": "Wilpattu National Park Safari",
-    "lightboxHref": "/api/r2/file/slots/wilpattu-safari_html__slot_1.jpg",
-    "r2Key": "slots/wilpattu-safari_html__slot_1.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Wilpattu National Park Safari"
   },
   {
     "slotId": "wilpattu-safari_html__slot_2",
@@ -1711,10 +1030,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Wilpattu Full Day Safari",
     "sectionContext": "Choose Your Wilpattu Safari · Full Day Safari",
-    "src": "/api/r2/file/slots/wilpattu-safari_html__slot_2.jpg",
-    "alt": "Wilpattu Full Day Safari",
-    "lightboxHref": "/api/r2/file/slots/wilpattu-safari_html__slot_2.jpg",
-    "r2Key": "slots/wilpattu-safari_html__slot_2.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Wilpattu Full Day Safari"
   },
   {
     "slotId": "wilpattu-safari_html__slot_3",
@@ -1723,10 +1041,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Wilpattu Morning Safari",
     "sectionContext": "Choose Your Wilpattu Safari · Morning Safari",
-    "src": "/api/r2/file/slots/wilpattu-safari_html__slot_3.jpg",
-    "alt": "Wilpattu Morning Safari",
-    "lightboxHref": "/api/r2/file/slots/wilpattu-safari_html__slot_3.jpg",
-    "r2Key": "slots/wilpattu-safari_html__slot_3.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Wilpattu Morning Safari"
   },
   {
     "slotId": "wilpattu-safari_html__slot_4",
@@ -1735,10 +1052,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Wilpattu Evening Safari",
     "sectionContext": "Choose Your Wilpattu Safari · Evening Safari",
-    "src": "/api/r2/file/slots/wilpattu-safari_html__slot_4.jpg",
-    "alt": "Wilpattu Evening Safari",
-    "lightboxHref": "/api/r2/file/slots/wilpattu-safari_html__slot_4.jpg",
-    "r2Key": "slots/wilpattu-safari_html__slot_4.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Wilpattu Evening Safari"
   },
   {
     "slotId": "wilpattu-safari_html__slot_5",
@@ -1747,10 +1063,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Sri Lankan Leopards in Wilpattu",
     "sectionContext": "Discover Wilpattu National Park · Sri Lankan Leopards",
-    "src": "/api/r2/file/slots/wilpattu-safari_html__slot_5.jpg",
-    "alt": "Sri Lankan Leopards in Wilpattu",
-    "lightboxHref": "/api/r2/file/slots/wilpattu-safari_html__slot_5.jpg",
-    "r2Key": "slots/wilpattu-safari_html__slot_5.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Sri Lankan Leopards in Wilpattu"
   },
   {
     "slotId": "wilpattu-safari_html__slot_6",
@@ -1759,10 +1074,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Sri Lankan Sloth Bears in Wilpattu",
     "sectionContext": "Discover Wilpattu National Park · Sri Lankan Sloth Bears",
-    "src": "/api/r2/file/slots/wilpattu-safari_html__slot_6.jpg",
-    "alt": "Sri Lankan Sloth Bears in Wilpattu",
-    "lightboxHref": "/api/r2/file/slots/wilpattu-safari_html__slot_6.jpg",
-    "r2Key": "slots/wilpattu-safari_html__slot_6.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Sri Lankan Sloth Bears in Wilpattu"
   },
   {
     "slotId": "wilpattu-safari_html__slot_7",
@@ -1771,10 +1085,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Deer & Forest Wildlife in Wilpattu",
     "sectionContext": "Discover Wilpattu National Park · Deer & Forest Wildlife",
-    "src": "/api/r2/file/slots/wilpattu-safari_html__slot_7.jpg",
-    "alt": "Deer & Forest Wildlife in Wilpattu",
-    "lightboxHref": "/api/r2/file/slots/wilpattu-safari_html__slot_7.jpg",
-    "r2Key": "slots/wilpattu-safari_html__slot_7.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Deer & Forest Wildlife in Wilpattu"
   },
   {
     "slotId": "wilpattu-safari_html__slot_8",
@@ -1783,10 +1096,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Crocodiles in Wilpattu Villu",
     "sectionContext": "Discover Wilpattu National Park · Crocodiles",
-    "src": "/api/r2/file/slots/wilpattu-safari_html__slot_8.jpg",
-    "alt": "Crocodiles in Wilpattu Villu",
-    "lightboxHref": "/api/r2/file/slots/wilpattu-safari_html__slot_8.jpg",
-    "r2Key": "slots/wilpattu-safari_html__slot_8.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Crocodiles in Wilpattu Villu"
   },
   {
     "slotId": "wilpattu-safari_html__slot_9",
@@ -1795,10 +1107,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Birdlife in Wilpattu",
     "sectionContext": "Discover Wilpattu National Park · Birdlife",
-    "src": "/api/r2/file/slots/wilpattu-safari_html__slot_9.jpg",
-    "alt": "Birdlife in Wilpattu",
-    "lightboxHref": "/api/r2/file/slots/wilpattu-safari_html__slot_9.jpg",
-    "r2Key": "slots/wilpattu-safari_html__slot_9.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Birdlife in Wilpattu"
   },
   {
     "slotId": "wilpattu-safari_html__slot_10",
@@ -1807,10 +1118,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "National park location map",
     "sectionContext": "Wilpattu — Location & Safari Access",
-    "src": "/api/r2/file/slots/wilpattu-safari_html__slot_10.jpg",
-    "lightboxHref": "/api/r2/file/slots/wilpattu-safari_html__slot_10.jpg",
-    "alt": "National park location map",
-    "r2Key": "slots/wilpattu-safari_html__slot_10.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "National park location map"
   },
   {
     "slotId": "wilpattu-safari_html__slot_11",
@@ -1819,10 +1129,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Wilpattu Safari Experience",
     "sectionContext": "Your Safari Experience",
-    "src": "/api/r2/file/slots/wilpattu-safari_html__slot_11.jpg",
-    "alt": "Wilpattu Safari Experience",
-    "lightboxHref": "/api/r2/file/slots/wilpattu-safari_html__slot_11.jpg",
-    "r2Key": "slots/wilpattu-safari_html__slot_11.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Wilpattu Safari Experience"
   },
   {
     "slotId": "wilpattu-safari_html__slot_12",
@@ -1831,10 +1140,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Wilpattu 4x4 Jeep on Sandy Trail",
     "sectionContext": "Your Safari Experience",
-    "src": "/api/r2/file/slots/wilpattu-safari_html__slot_12.jpg",
-    "lightboxHref": "/api/r2/file/slots/wilpattu-safari_html__slot_12.jpg",
-    "alt": "Wilpattu 4x4 Jeep on Sandy Trail",
-    "r2Key": "slots/wilpattu-safari_html__slot_12.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Wilpattu 4x4 Jeep on Sandy Trail"
   },
   {
     "slotId": "wilpattu-safari_html__slot_13",
@@ -1843,10 +1151,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Wilpattu Forest Track Safari",
     "sectionContext": "Your Safari Experience",
-    "src": "/api/r2/file/slots/wilpattu-safari_html__slot_13.jpg",
-    "lightboxHref": "/api/r2/file/slots/wilpattu-safari_html__slot_13.jpg",
-    "alt": "Wilpattu Forest Track Safari",
-    "r2Key": "slots/wilpattu-safari_html__slot_13.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Wilpattu Forest Track Safari"
   },
   {
     "slotId": "wilpattu-safari_html__slot_14",
@@ -1855,10 +1162,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Nisha Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "/api/r2/file/slots/wilpattu-safari_html__slot_14.svg",
-    "alt": "Nisha Safari Logo",
-    "lightboxHref": "/api/r2/file/slots/wilpattu-safari_html__slot_14.svg",
-    "r2Key": "slots/wilpattu-safari_html__slot_14.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha Safari Logo"
   },
   {
     "slotId": "minneriya-safari_html__slot_0",
@@ -1867,10 +1173,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Nisha Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "/api/r2/file/slots/minneriya-safari_html__slot_0.svg",
-    "alt": "Nisha Safari",
-    "lightboxHref": "/api/r2/file/slots/minneriya-safari_html__slot_0.svg",
-    "r2Key": "slots/minneriya-safari_html__slot_0.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha Safari"
   },
   {
     "slotId": "minneriya-safari_html__slot_1",
@@ -1879,10 +1184,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "hero-bg",
     "label": "Minneriya Safari",
     "sectionContext": "Hero Banner (Minneriya Safari)",
-    "src": "/api/r2/file/slots/minneriya-safari_html__slot_1.jpg",
-    "alt": "Minneriya Safari",
-    "lightboxHref": "/api/r2/file/slots/minneriya-safari_html__slot_1.jpg",
-    "r2Key": "slots/minneriya-safari_html__slot_1.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Minneriya Safari"
   },
   {
     "slotId": "minneriya-safari_html__slot_2",
@@ -1891,10 +1195,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Minneriya Morning Safari",
     "sectionContext": "Choose Your Minneriya Safari · Morning Safari",
-    "src": "/api/r2/file/slots/minneriya-safari_html__slot_2.jpg",
-    "alt": "Minneriya Morning Safari",
-    "lightboxHref": "/api/r2/file/slots/minneriya-safari_html__slot_2.jpg",
-    "r2Key": "slots/minneriya-safari_html__slot_2.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Minneriya Morning Safari"
   },
   {
     "slotId": "minneriya-safari_html__slot_3",
@@ -1903,10 +1206,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Minneriya Evening Safari",
     "sectionContext": "Choose Your Minneriya Safari · Evening Safari",
-    "src": "/api/r2/file/slots/minneriya-safari_html__slot_3.jpg",
-    "alt": "Minneriya Evening Safari",
-    "lightboxHref": "/api/r2/file/slots/minneriya-safari_html__slot_3.jpg",
-    "r2Key": "slots/minneriya-safari_html__slot_3.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Minneriya Evening Safari"
   },
   {
     "slotId": "minneriya-safari_html__slot_4",
@@ -1915,10 +1217,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Sri Lankan Elephants at Minneriya Reservoir",
     "sectionContext": "Discover Minneriya National Park · Sri Lankan Elephants",
-    "src": "/api/r2/file/slots/minneriya-safari_html__slot_4.jpg",
-    "alt": "Sri Lankan Elephants at Minneriya Reservoir",
-    "lightboxHref": "/api/r2/file/slots/minneriya-safari_html__slot_4.jpg",
-    "r2Key": "slots/minneriya-safari_html__slot_4.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Sri Lankan Elephants at Minneriya Reservoir"
   },
   {
     "slotId": "minneriya-safari_html__slot_5",
@@ -1927,10 +1228,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Wild Buffalo at Minneriya",
     "sectionContext": "Discover Minneriya National Park · Wild Buffalo",
-    "src": "/api/r2/file/slots/minneriya-safari_html__slot_5.jpg",
-    "alt": "Wild Buffalo at Minneriya",
-    "lightboxHref": "/api/r2/file/slots/minneriya-safari_html__slot_5.jpg",
-    "r2Key": "slots/minneriya-safari_html__slot_5.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Wild Buffalo at Minneriya"
   },
   {
     "slotId": "minneriya-safari_html__slot_6",
@@ -1939,10 +1239,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Spotted Deer at Minneriya",
     "sectionContext": "Discover Minneriya National Park · Spotted Deer",
-    "src": "/api/r2/file/slots/minneriya-safari_html__slot_6.jpg",
-    "alt": "Spotted Deer at Minneriya",
-    "lightboxHref": "/api/r2/file/slots/minneriya-safari_html__slot_6.jpg",
-    "r2Key": "slots/minneriya-safari_html__slot_6.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Spotted Deer at Minneriya"
   },
   {
     "slotId": "minneriya-safari_html__slot_7",
@@ -1951,10 +1250,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Crocodiles at Minneriya Tank",
     "sectionContext": "Discover Minneriya National Park · Crocodiles",
-    "src": "/api/r2/file/slots/minneriya-safari_html__slot_7.jpg",
-    "alt": "Crocodiles at Minneriya Tank",
-    "lightboxHref": "/api/r2/file/slots/minneriya-safari_html__slot_7.jpg",
-    "r2Key": "slots/minneriya-safari_html__slot_7.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Crocodiles at Minneriya Tank"
   },
   {
     "slotId": "minneriya-safari_html__slot_8",
@@ -1963,10 +1261,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Birdlife at Minneriya Reservoir",
     "sectionContext": "Discover Minneriya National Park · Birdlife",
-    "src": "/api/r2/file/slots/minneriya-safari_html__slot_8.jpg",
-    "alt": "Birdlife at Minneriya Reservoir",
-    "lightboxHref": "/api/r2/file/slots/minneriya-safari_html__slot_8.jpg",
-    "r2Key": "slots/minneriya-safari_html__slot_8.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Birdlife at Minneriya Reservoir"
   },
   {
     "slotId": "minneriya-safari_html__slot_9",
@@ -1975,10 +1272,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "National park location map",
     "sectionContext": "Minneriya — Location & Safari Access",
-    "src": "/api/r2/file/slots/minneriya-safari_html__slot_9.jpg",
-    "lightboxHref": "/api/r2/file/slots/minneriya-safari_html__slot_9.jpg",
-    "alt": "National park location map",
-    "r2Key": "slots/minneriya-safari_html__slot_9.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "National park location map"
   },
   {
     "slotId": "minneriya-safari_html__slot_10",
@@ -1987,10 +1283,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Minneriya Safari Jeep Experience",
     "sectionContext": "Your Safari Experience",
-    "src": "/api/r2/file/slots/minneriya-safari_html__slot_10.jpg",
-    "alt": "Minneriya Safari Jeep Experience",
-    "lightboxHref": "/api/r2/file/slots/minneriya-safari_html__slot_10.jpg",
-    "r2Key": "slots/minneriya-safari_html__slot_10.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Minneriya Safari Jeep Experience"
   },
   {
     "slotId": "minneriya-safari_html__slot_11",
@@ -1999,10 +1294,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Minneriya Reservoir Jeep Drive",
     "sectionContext": "Your Safari Experience",
-    "src": "/api/r2/file/slots/minneriya-safari_html__slot_11.jpg",
-    "lightboxHref": "/api/r2/file/slots/minneriya-safari_html__slot_11.jpg",
-    "alt": "Minneriya Reservoir Jeep Drive",
-    "r2Key": "slots/minneriya-safari_html__slot_11.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Minneriya Reservoir Jeep Drive"
   },
   {
     "slotId": "minneriya-safari_html__slot_12",
@@ -2011,10 +1305,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Minneriya Evening Jeep Viewing",
     "sectionContext": "Your Safari Experience",
-    "src": "/api/r2/file/slots/minneriya-safari_html__slot_12.jpg",
-    "lightboxHref": "/api/r2/file/slots/minneriya-safari_html__slot_12.jpg",
-    "alt": "Minneriya Evening Jeep Viewing",
-    "r2Key": "slots/minneriya-safari_html__slot_12.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Minneriya Evening Jeep Viewing"
   },
   {
     "slotId": "minneriya-safari_html__slot_13",
@@ -2023,10 +1316,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Nisha Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "/api/r2/file/slots/minneriya-safari_html__slot_13.svg",
-    "alt": "Nisha Safari Logo",
-    "lightboxHref": "/api/r2/file/slots/minneriya-safari_html__slot_13.svg",
-    "r2Key": "slots/minneriya-safari_html__slot_13.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha Safari Logo"
   },
   {
     "slotId": "kumana-birding-safari_html__slot_0",
@@ -2035,10 +1327,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Nisha Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "/api/r2/file/slots/kumana-birding-safari_html__slot_0.svg",
-    "alt": "Nisha Safari",
-    "lightboxHref": "/api/r2/file/slots/kumana-birding-safari_html__slot_0.svg",
-    "r2Key": "slots/kumana-birding-safari_html__slot_0.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha Safari"
   },
   {
     "slotId": "kumana-birding-safari_html__slot_1",
@@ -2047,10 +1338,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "hero-bg",
     "label": "Kumana Safari",
     "sectionContext": "Hero Banner (Kumana Safari)",
-    "src": "/api/r2/file/slots/kumana-birding-safari_html__slot_1.jpg",
-    "alt": "Kumana Safari",
-    "lightboxHref": "/api/r2/file/slots/kumana-birding-safari_html__slot_1.jpg",
-    "r2Key": "slots/kumana-birding-safari_html__slot_1.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Kumana Safari"
   },
   {
     "slotId": "kumana-birding-safari_html__slot_2",
@@ -2059,10 +1349,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Kumana Morning Birding Safari",
     "sectionContext": "Choose Your Kumana Safari · Morning Safari",
-    "src": "/api/r2/file/slots/kumana-birding-safari_html__slot_2.jpg",
-    "alt": "Kumana Morning Birding Safari",
-    "lightboxHref": "/api/r2/file/slots/kumana-birding-safari_html__slot_2.jpg",
-    "r2Key": "slots/kumana-birding-safari_html__slot_2.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Kumana Morning Birding Safari"
   },
   {
     "slotId": "kumana-birding-safari_html__slot_3",
@@ -2071,10 +1360,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Kumana Evening Birding Safari",
     "sectionContext": "Choose Your Kumana Safari · Evening Safari",
-    "src": "/api/r2/file/slots/kumana-birding-safari_html__slot_3.jpg",
-    "alt": "Kumana Evening Birding Safari",
-    "lightboxHref": "/api/r2/file/slots/kumana-birding-safari_html__slot_3.jpg",
-    "r2Key": "slots/kumana-birding-safari_html__slot_3.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Kumana Evening Birding Safari"
   },
   {
     "slotId": "kumana-birding-safari_html__slot_4",
@@ -2083,10 +1371,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Waterbirds & Wetland Life in Kumana",
     "sectionContext": "Discover Kumana National Park · Waterbirds & Wetland Life",
-    "src": "/api/r2/file/slots/kumana-birding-safari_html__slot_4.jpg",
-    "alt": "Waterbirds & Wetland Life in Kumana",
-    "lightboxHref": "/api/r2/file/slots/kumana-birding-safari_html__slot_4.jpg",
-    "r2Key": "slots/kumana-birding-safari_html__slot_4.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Waterbirds & Wetland Life in Kumana"
   },
   {
     "slotId": "kumana-birding-safari_html__slot_5",
@@ -2095,10 +1382,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Sri Lankan Elephants in Kumana",
     "sectionContext": "Discover Kumana National Park · Sri Lankan Elephants",
-    "src": "/api/r2/file/slots/kumana-birding-safari_html__slot_5.jpg",
-    "alt": "Sri Lankan Elephants in Kumana",
-    "lightboxHref": "/api/r2/file/slots/kumana-birding-safari_html__slot_5.jpg",
-    "r2Key": "slots/kumana-birding-safari_html__slot_5.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Sri Lankan Elephants in Kumana"
   },
   {
     "slotId": "kumana-birding-safari_html__slot_6",
@@ -2107,10 +1393,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Spotted Deer in Kumana",
     "sectionContext": "Discover Kumana National Park · Spotted Deer",
-    "src": "/api/r2/file/slots/kumana-birding-safari_html__slot_6.jpg",
-    "alt": "Spotted Deer in Kumana",
-    "lightboxHref": "/api/r2/file/slots/kumana-birding-safari_html__slot_6.jpg",
-    "r2Key": "slots/kumana-birding-safari_html__slot_6.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Spotted Deer in Kumana"
   },
   {
     "slotId": "kumana-birding-safari_html__slot_7",
@@ -2119,10 +1404,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Sri Lankan Leopards in Kumana",
     "sectionContext": "Discover Kumana National Park · Sri Lankan Leopards",
-    "src": "/api/r2/file/slots/kumana-birding-safari_html__slot_7.jpg",
-    "alt": "Sri Lankan Leopards in Kumana",
-    "lightboxHref": "/api/r2/file/slots/kumana-birding-safari_html__slot_7.jpg",
-    "r2Key": "slots/kumana-birding-safari_html__slot_7.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Sri Lankan Leopards in Kumana"
   },
   {
     "slotId": "kumana-birding-safari_html__slot_8",
@@ -2131,10 +1415,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Seasonal Migratory Birds in Kumana",
     "sectionContext": "Discover Kumana National Park · Seasonal Migratory Birds",
-    "src": "/api/r2/file/slots/kumana-birding-safari_html__slot_8.jpg",
-    "alt": "Seasonal Migratory Birds in Kumana",
-    "lightboxHref": "/api/r2/file/slots/kumana-birding-safari_html__slot_8.jpg",
-    "r2Key": "slots/kumana-birding-safari_html__slot_8.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Seasonal Migratory Birds in Kumana"
   },
   {
     "slotId": "kumana-birding-safari_html__slot_9",
@@ -2143,10 +1426,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "National park location map",
     "sectionContext": "Kumana — Location & Safari Access",
-    "src": "/api/r2/file/slots/kumana-birding-safari_html__slot_9.jpg",
-    "lightboxHref": "/api/r2/file/slots/kumana-birding-safari_html__slot_9.jpg",
-    "alt": "National park location map",
-    "r2Key": "slots/kumana-birding-safari_html__slot_9.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "National park location map"
   },
   {
     "slotId": "kumana-birding-safari_html__slot_10",
@@ -2155,10 +1437,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Kumana Safari Guide & Jeep",
     "sectionContext": "Your Safari Experience",
-    "src": "/api/r2/file/slots/kumana-birding-safari_html__slot_10.jpg",
-    "alt": "Kumana Safari Guide & Jeep",
-    "lightboxHref": "/api/r2/file/slots/kumana-birding-safari_html__slot_10.jpg",
-    "r2Key": "slots/kumana-birding-safari_html__slot_10.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Kumana Safari Guide & Jeep"
   },
   {
     "slotId": "kumana-birding-safari_html__slot_11",
@@ -2167,10 +1448,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Kumana Wetland Jeep Trail",
     "sectionContext": "Your Safari Experience",
-    "src": "/api/r2/file/slots/kumana-birding-safari_html__slot_11.jpg",
-    "lightboxHref": "/api/r2/file/slots/kumana-birding-safari_html__slot_11.jpg",
-    "alt": "Kumana Wetland Jeep Trail",
-    "r2Key": "slots/kumana-birding-safari_html__slot_11.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Kumana Wetland Jeep Trail"
   },
   {
     "slotId": "kumana-birding-safari_html__slot_12",
@@ -2179,10 +1459,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Kumana East Coast Safari Drive",
     "sectionContext": "Your Safari Experience",
-    "src": "/api/r2/file/slots/kumana-birding-safari_html__slot_12.jpg",
-    "lightboxHref": "/api/r2/file/slots/kumana-birding-safari_html__slot_12.jpg",
-    "alt": "Kumana East Coast Safari Drive",
-    "r2Key": "slots/kumana-birding-safari_html__slot_12.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Kumana East Coast Safari Drive"
   },
   {
     "slotId": "kumana-birding-safari_html__slot_13",
@@ -2191,10 +1470,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Nisha Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "/api/r2/file/slots/kumana-birding-safari_html__slot_13.svg",
-    "alt": "Nisha Safari Logo",
-    "lightboxHref": "/api/r2/file/slots/kumana-birding-safari_html__slot_13.svg",
-    "r2Key": "slots/kumana-birding-safari_html__slot_13.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha Safari Logo"
   },
   {
     "slotId": "gallery_html__slot_0",
@@ -2203,10 +1481,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Nisha Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "/api/r2/file/slots/gallery_html__slot_0.svg",
-    "alt": "Nisha Safari",
-    "lightboxHref": "/api/r2/file/slots/gallery_html__slot_0.svg",
-    "r2Key": "slots/gallery_html__slot_0.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha Safari"
   },
   {
     "slotId": "gallery_html__slot_1",
@@ -2215,10 +1492,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Sri Lankan leopard resting on a rock beneath trees",
     "sectionContext": "Wildlife & Landscapes",
-    "src": "/api/r2/file/slots/gallery_html__slot_1.jpg",
-    "lightboxHref": "/api/r2/file/slots/gallery_html__slot_1.jpg",
-    "alt": "Sri Lankan leopard resting on a rock beneath trees",
-    "r2Key": "slots/gallery_html__slot_1.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Sri Lankan leopard resting on a rock beneath trees"
   },
   {
     "slotId": "gallery_html__slot_2",
@@ -2227,10 +1503,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Sri Lankan sloth bear walking through woodland",
     "sectionContext": "Wildlife & Landscapes",
-    "src": "/api/r2/file/slots/gallery_html__slot_2.jpg",
-    "lightboxHref": "/api/r2/file/slots/gallery_html__slot_2.jpg",
-    "alt": "Sri Lankan sloth bear walking through woodland",
-    "r2Key": "slots/gallery_html__slot_2.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Sri Lankan sloth bear walking through woodland"
   },
   {
     "slotId": "gallery_html__slot_3",
@@ -2239,10 +1514,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Elephant herd with calves beside a muddy waterhole",
     "sectionContext": "Wildlife & Landscapes",
-    "src": "/api/r2/file/slots/gallery_html__slot_3.jpg",
-    "lightboxHref": "/api/r2/file/slots/gallery_html__slot_3.jpg",
-    "alt": "Elephant herd with calves beside a muddy waterhole",
-    "r2Key": "slots/gallery_html__slot_3.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Elephant herd with calves beside a muddy waterhole"
   },
   {
     "slotId": "gallery_html__slot_4",
@@ -2251,10 +1525,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Owl perched on a branch among green leaves",
     "sectionContext": "Wildlife & Landscapes",
-    "src": "/api/r2/file/slots/gallery_html__slot_4.jpg",
-    "lightboxHref": "/api/r2/file/slots/gallery_html__slot_4.jpg",
-    "alt": "Owl perched on a branch among green leaves",
-    "r2Key": "slots/gallery_html__slot_4.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Owl perched on a branch among green leaves"
   },
   {
     "slotId": "gallery_html__slot_5",
@@ -2263,10 +1536,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Jackal standing on a sandy track",
     "sectionContext": "Wildlife & Landscapes",
-    "src": "/api/r2/file/slots/gallery_html__slot_5.jpg",
-    "lightboxHref": "/api/r2/file/slots/gallery_html__slot_5.jpg",
-    "alt": "Jackal standing on a sandy track",
-    "r2Key": "slots/gallery_html__slot_5.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Jackal standing on a sandy track"
   },
   {
     "slotId": "gallery_html__slot_6",
@@ -2275,10 +1547,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Two Sri Lankan leopards resting on a tree branch",
     "sectionContext": "Wildlife & Landscapes",
-    "src": "/api/r2/file/slots/gallery_html__slot_6.jpg",
-    "lightboxHref": "/api/r2/file/slots/gallery_html__slot_6.jpg",
-    "alt": "Two Sri Lankan leopards resting on a tree branch",
-    "r2Key": "slots/gallery_html__slot_6.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Two Sri Lankan leopards resting on a tree branch"
   },
   {
     "slotId": "gallery_html__slot_7",
@@ -2287,10 +1558,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Crocodile resting on a bank surrounded by an algae-covered pond",
     "sectionContext": "Wildlife & Landscapes",
-    "src": "/api/r2/file/slots/gallery_html__slot_7.jpg",
-    "lightboxHref": "/api/r2/file/slots/gallery_html__slot_7.jpg",
-    "alt": "Crocodile resting on a bank surrounded by an algae-covered pond",
-    "r2Key": "slots/gallery_html__slot_7.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Crocodile resting on a bank surrounded by an algae-covered pond"
   },
   {
     "slotId": "gallery_html__slot_8",
@@ -2299,10 +1569,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Bird of prey perched on a tree branch in Yala",
     "sectionContext": "Wildlife & Landscapes",
-    "src": "/api/r2/file/slots/gallery_html__slot_8.jpg",
-    "lightboxHref": "/api/r2/file/slots/gallery_html__slot_8.jpg",
-    "alt": "Bird of prey perched on a tree branch in Yala",
-    "r2Key": "slots/gallery_html__slot_8.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Bird of prey perched on a tree branch in Yala"
   },
   {
     "slotId": "gallery_html__slot_9",
@@ -2311,10 +1580,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Sri Lankan leopard stalking through dry scrub",
     "sectionContext": "Wildlife & Landscapes",
-    "src": "/api/r2/file/slots/gallery_html__slot_9.jpg",
-    "lightboxHref": "/api/r2/file/slots/gallery_html__slot_9.jpg",
-    "alt": "Sri Lankan leopard stalking through dry scrub",
-    "r2Key": "slots/gallery_html__slot_9.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Sri Lankan leopard stalking through dry scrub"
   },
   {
     "slotId": "gallery_html__slot_10",
@@ -2323,10 +1591,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Sri Lankan leopard drinking from a waterhole",
     "sectionContext": "Wildlife & Landscapes",
-    "src": "/api/r2/file/slots/gallery_html__slot_10.jpg",
-    "lightboxHref": "/api/r2/file/slots/gallery_html__slot_10.jpg",
-    "alt": "Sri Lankan leopard drinking from a waterhole",
-    "r2Key": "slots/gallery_html__slot_10.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Sri Lankan leopard drinking from a waterhole"
   },
   {
     "slotId": "gallery_html__slot_11",
@@ -2335,10 +1602,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Sri Lankan leopard resting on golden savannah grass",
     "sectionContext": "Wildlife & Landscapes",
-    "src": "/api/r2/file/slots/gallery_html__slot_11.jpg",
-    "lightboxHref": "/api/r2/file/slots/gallery_html__slot_11.jpg",
-    "alt": "Sri Lankan leopard resting on golden savannah grass",
-    "r2Key": "slots/gallery_html__slot_11.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Sri Lankan leopard resting on golden savannah grass"
   },
   {
     "slotId": "gallery_html__slot_12",
@@ -2347,10 +1613,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Two hornbills perched on bare branches against a blue sky",
     "sectionContext": "Wildlife & Landscapes",
-    "src": "/api/r2/file/slots/gallery_html__slot_12.jpg",
-    "lightboxHref": "/api/r2/file/slots/gallery_html__slot_12.jpg",
-    "alt": "Two hornbills perched on bare branches against a blue sky",
-    "r2Key": "slots/gallery_html__slot_12.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Two hornbills perched on bare branches against a blue sky"
   },
   {
     "slotId": "gallery_html__slot_13",
@@ -2359,10 +1624,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Flamingos spreading their pink and black wings in shallow water",
     "sectionContext": "Wildlife & Landscapes",
-    "src": "/api/r2/file/slots/gallery_html__slot_13.jpg",
-    "lightboxHref": "/api/r2/file/slots/gallery_html__slot_13.jpg",
-    "alt": "Flamingos spreading their pink and black wings in shallow water",
-    "r2Key": "slots/gallery_html__slot_13.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Flamingos spreading their pink and black wings in shallow water"
   },
   {
     "slotId": "gallery_html__slot_14",
@@ -2371,10 +1635,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Sri Lankan leopard walking towards the camera through dry grass",
     "sectionContext": "Wildlife & Landscapes",
-    "src": "/api/r2/file/slots/gallery_html__slot_14.jpg",
-    "lightboxHref": "/api/r2/file/slots/gallery_html__slot_14.jpg",
-    "alt": "Sri Lankan leopard walking towards the camera through dry grass",
-    "r2Key": "slots/gallery_html__slot_14.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Sri Lankan leopard walking towards the camera through dry grass"
   },
   {
     "slotId": "gallery_html__slot_15",
@@ -2383,10 +1646,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Elephants wading in water beside a grassy bank",
     "sectionContext": "Wildlife & Landscapes",
-    "src": "/api/r2/file/slots/gallery_html__slot_15.jpg",
-    "lightboxHref": "/api/r2/file/slots/gallery_html__slot_15.jpg",
-    "alt": "Elephants wading in water beside a grassy bank",
-    "r2Key": "slots/gallery_html__slot_15.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Elephants wading in water beside a grassy bank"
   },
   {
     "slotId": "gallery_html__slot_16",
@@ -2395,10 +1657,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Nisha standing beside a safari jeep with guests seated inside",
     "sectionContext": "Our Guests & Safari Moments",
-    "src": "/api/r2/file/slots/gallery_html__slot_16.jpg",
-    "lightboxHref": "/api/r2/file/slots/gallery_html__slot_16.jpg",
-    "alt": "Nisha standing beside a safari jeep with guests seated inside",
-    "r2Key": "slots/gallery_html__slot_16.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha standing beside a safari jeep with guests seated inside"
   },
   {
     "slotId": "gallery_html__slot_17",
@@ -2407,10 +1668,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Safari guide taking a group selfie with guests beside a jeep",
     "sectionContext": "Our Guests & Safari Moments",
-    "src": "/api/r2/file/slots/gallery_html__slot_17.jpg",
-    "lightboxHref": "/api/r2/file/slots/gallery_html__slot_17.jpg",
-    "alt": "Safari guide taking a group selfie with guests beside a jeep",
-    "r2Key": "slots/gallery_html__slot_17.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Safari guide taking a group selfie with guests beside a jeep"
   },
   {
     "slotId": "gallery_html__slot_18",
@@ -2419,10 +1679,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Safari guide standing beside a jeep with guests in the passenger seats",
     "sectionContext": "Our Guests & Safari Moments",
-    "src": "/api/r2/file/slots/gallery_html__slot_18.jpg",
-    "lightboxHref": "/api/r2/file/slots/gallery_html__slot_18.jpg",
-    "alt": "Safari guide standing beside a jeep with guests in the passenger seats",
-    "r2Key": "slots/gallery_html__slot_18.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Safari guide standing beside a jeep with guests in the passenger seats"
   },
   {
     "slotId": "gallery_html__slot_19",
@@ -2431,10 +1690,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Safari guests and guide posing on a dirt road beside safari jeeps",
     "sectionContext": "Our Guests & Safari Moments",
-    "src": "/api/r2/file/slots/gallery_html__slot_19.jpg",
-    "lightboxHref": "/api/r2/file/slots/gallery_html__slot_19.jpg",
-    "alt": "Safari guests and guide posing on a dirt road beside safari jeeps",
-    "r2Key": "slots/gallery_html__slot_19.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Safari guests and guide posing on a dirt road beside safari jeeps"
   },
   {
     "slotId": "gallery_html__slot_20",
@@ -2443,10 +1701,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Safari guests and guide posing together in front of a jeep",
     "sectionContext": "Our Guests & Safari Moments",
-    "src": "/api/r2/file/slots/gallery_html__slot_20.jpg",
-    "lightboxHref": "/api/r2/file/slots/gallery_html__slot_20.jpg",
-    "alt": "Safari guests and guide posing together in front of a jeep",
-    "r2Key": "slots/gallery_html__slot_20.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Safari guests and guide posing together in front of a jeep"
   },
   {
     "slotId": "gallery_html__slot_21",
@@ -2455,10 +1712,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "lightbox-img",
     "label": "Four safari jeeps parked together on grass under a blue sky",
     "sectionContext": "Our Guests & Safari Moments",
-    "src": "/api/r2/file/slots/gallery_html__slot_21.jpg",
-    "lightboxHref": "/api/r2/file/slots/gallery_html__slot_21.jpg",
-    "alt": "Four safari jeeps parked together on grass under a blue sky",
-    "r2Key": "slots/gallery_html__slot_21.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Four safari jeeps parked together on grass under a blue sky"
   },
   {
     "slotId": "gallery_html__slot_22",
@@ -2467,10 +1723,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Nisha Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "/api/r2/file/slots/gallery_html__slot_22.svg",
-    "alt": "Nisha Safari Logo",
-    "lightboxHref": "/api/r2/file/slots/gallery_html__slot_22.svg",
-    "r2Key": "slots/gallery_html__slot_22.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha Safari Logo"
   },
   {
     "slotId": "reviews_html__slot_0",
@@ -2479,10 +1734,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Nisha Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "/api/r2/file/slots/reviews_html__slot_0.svg",
-    "alt": "Nisha Safari",
-    "lightboxHref": "/api/r2/file/slots/reviews_html__slot_0.svg",
-    "r2Key": "slots/reviews_html__slot_0.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha Safari"
   },
   {
     "slotId": "reviews_html__slot_1",
@@ -2491,10 +1745,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Nisha with safari guests beside a jeep at Yala National Park",
     "sectionContext": "Featured in Travel Stories",
-    "src": "/api/r2/file/slots/reviews_html__slot_1.jpg",
-    "alt": "Nisha with safari guests beside a jeep at Yala National Park",
-    "lightboxHref": "/api/r2/file/slots/reviews_html__slot_1.jpg",
-    "r2Key": "slots/reviews_html__slot_1.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha with safari guests beside a jeep at Yala National Park"
   },
   {
     "slotId": "reviews_html__slot_2",
@@ -2503,10 +1756,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "img",
     "label": "Cover of Iwanowski’s Sri Lanka travel guide, 14th edition",
     "sectionContext": "Mentioned in Travel Guides",
-    "src": "/api/r2/file/slots/reviews_html__slot_2.jpg",
-    "alt": "Cover of Iwanowski’s Sri Lanka travel guide, 14th edition",
-    "lightboxHref": "/api/r2/file/slots/reviews_html__slot_2.jpg",
-    "r2Key": "slots/reviews_html__slot_2.jpg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Cover of Iwanowski’s Sri Lanka travel guide, 14th edition"
   },
   {
     "slotId": "reviews_html__slot_3",
@@ -2515,10 +1767,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Nisha Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "/api/r2/file/slots/reviews_html__slot_3.svg",
-    "alt": "Nisha Safari Logo",
-    "lightboxHref": "/api/r2/file/slots/reviews_html__slot_3.svg",
-    "r2Key": "slots/reviews_html__slot_3.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha Safari Logo"
   },
   {
     "slotId": "contact_html__slot_0",
@@ -2527,10 +1778,9 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Nisha Safari",
     "sectionContext": "Header Navigation Logo",
-    "src": "/api/r2/file/slots/contact_html__slot_0.svg",
-    "alt": "Nisha Safari",
-    "lightboxHref": "/api/r2/file/slots/contact_html__slot_0.svg",
-    "r2Key": "slots/contact_html__slot_0.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha Safari"
   },
   {
     "slotId": "contact_html__slot_1",
@@ -2539,9 +1789,8 @@ export const INITIAL_FIREBASE_SLOT_UPGRADES: SeedSlotOverrideItem[] = [
     "type": "logo",
     "label": "Nisha Safari Logo",
     "sectionContext": "Footer Brand Logo",
-    "src": "/api/r2/file/slots/contact_html__slot_1.svg",
-    "alt": "Nisha Safari Logo",
-    "lightboxHref": "/api/r2/file/slots/contact_html__slot_1.svg",
-    "r2Key": "slots/contact_html__slot_1.svg"
+    "src": "",
+    "lightboxHref": "",
+    "alt": "Nisha Safari Logo"
   }
 ];

@@ -891,6 +891,7 @@ export async function listR2Objects(): Promise<R2ObjectRecord[]> {
   try {
     const mediaFiles = await fs.readdir(MEDIA_DIR);
     for (const filename of mediaFiles.sort()) {
+      if (filename === 'empty-slot.svg') continue;
       const r2Key = `media/${filename}`;
       if (deletedSet.has(r2Key) || resultsMap.has(r2Key)) continue;
       const fullPath = path.join(MEDIA_DIR, filename);
