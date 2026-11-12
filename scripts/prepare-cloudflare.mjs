@@ -537,11 +537,16 @@ function getR2BucketBinding(env) {
   return null;
 }
 
+const UPLOADED_BLOBS = new Map();
+
 function getWorkerCdnBase(env) {
-  const publicUrl = (env && (env.R2_PUBLIC_URL || env.NEXT_PUBLIC_R2_PUBLIC_URL)) || 'https://cdn.srilankabestsafari.com';
-  if (publicUrl && String(publicUrl).trim()) {
-    const trimmed = String(publicUrl).trim().replace(/\\/+$/, '');
+  const explicitUrl = env && (env.R2_PUBLIC_URL || env.NEXT_PUBLIC_R2_PUBLIC_URL);
+  if (explicitUrl && String(explicitUrl).trim()) {
+    const trimmed = String(explicitUrl).trim().replace(/\\/+$/, '');
     return trimmed.startsWith('http://') || trimmed.startsWith('https://') ? trimmed : 'https://' + trimmed;
+  }
+  if (getR2BucketBinding(env)) {
+    return 'https://cdn.srilankabestsafari.com';
   }
   return '/api/r2/file';
 }
@@ -554,7 +559,10 @@ function extractWorkerR2Key(raw) {
   const marker = '/api/r2/file/';
   const idx = clean.indexOf(marker);
   if (idx !== -1) return sanitizeKey(clean.slice(idx + marker.length));
-  const folderMatch = clean.match(/^https?:\\/\\/[^/]+\\/((?:slots|media|uploads|index|yala-safari|udawalawe-safari|bundala-birding-safari|wilpattu-safari|minneriya-safari|kumana-birding-safari|safari-parks|about|gallery|reviews|contact)\\/.+)$/i);
+  const assetMarker = '/assets/r2-bucket/';
+  const assetIdx = clean.indexOf(assetMarker);
+  if (assetIdx !== -1) return sanitizeKey(clean.slice(assetIdx + assetMarker.length));
+  const folderMatch = clean.match(/^https?:\\/\\/[^/]+\\/((?:slots|sections|media|uploads|index|yala-safari|udawalawe-safari|bundala-birding-safari|wilpattu-safari|minneriya-safari|kumana-birding-safari|safari-parks|about|gallery|reviews|contact)\\/.+)$/i);
   if (folderMatch && folderMatch[1]) return sanitizeKey(folderMatch[1]);
   return sanitizeKey(clean);
 }
@@ -629,6 +637,8 @@ async function uploadFileToWorkerR2(env, { bytes, originalFilename, mimeType, cu
   const cdnBase = getWorkerCdnBase(env);
   const activeBucketName = (env && (env.R2_BUCKET_NAME || env.BUCKET_NAME)) || BUCKET_NAME;
 
+  UPLOADED_BLOBS.set(r2Key, { bytes, mimeType: finalMime });
+
   if (r2Bucket) {
     if (replaceKey && replaceKey !== r2Key) {
       try {
@@ -680,6 +690,18 @@ const worker = {
       const r2Key = sanitizeKey(rawKey);
       if (!r2Key || DELETED_R2_KEYS.has(r2Key)) {
         return new Response('R2 object not found', { status: 404 });
+      }
+
+      if (UPLOADED_BLOBS.has(r2Key)) {
+        const cached = UPLOADED_BLOBS.get(r2Key);
+        return new Response(cached.bytes, {
+          status: 200,
+          headers: {
+            'Content-Type': cached.mimeType || guessMimeType(r2Key),
+            'Cache-Control': 'public, max-age=31536000',
+            'X-R2-Key': r2Key,
+          },
+        });
       }
 
       if (r2Bucket) {
@@ -1396,7 +1418,8 @@ export default worker;
 `;
 
   await fs.writeFile(path.join(CF_DIR, 'worker.mjs'), workerCode, 'utf8');
-  console.log('Prepared Cloudflare bundle in .cloudflare/ successfully.');
+  await fs.writeFile(path.join(CF_ASSETS_DIR, '_worker.js'), workerCode, 'utf8');
+  console.log('Prepared Cloudflare bundle in .cloudflare/ (Workers + Pages _worker.js) successfully.');
 }
 
 main().catch((err) => {

@@ -230,9 +230,9 @@ export default function AdminCmsStudioPage() {
   const [savingR2Creds, setSavingR2Creds] = useState<boolean>(false);
   const [r2SetupGuideTab, setR2SetupGuideTab] = useState<'credentials' | 'pages-binding' | 'api-token'>('credentials');
 
-  // Navigation & Filters
+  // Navigation & Filters (Default to Home Page organized by section)
   const [viewMode, setViewMode] = useState<ViewMode>('slots');
-  const [selectedPage, setSelectedPage] = useState<string>('all');
+  const [selectedPage, setSelectedPage] = useState<string>('index.html');
   const [selectedType, setSelectedType] = useState<SlotTypeFilter>('all');
   const [selectedTextType, setSelectedTextType] = useState<TextTypeFilter>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -839,24 +839,35 @@ export default function AdminCmsStudioPage() {
     setLoginError('');
   };
 
-  // Authoritative R2 & server slots (never let stale non-R2 Firestore docs overwrite R2 edits/deletions)
+  // Authoritative R2 & Firestore merged slots (supports stateless Cloudflare Pages deployments)
   const mergedSlots = useMemo(() => {
     return slots.map((slot) => {
       if (slot.isDeleted) return slot;
       const fbDoc = firestoreImageDocs[slot.slotId];
-      if (!fbDoc || !fbDoc.src || fbDoc.src.startsWith('data:')) return slot;
+      if (!fbDoc) return slot;
+      if (fbDoc.src === '/deleted' || fbDoc.isDeleted) {
+        return {
+          ...slot,
+          src: '',
+          lightboxHref: '',
+          r2Key: undefined,
+          isDeleted: true,
+          isModified: true,
+        };
+      }
+      if (!fbDoc.src || fbDoc.src.startsWith('data:')) return slot;
       const isR2Cdn =
         fbDoc.src.includes('/api/r2/file/') ||
+        fbDoc.src.startsWith('/assets/') ||
         Boolean(fbDoc.r2Key) ||
         fbDoc.src.startsWith('http://') ||
         fbDoc.src.startsWith('https://');
       if (!isR2Cdn) return slot;
-      // Only prefer fbDoc if slot wasn't more recently modified in server R2 state
-      if (slot.isModified) return slot;
       const isLbCdn =
         fbDoc.lightboxHref &&
         !fbDoc.lightboxHref.startsWith('data:') &&
         (fbDoc.lightboxHref.includes('/api/r2/file/') ||
+          fbDoc.lightboxHref.startsWith('/assets/') ||
           fbDoc.lightboxHref.startsWith('http://') ||
           fbDoc.lightboxHref.startsWith('https://'));
       return {
@@ -866,14 +877,29 @@ export default function AdminCmsStudioPage() {
         r2Key: fbDoc.r2Key || extractR2KeyFromUrl(fbDoc.src) || slot.r2Key,
         alt: fbDoc.alt !== undefined ? fbDoc.alt : slot.alt,
         label: fbDoc.label || slot.label,
+        isModified: true,
       };
     });
   }, [slots, firestoreImageDocs]);
 
-  // Authoritative R2 & server section gallery items
+  // Authoritative R2, server & Firestore merged section gallery items (including hero_slideshow)
   const mergedSectionImages = useMemo(() => {
-    return [...sectionImages].sort((a, b) => a.order - b.order);
-  }, [sectionImages]);
+    const map = new Map<string, SeedSectionGalleryItem>();
+    for (const item of sectionImages) {
+      if (item && item.itemId) {
+        map.set(item.itemId, item);
+      }
+    }
+    for (const fbItem of firestoreSectionDocs) {
+      if (!fbItem || !fbItem.itemId) continue;
+      if (fbItem.sectionKey === 'deleted_section_item' || fbItem.src === '/deleted') {
+        map.delete(fbItem.itemId);
+      } else if (fbItem.src && !fbItem.src.startsWith('data:')) {
+        map.set(fbItem.itemId, fbItem);
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => (a.order || 0) - (b.order || 0));
+  }, [sectionImages, firestoreSectionDocs]);
 
   // Merge text slots + custom texts with live Firestore text docs
   const mergedTexts = useMemo(() => {
@@ -1241,9 +1267,19 @@ export default function AdminCmsStudioPage() {
       }
       setCacheBuster(Date.now());
 
-      await deleteSiteImageInFirestore(slot.slotId);
+      await saveSiteImageInFirestore({
+        slotId: slot.slotId,
+        page: slot.page,
+        slotIndex: slot.slotIndex,
+        type: slot.type,
+        label: slot.label,
+        sectionContext: slot.sectionContext,
+        src: '/deleted',
+        lightboxHref: '/deleted',
+        alt: slot.alt || '',
+      });
       showNotice(
-        `Deleted "${slot.label}" from Cloudflare R2 bucket and hidden on ${slot.pageTitle}.`
+        `Deleted "${slot.label}" from ${slot.pageTitle} (${slot.sectionContext}).`
       );
       await fetchInventory();
     } catch (err) {
@@ -1282,7 +1318,7 @@ export default function AdminCmsStudioPage() {
         setR2Objects(data.r2Objects);
       }
       await deleteSiteImageInFirestore(slot.slotId);
-      showNotice(`Restored default R2 image for "${slot.label}".`);
+      showNotice(`Restored default image for "${slot.label}".`);
       await fetchInventory();
     } catch (err) {
       showNotice(err instanceof Error ? err.message : 'Reset failed', 'error');
@@ -1312,8 +1348,13 @@ export default function AdminCmsStudioPage() {
     });
   };
 
-  const openNewSectionImageModal = () => {
-    const defaultPage = selectedPage === 'all' ? 'index.html' : selectedPage;
+  const openNewSectionImageModal = (targetPage?: string) => {
+    const defaultPage =
+      typeof targetPage === 'string' && targetPage
+        ? targetPage
+        : selectedPage === 'all'
+        ? 'index.html'
+        : selectedPage;
     setIsNewSectionImg(true);
     setSecImgUploadFile(null);
     setSecImgPreviewUrl(null);
@@ -1400,9 +1441,9 @@ export default function AdminCmsStudioPage() {
       await saveSectionGalleryItemInFirestore(itemToSave);
 
       showNotice(
-        `${isNewSectionImg ? 'Pushed new photo to R2 & added' : 'Updated R2 photo & synced'} "${
+        `${isNewSectionImg ? 'Uploaded & added' : 'Updated'} "${
           itemToSave.title
-        }" via Firebase CDN link.`
+        }" on ${itemToSave.page}.`
       );
       setEditingSectionImg(null);
       await fetchInventory();
@@ -1420,7 +1461,10 @@ export default function AdminCmsStudioPage() {
 
       // Optimistically remove from local state immediately
       setSectionImages((prev) => prev.filter((i) => i.itemId !== item.itemId));
-      setFirestoreSectionDocs((prev) => prev.filter((i) => i.itemId !== item.itemId));
+      setFirestoreSectionDocs((prev) => [
+        ...prev.filter((i) => i.itemId !== item.itemId),
+        { ...item, sectionKey: 'deleted_section_item', src: '/deleted' },
+      ]);
       setEditingSectionImg(null);
 
       const res = await fetch('/api/admin/cms', {
@@ -1439,8 +1483,13 @@ export default function AdminCmsStudioPage() {
         setSectionImages(data.sectionGalleryItems);
       }
 
-      await deleteSectionGalleryItemInFirestore(item.itemId);
-      showNotice(`Deleted "${item.title}" from Cloudflare R2 bucket and Firebase Firestore.`);
+      // Save deletion tombstone in Firestore so stateless Cloudflare Pages knows this slide was deleted
+      await saveSectionGalleryItemInFirestore({
+        ...item,
+        sectionKey: 'deleted_section_item',
+        src: '/deleted',
+      });
+      showNotice(`Deleted "${item.title}" from ${item.page}.`);
       await fetchInventory();
     } catch (err) {
       showNotice(err instanceof Error ? err.message : 'Failed to delete section image', 'error');
@@ -2034,71 +2083,126 @@ export default function AdminCmsStudioPage() {
 
   return (
     <div className="min-h-screen bg-[#0B0F0D] text-[#F1F5F2] flex flex-col md:flex-row font-sans selection:bg-[#E59819]/30 selection:text-[#FBBF24]">
-      {/* Sidebar Navigation */}
-      <aside className="w-full md:w-64 shrink-0 bg-[#111714] border-b md:border-b-0 md:border-r border-[#1F2923] flex flex-col justify-between">
+      {/* Left Sidebar: Step 1 Pick Page -> Step 2 Pick Section/View */}
+      <aside className="w-full md:w-68 shrink-0 bg-[#111714] border-b md:border-b-0 md:border-r border-[#1F2923] flex flex-col justify-between">
         <div className="p-4 md:p-5 space-y-5">
           {/* Brand Header */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <div>
-              <div className="text-xs font-medium uppercase tracking-wider text-[#E59819]">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-[#E59819]">
                 Nisha Safari
               </div>
               <h1 className="text-base font-semibold text-[#F1F5F2] tracking-tight mt-0.5">
-                Admin Panel
+                Website Admin Studio
               </h1>
             </div>
             <a
               href={`/${selectedPage === 'all' ? 'index.html' : selectedPage}?editImages=1`}
-              className="inline-flex items-center gap-1 text-xs font-medium text-[#9CA9A1] hover:text-[#F1F5F2] bg-[#18211C] hover:bg-[#202C25] border border-[#26332B] px-2.5 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0"
+              className="inline-flex items-center gap-1 text-xs font-medium text-[#D5E0D9] hover:text-[#F1F5F2] bg-[#18221D] hover:bg-[#223029] border border-[#2A3B32] px-2.5 py-1.5 rounded-md transition-colors whitespace-nowrap shrink-0"
               title="Open live page with click-to-edit overlays"
             >
-              <span>Live Edit</span>
+              <span>Visual Edit</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
             </a>
           </div>
 
-          {/* Clean Session & Sync Bar */}
-          <div className="p-3 rounded-md bg-[#151D19] border border-[#233029] space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-medium text-[#D5E0D9] flex items-center gap-1.5">
-                <Database className="w-3.5 h-3.5 text-[#E59819]" />
-                <span>Storage ({bucketName})</span>
+          {/* Step 1: Select Website Page */}
+          <div className="space-y-1.5">
+            <div className="px-2 flex items-center justify-between">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#E59819]">
+                1. Select Website Page
               </span>
-              <span className="text-[11px] font-mono text-[#86EFAC]">Connected</span>
+              <span className="text-[11px] text-[#68756D]">{pages.length} Pages</span>
             </div>
-            <div className="flex items-center gap-1.5 pt-1 border-t border-[#222F28]">
+            <div className="max-h-[250px] md:max-h-[310px] overflow-y-auto space-y-1 pr-1">
+              {pages.map((p, idx) => {
+                const isSelected = selectedPage === p.file && viewMode !== 'library';
+                return (
+                  <button
+                    key={p.file}
+                    type="button"
+                    onClick={() => {
+                      setSelectedPage(p.file);
+                      if (viewMode === 'library') {
+                        setViewMode('slots');
+                      }
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${
+                      isSelected
+                        ? 'bg-[#E59819] text-[#0B0F0D] font-semibold'
+                        : 'text-[#D5E0D9] hover:text-[#F1F5F2] hover:bg-[#17211C]'
+                    }`}
+                  >
+                    <span className="truncate flex items-center gap-2">
+                      <span
+                        className={`text-[10px] font-mono ${
+                          isSelected ? 'text-[#0B0F0D]/80' : 'text-[#68756D]'
+                        }`}
+                      >
+                        {idx + 1}.
+                      </span>
+                      <span className="truncate">{p.title}</span>
+                    </span>
+                    <span
+                      className={`font-mono tabular-nums text-[11px] ml-2 px-1.5 py-0.5 rounded ${
+                        isSelected
+                          ? 'bg-[#0B0F0D]/15 text-[#0B0F0D]'
+                          : 'bg-[#161F1A] text-[#9CA9A1]'
+                      }`}
+                    >
+                      {pageCounts[p.file] || 0}
+                    </span>
+                  </button>
+                );
+              })}
+
               <button
                 type="button"
-                onClick={() => handleSeedSectionImagesToFirestore(false)}
-                disabled={syncingSeed}
-                className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-[#1F2D25] hover:bg-[#283A30] text-[#E59819] border border-[#2F4438] transition-colors"
+                onClick={() => setSelectedPage('all')}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors mt-1 border ${
+                  selectedPage === 'all' && viewMode !== 'library'
+                    ? 'bg-[#1F2D25] text-[#E59819] border-[#E59819]/50 font-semibold'
+                    : 'text-[#9CA9A1] hover:text-[#F1F5F2] hover:bg-[#151D19] border-[#1F2923]'
+                }`}
               >
-                <RefreshCw className={`w-3 h-3 ${syncingSeed ? 'animate-spin' : ''}`} />
-                <span>{syncingSeed ? 'Syncing...' : 'Sync Changes'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleAdminLogout}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-medium bg-[#1A231E] hover:bg-[#2A1616] text-[#9CA9A1] hover:text-[#FCA5A5] border border-[#26332B] transition-colors"
-                title="Sign Out"
-              >
-                <LogOut className="w-3 h-3" />
-                <span>Sign Out</span>
+                <span className="truncate">All 12 Pages Combined</span>
+                <span className="font-mono tabular-nums text-[11px] text-[#68756D] ml-2">
+                  {pageCounts.all || 0}
+                </span>
               </button>
             </div>
           </div>
 
-          {/* Primary Mode Switcher (5 Tabs) */}
-          <div className="space-y-1">
-            <div className="px-2 text-[11px] font-medium uppercase tracking-wider text-[#68756D] mb-1">
-              Workspaces
+          {/* Step 2: Choose What to Edit on Selected Page */}
+          <div className="space-y-1 pt-2 border-t border-[#1F2923]">
+            <div className="px-2 text-[11px] font-semibold uppercase tracking-wider text-[#E59819] mb-1.5">
+              2. What to Edit
             </div>
+
+            <button
+              type="button"
+              onClick={() => setViewMode('slots')}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${
+                viewMode === 'slots'
+                  ? 'bg-[#1E2B24] text-[#F1F5F2] font-semibold border border-[#31473B]'
+                  : 'text-[#9CA9A1] hover:text-[#F1F5F2] hover:bg-[#161E1A]'
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-[#E59819]" />
+                <span>Page Sections & Images</span>
+              </span>
+              <span className="text-xs font-mono tabular-nums text-[#9CA9A1]">
+                {filteredSlots.length}
+              </span>
+            </button>
+
             <button
               type="button"
               onClick={() => setViewMode('hero-slideshow')}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${
                 viewMode === 'hero-slideshow'
-                  ? 'bg-[#1A2620] text-[#F1F5F2] border-l-2 border-[#E59819]'
+                  ? 'bg-[#1E2B24] text-[#F1F5F2] font-semibold border border-[#31473B]'
                   : 'text-[#9CA9A1] hover:text-[#F1F5F2] hover:bg-[#161E1A]'
               }`}
             >
@@ -2107,43 +2211,12 @@ export default function AdminCmsStudioPage() {
                 <span>Hero Slideshow (4s)</span>
               </span>
               <span className="text-xs font-mono tabular-nums text-[#E59819]">
-                {mergedSlots.filter((s) => s.type === 'hero-bg').length + heroSlideshowItems.length}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setViewMode('slots')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${
-                viewMode === 'slots'
-                  ? 'bg-[#1A2620] text-[#F1F5F2] border-l-2 border-[#E59819]'
-                  : 'text-[#9CA9A1] hover:text-[#F1F5F2] hover:bg-[#161E1A]'
-              }`}
-            >
-              <span className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-[#E59819]" />
-                <span>Page Images</span>
-              </span>
-              <span className="text-xs font-mono tabular-nums text-[#68756D]">
-                {mergedSlots.length}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setViewMode('section-images')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${
-                viewMode === 'section-images'
-                  ? 'bg-[#1A2620] text-[#F1F5F2] border-l-2 border-[#E59819]'
-                  : 'text-[#9CA9A1] hover:text-[#F1F5F2] hover:bg-[#161E1A]'
-              }`}
-            >
-              <span className="flex items-center gap-2">
-                <Grid className="w-4 h-4 text-[#E59819]" />
-                <span>Section Photos</span>
-              </span>
-              <span className="text-xs font-mono tabular-nums text-[#68756D]">
-                {mergedSectionImages.filter((s) => s.sectionKey !== 'hero_slideshow').length}
+                {mergedSlots.filter(
+                  (s) =>
+                    s.type === 'hero-bg' &&
+                    !s.isDeleted &&
+                    (selectedPage === 'all' || s.page === selectedPage)
+                ).length + filteredHeroSlides.length}
               </span>
             </button>
 
@@ -2152,16 +2225,34 @@ export default function AdminCmsStudioPage() {
               onClick={() => setViewMode('texts')}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${
                 viewMode === 'texts'
-                  ? 'bg-[#1A2620] text-[#F1F5F2] border-l-2 border-[#E59819]'
+                  ? 'bg-[#1E2B24] text-[#F1F5F2] font-semibold border border-[#31473B]'
                   : 'text-[#9CA9A1] hover:text-[#F1F5F2] hover:bg-[#161E1A]'
               }`}
             >
               <span className="flex items-center gap-2">
                 <Type className="w-4 h-4 text-[#E59819]" />
-                <span>Site Text</span>
+                <span>Page Text & Headings</span>
               </span>
-              <span className="text-xs font-mono tabular-nums text-[#68756D]">
-                {mergedTexts.length}
+              <span className="text-xs font-mono tabular-nums text-[#9CA9A1]">
+                {filteredTexts.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewMode('section-images')}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${
+                viewMode === 'section-images'
+                  ? 'bg-[#1E2B24] text-[#F1F5F2] font-semibold border border-[#31473B]'
+                  : 'text-[#9CA9A1] hover:text-[#F1F5F2] hover:bg-[#161E1A]'
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                <Grid className="w-4 h-4 text-[#E59819]" />
+                <span>Extra Bottom Gallery</span>
+              </span>
+              <span className="text-xs font-mono tabular-nums text-[#9CA9A1]">
+                {filteredSectionImages.length}
               </span>
             </button>
 
@@ -2170,58 +2261,18 @@ export default function AdminCmsStudioPage() {
               onClick={() => setViewMode('library')}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${
                 viewMode === 'library'
-                  ? 'bg-[#1A2620] text-[#F1F5F2] border-l-2 border-[#E59819]'
+                  ? 'bg-[#1E2B24] text-[#F1F5F2] font-semibold border border-[#31473B]'
                   : 'text-[#9CA9A1] hover:text-[#F1F5F2] hover:bg-[#161E1A]'
               }`}
             >
               <span className="flex items-center gap-2">
                 <FolderOpen className="w-4 h-4 text-[#E59819]" />
-                <span>R2 Bucket</span>
+                <span>All Uploaded Files (R2)</span>
               </span>
               <span className="text-xs font-mono tabular-nums text-[#68756D]">
                 {enrichedR2Objects.length}
               </span>
             </button>
-          </div>
-
-          {/* Page Filter Navigation */}
-          <div className="space-y-1">
-            <div className="px-2 text-[11px] font-medium uppercase tracking-wider text-[#68756D] mb-1">
-              Pages (12)
-            </div>
-            <div className="max-h-[260px] md:max-h-[calc(100vh-470px)] overflow-y-auto space-y-0.5 pr-1">
-              <button
-                type="button"
-                onClick={() => setSelectedPage('all')}
-                className={`w-full flex items-center justify-between px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                  selectedPage === 'all'
-                    ? 'bg-[#1E2B24] text-[#F1F5F2]'
-                    : 'text-[#9CA9A1] hover:text-[#F1F5F2] hover:bg-[#151D19]'
-                }`}
-              >
-                <span className="truncate">All Website Pages</span>
-                <span className="font-mono tabular-nums text-[11px] text-[#68756D] ml-2">
-                  {pageCounts.all || 0}
-                </span>
-              </button>
-              {pages.map((p) => (
-                <button
-                  key={p.file}
-                  type="button"
-                  onClick={() => setSelectedPage(p.file)}
-                  className={`w-full flex items-center justify-between px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                    selectedPage === p.file
-                      ? 'bg-[#1E2B24] text-[#F1F5F2]'
-                      : 'text-[#9CA9A1] hover:text-[#F1F5F2] hover:bg-[#151D19]'
-                  }`}
-                >
-                  <span className="truncate">{p.title}</span>
-                  <span className="font-mono tabular-nums text-[11px] text-[#68756D] ml-2">
-                    {pageCounts[p.file] || 0}
-                  </span>
-                </button>
-              ))}
-            </div>
           </div>
         </div>
 
@@ -2229,154 +2280,140 @@ export default function AdminCmsStudioPage() {
         <div className="p-4 border-t border-[#1F2923] space-y-2 bg-[#0E1411]">
           <a
             href={`/${selectedPage === 'all' ? 'index.html' : selectedPage}`}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs font-medium bg-[#18221D] hover:bg-[#1F2C26] text-[#D5E0D9] border border-[#26352D] transition-colors"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs font-medium bg-[#18221D] hover:bg-[#1F2C26] text-[#F1F5F2] border border-[#26352D] transition-colors"
           >
-            <Eye className="w-3.5 h-3.5" />
-            <span>View Live Website</span>
+            <Eye className="w-3.5 h-3.5 text-[#E59819]" />
+            <span>
+              Preview {selectedPage === 'all' ? 'Home Page' : currentPageObj?.title || 'Page'}
+            </span>
           </a>
-          <button
-            type="button"
-            onClick={() =>
-              setConfirmResetModal({
-                open: true,
-                scope: 'all',
-                title: 'All Website Images',
-              })
-            }
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs font-medium text-[#F87171] hover:bg-[#2A1616] border border-transparent hover:border-[#4C2222] transition-colors"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Restore Defaults</span>
-          </button>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleSeedSectionImagesToFirestore(false)}
+              disabled={syncingSeed}
+              className="flex-1 inline-flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-md text-xs font-medium bg-[#161F1A] hover:bg-[#1F2C25] text-[#D5E0D9] border border-[#24322A] transition-colors"
+              title="Publish all changes to live Firebase & R2"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-[#E59819] ${syncingSeed ? 'animate-spin' : ''}`} />
+              <span>{syncingSeed ? 'Syncing...' : 'Sync Live'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleAdminLogout}
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium bg-[#161F1A] hover:bg-[#2A1616] text-[#9CA9A1] hover:text-[#FCA5A5] border border-[#24322A] transition-colors"
+              title="Sign Out"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Exit</span>
+            </button>
+          </div>
         </div>
       </aside>
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Utility Header */}
-        <header className="h-auto min-h-16 px-6 py-3 bg-[#111714] border-b border-[#1F2923] flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-[#68756D]">Admin</span>
-            <span className="text-[#3B4740]">/</span>
-            <span className="font-medium text-[#F1F5F2]">
-              {viewMode === 'hero-slideshow'
-                ? 'Hero Slideshow (4s)'
-                : viewMode === 'slots'
-                ? 'Page Images'
-                : viewMode === 'section-images'
-                ? 'Section Photos'
+        {/* Clear Active Page & Location Header */}
+        <header className="px-6 py-4 bg-[#111714] border-b border-[#1F2923] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="px-2 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider bg-[#E59819]/15 text-[#E59819] border border-[#E59819]/30">
+                {selectedPage === 'all'
+                  ? 'All 12 Website Pages'
+                  : `Editing Page: ${currentPageObj?.title || selectedPage}`}
+              </span>
+              {selectedPage !== 'all' && (
+                <span className="text-xs font-mono text-[#9CA9A1]">
+                  ({selectedPage})
+                </span>
+              )}
+            </div>
+            <h2 className="text-base sm:text-lg font-semibold text-[#F1F5F2]">
+              {viewMode === 'slots'
+                ? selectedPage === 'all'
+                  ? 'All Website Pages — Organized by Page & Section'
+                  : `${currentPageObj?.title || selectedPage} — Sections from Top to Bottom`
+                : viewMode === 'hero-slideshow'
+                ? `Top Hero Section — 4-Second Image Slideshow (${
+                    selectedPage === 'all' ? 'All Pages' : currentPageObj?.title || selectedPage
+                  })`
                 : viewMode === 'texts'
-                ? 'Site Text'
-                : `R2 Bucket (${bucketName})`}
-            </span>
-            <span className="text-[#3B4740]">/</span>
-            <span className="text-[#E59819] font-medium">
-              {selectedPage === 'all' ? 'All Pages' : currentPageObj?.title || selectedPage}
-            </span>
+                ? `Page Text & Headings — Organized by Section (${
+                    selectedPage === 'all' ? 'All Pages' : currentPageObj?.title || selectedPage
+                  })`
+                : viewMode === 'section-images'
+                ? `Bottom Extra Photo Gallery (${
+                    selectedPage === 'all' ? 'All Pages' : currentPageObj?.title || selectedPage
+                  })`
+                : `R2 Media Storage Bucket (${bucketName})`}
+            </h2>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
             {/* Search Input */}
-            <div className="relative w-64 sm:w-72">
+            <div className="relative w-56 sm:w-64">
               <Search className="w-4 h-4 text-[#68756D] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={
-                  viewMode === 'texts'
-                    ? 'Search text...'
-                    : viewMode === 'hero-slideshow'
-                    ? 'Search hero slides...'
-                    : viewMode === 'section-images'
-                    ? 'Search section photos...'
-                    : viewMode === 'library'
-                    ? 'Search bucket files...'
-                    : 'Search images...'
-                }
+                placeholder="Find section, image, or text..."
                 className="w-full bg-[#0B0F0D] border border-[#243029] focus:border-[#E59819] rounded-md pl-9 pr-3 py-1.5 text-xs text-[#F1F5F2] placeholder-[#68756D] focus:outline-none transition-colors"
               />
             </div>
 
-            {(viewMode === 'hero-slideshow' ||
-              (viewMode === 'slots' && selectedType === 'hero-bg')) && (
-              <button
-                type="button"
-                onClick={() => openNewHeroSlideModal()}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-[#E59819] hover:bg-[#F5A623] text-[#0B0F0D] transition-colors whitespace-nowrap shrink-0"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Hero Slide (4s)</span>
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => openNewHeroSlideModal(selectedPage === 'all' ? 'index.html' : selectedPage)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-[#E59819] hover:bg-[#F5A623] text-[#0B0F0D] transition-colors whitespace-nowrap shrink-0"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Hero Slide (4s)</span>
+            </button>
 
-            {viewMode === 'section-images' && (
-              <button
-                type="button"
-                onClick={openNewSectionImageModal}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-[#E59819] hover:bg-[#F5A623] text-[#0B0F0D] transition-colors whitespace-nowrap shrink-0"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Section Photo</span>
-              </button>
-            )}
-
-            {viewMode !== 'texts' && (
-              <button
-                type="button"
-                onClick={openNewR2UploadModal}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-[#182820] hover:bg-[#22382D] text-[#86EFAC] border border-[#2B4739] transition-colors whitespace-nowrap shrink-0"
-              >
-                <Upload className="w-3.5 h-3.5" />
-                <span>Upload Image</span>
-              </button>
-            )}
-
-            {viewMode === 'texts' && (
-              <button
-                type="button"
-                onClick={openNewCustomTextModal}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-[#E59819] hover:bg-[#F5A623] text-[#0B0F0D] transition-colors whitespace-nowrap shrink-0"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Text Block</span>
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={openNewR2UploadModal}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-[#182820] hover:bg-[#22382D] text-[#86EFAC] border border-[#2B4739] transition-colors whitespace-nowrap shrink-0"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              <span>Upload New Image</span>
+            </button>
 
             <button
               type="button"
               onClick={handleManualRefresh}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-[#1A241E] hover:bg-[#222F28] text-[#D5E0D9] border border-[#2A3830] transition-colors whitespace-nowrap shrink-0"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium bg-[#1A241E] hover:bg-[#222F28] text-[#D5E0D9] border border-[#2A3830] transition-colors whitespace-nowrap shrink-0"
               title="Refresh"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              <span>Refresh</span>
             </button>
           </div>
         </header>
 
-        {/* Sub-Toolbar: Context Filters & Counts */}
-        <div className="px-6 py-3 bg-[#0E1411] border-b border-[#1A231E] flex flex-wrap items-center justify-between gap-4">
-          {viewMode === 'hero-slideshow' ? (
-            <div className="text-xs text-[#9CA9A1]">
-              Hero Section slideshow interval: <span className="text-[#E59819] font-semibold">4 seconds</span>
-            </div>
-          ) : viewMode === 'slots' ? (
+        {/* Sub-Toolbar: Quick Section Jump / Filter Bar */}
+        <div className="px-6 py-2.5 bg-[#0E1411] border-b border-[#1A231E] flex flex-wrap items-center justify-between gap-3">
+          {viewMode === 'slots' ? (
             <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-xs text-[#9CA9A1] mr-1">Show on page:</span>
               {(
                 [
-                  { id: 'all', label: 'All Types' },
-                  { id: 'hero-bg', label: 'Hero Banners' },
-                  { id: 'img', label: 'Content Photos' },
-                  { id: 'lightbox-img', label: 'Gallery + Lightbox' },
-                  { id: 'logo', label: 'Logos' },
+                  { id: 'all', label: 'All Page Sections (Top to Bottom)' },
+                  { id: 'hero-bg', label: '1. Top Hero Banner Only' },
+                  { id: 'img', label: '2. Section Content Photos' },
+                  { id: 'lightbox-img', label: '3. Gallery Lightbox Photos' },
+                  { id: 'logo', label: '4. Header & Footer Logos' },
                 ] as { id: SlotTypeFilter; label: string }[]
               ).map((tab) => (
                 <button
                   key={tab.id}
                   type="button"
                   onClick={() => setSelectedType(tab.id)}
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
                     selectedType === tab.id
                       ? 'bg-[#E59819] text-[#0B0F0D] font-semibold'
                       : 'bg-[#151D19] text-[#9CA9A1] hover:text-[#F1F5F2] border border-[#222E27]'
@@ -2388,21 +2425,22 @@ export default function AdminCmsStudioPage() {
             </div>
           ) : viewMode === 'texts' ? (
             <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-xs text-[#9CA9A1] mr-1">Filter text:</span>
               {(
                 [
-                  { id: 'all', label: 'All Text' },
-                  { id: 'headings', label: 'Headings' },
+                  { id: 'all', label: 'All Page Text' },
+                  { id: 'headings', label: 'Section Headings (H1–H4)' },
                   { id: 'paragraphs', label: 'Paragraphs' },
-                  { id: 'buttons', label: 'Buttons' },
-                  { id: 'lists', label: 'Lists' },
-                  { id: 'custom', label: 'Added Blocks' },
+                  { id: 'buttons', label: 'Buttons & Links' },
+                  { id: 'lists', label: 'Bullet Lists' },
+                  { id: 'custom', label: 'Custom Added Text' },
                 ] as { id: TextTypeFilter; label: string }[]
               ).map((tab) => (
                 <button
                   key={tab.id}
                   type="button"
                   onClick={() => setSelectedTextType(tab.id)}
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
                     selectedTextType === tab.id
                       ? 'bg-[#E59819] text-[#0B0F0D] font-semibold'
                       : 'bg-[#151D19] text-[#9CA9A1] hover:text-[#F1F5F2] border border-[#222E27]'
@@ -2411,30 +2449,57 @@ export default function AdminCmsStudioPage() {
                   {tab.label}
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={openNewCustomTextModal}
+                className="ml-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-[#182820] text-[#86EFAC] border border-[#2B4739]"
+              >
+                <Plus className="w-3 h-3" />
+                <span>Add Text Block</span>
+              </button>
+            </div>
+          ) : viewMode === 'hero-slideshow' ? (
+            <div className="text-xs text-[#9CA9A1]">
+              Every image in a page&apos;s Hero Section automatically crossfades every{' '}
+              <span className="text-[#E59819] font-semibold">4 seconds</span> on the live website.
             </div>
           ) : viewMode === 'section-images' ? (
-            <div className="text-xs text-[#9CA9A1]">Section Photos</div>
+            <div className="flex items-center justify-between w-full">
+              <span className="text-xs text-[#9CA9A1]">
+                Additional photo cards displayed in the bottom gallery section of the page.
+              </span>
+              <button
+                type="button"
+                onClick={() => openNewSectionImageModal(selectedPage === 'all' ? 'index.html' : selectedPage)}
+                className="inline-flex items-center gap-1 px-3 py-1 rounded-md text-xs font-semibold bg-[#E59819] text-[#0B0F0D]"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Extra Gallery Photo</span>
+              </button>
+            </div>
           ) : (
-            <div className="text-xs text-[#9CA9A1]">Bucket: {bucketName}</div>
+            <div className="text-xs text-[#9CA9A1]">
+              Cloudflare R2 Storage Bucket: <span className="text-[#F1F5F2] font-mono">{bucketName}</span>
+            </div>
           )}
 
-          <div className="text-xs text-[#9CA9A1] font-mono tabular-nums">
-            {viewMode === 'hero-slideshow'
-              ? `${
-                  mergedSlots.filter(
-                    (s) =>
-                      s.type === 'hero-bg' &&
-                      (selectedPage === 'all' || s.page === selectedPage)
-                  ).length + filteredHeroSlides.length
-                } slides`
-              : viewMode === 'slots'
-              ? `${filteredSlots.length} / ${mergedSlots.length} slots`
-              : viewMode === 'section-images'
-              ? `${filteredSectionImages.length} photos`
-              : viewMode === 'texts'
-              ? `${filteredTexts.length} items`
-              : `${filteredR2Objects.length} files`}
-          </div>
+          {selectedPage !== 'all' && viewMode === 'slots' && (
+            <button
+              type="button"
+              onClick={() =>
+                setConfirmResetModal({
+                  open: true,
+                  scope: 'page',
+                  page: selectedPage,
+                  title: currentPageObj?.title || selectedPage,
+                })
+              }
+              className="inline-flex items-center gap-1 text-xs text-[#9CA9A1] hover:text-[#FCA5A5] transition-colors"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Reset {currentPageObj?.title || 'Page'} to Default Images</span>
+            </button>
+          )}
         </div>
 
         {/* Toast Notification Banner */}
@@ -2457,7 +2522,7 @@ export default function AdminCmsStudioPage() {
           </div>
         )}
 
-        {/* Main Workspace Grid */}
+        {/* Main Workspace Container */}
         <main className="p-6 flex-1 overflow-y-auto">
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
@@ -2475,8 +2540,466 @@ export default function AdminCmsStudioPage() {
                 </div>
               ))}
             </div>
+          ) : viewMode === 'slots' ? (
+            /* STRUCTURED PAGE EDITOR: Organized by Page -> Top Hero Slideshow -> Each Page Section in Top-to-Bottom Order */
+            <div className="space-y-8">
+              {(selectedPage === 'all' ? pages : pages.filter((p) => p.file === selectedPage)).map(
+                (pageMeta) => {
+                  const pageSlots = filteredSlots.filter((s) => s.page === pageMeta.file);
+                  const primaryHeroSlot = mergedSlots.find(
+                    (s) => s.page === pageMeta.file && s.type === 'hero-bg'
+                  );
+                  const pageHeroSlides = filteredHeroSlides.filter(
+                    (item) => item.page === pageMeta.file
+                  );
+                  const showHeroSection =
+                    (selectedType === 'all' || selectedType === 'hero-bg') &&
+                    (Boolean(primaryHeroSlot) || pageHeroSlides.length > 0);
+
+                  // Group non-hero slots by their exact sectionContext in top-to-bottom page order
+                  const nonHeroSlots = pageSlots.filter((s) => s.type !== 'hero-bg');
+                  const sectionGroups: { sectionName: string; slots: ImageSlot[] }[] = [];
+                  for (const slot of nonHeroSlots) {
+                    const secName = slot.sectionContext || 'Main Page Content';
+                    const existing = sectionGroups.find((g) => g.sectionName === secName);
+                    if (existing) {
+                      existing.slots.push(slot);
+                    } else {
+                      sectionGroups.push({ sectionName: secName, slots: [slot] });
+                    }
+                  }
+
+                  const pageExtraGallery = filteredSectionImages.filter(
+                    (item) => item.page === pageMeta.file
+                  );
+
+                  if (
+                    !showHeroSection &&
+                    sectionGroups.length === 0 &&
+                    pageExtraGallery.length === 0
+                  ) {
+                    return null;
+                  }
+
+                  return (
+                    <div key={pageMeta.file} className="space-y-6">
+                      {/* Page Header Bar when viewing All Pages */}
+                      {selectedPage === 'all' && (
+                        <div className="flex items-center justify-between bg-[#151E19] border border-[#26352D] px-4 py-3 rounded-lg">
+                          <div>
+                            <span className="text-xs font-semibold uppercase tracking-wider text-[#E59819]">
+                              Website Page
+                            </span>
+                            <h3 className="text-base font-semibold text-[#F1F5F2]">
+                              {pageMeta.title}{' '}
+                              <span className="text-xs font-mono text-[#9CA9A1] font-normal">
+                                ({pageMeta.file})
+                              </span>
+                            </h3>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedPage(pageMeta.file)}
+                            className="px-3 py-1.5 rounded-md text-xs font-semibold bg-[#E59819] text-[#0B0F0D]"
+                          >
+                            Focus This Page Only
+                          </button>
+                        </div>
+                      )}
+
+                      {/* SECTION 1: TOP HERO BANNER & 4-SECOND SLIDESHOW */}
+                      {showHeroSection && (
+                        <section className="bg-[#121915] border border-[#26352D] rounded-lg overflow-hidden">
+                          <div className="px-5 py-4 bg-[#16201B] border-b border-[#24332B] flex flex-wrap items-center justify-between gap-3">
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-2">
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[#E59819] text-[#0B0F0D]">
+                                  Section 1 · Top of {pageMeta.title}
+                                </span>
+                                <span className="text-xs font-medium text-[#86EFAC]">
+                                  {(primaryHeroSlot && !primaryHeroSlot.isDeleted ? 1 : 0) +
+                                    pageHeroSlides.length}{' '}
+                                  Active Slide(s) · Changes every 4 seconds
+                                </span>
+                              </div>
+                              <h3 className="text-sm sm:text-base font-semibold text-[#F1F5F2]">
+                                Hero Banner & 4-Second Image Slideshow
+                              </h3>
+                              <p className="text-xs text-[#9CA9A1]">
+                                Location: Large full-width banner at the very top of{' '}
+                                <span className="text-[#F1F5F2] font-medium">{pageMeta.title}</span>.
+                              </p>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => openNewHeroSlideModal(pageMeta.file)}
+                              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md text-xs font-semibold bg-[#E59819] hover:bg-[#F5A623] text-[#0B0F0D] transition-colors"
+                            >
+                              <Plus className="w-4 h-4" />
+                              <span>Add Hero Slide Image (4s)</span>
+                            </button>
+                          </div>
+
+                          <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            {primaryHeroSlot && (
+                              <article className="bg-[#0E1411] border border-[#26352D] rounded-lg overflow-hidden flex flex-col justify-between group">
+                                <div>
+                                  <div
+                                    onClick={() => openSlotEditor(primaryHeroSlot)}
+                                    className="relative h-44 bg-[#090D0B] border-b border-[#1A231E] overflow-hidden cursor-pointer flex items-center justify-center"
+                                  >
+                                    {primaryHeroSlot.isDeleted || !primaryHeroSlot.src ? (
+                                      <div className="flex flex-col items-center justify-center text-center p-4 space-y-1">
+                                        <Trash2 className="w-5 h-5 text-[#F87171]" />
+                                        <span className="text-xs font-semibold text-[#FCA5A5]">
+                                          Slide #1 Hidden / Deleted
+                                        </span>
+                                        <span className="text-[11px] text-[#9CA9A1]">
+                                          Click to upload a new Slide #1 image
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <img
+                                        src={resolveImageUrl(primaryHeroSlot.src)}
+                                        alt={primaryHeroSlot.alt || primaryHeroSlot.label}
+                                        className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+                                        loading="lazy"
+                                      />
+                                    )}
+                                    <div className="absolute top-2.5 left-2.5 bg-[#E59819] text-[#0B0F0D] px-2 py-0.5 rounded text-[11px] font-bold">
+                                      Hero Slide #1 (Main Background)
+                                    </div>
+                                  </div>
+
+                                  <div className="p-3.5 space-y-1">
+                                    <div className="text-[11px] font-medium text-[#E59819]">
+                                      {pageMeta.title} · Top Hero Banner
+                                    </div>
+                                    <h4 className="text-xs font-semibold text-[#F1F5F2] truncate">
+                                      {primaryHeroSlot.label}
+                                    </h4>
+                                  </div>
+                                </div>
+
+                                <div className="px-3.5 pb-3.5 pt-1 flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => openSlotEditor(primaryHeroSlot)}
+                                    className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#1B2620] hover:bg-[#E59819] text-[#F1F5F2] hover:text-[#0B0F0D] border border-[#2A3A31] hover:border-[#E59819] font-medium text-xs py-1.5 px-2.5 rounded-md transition-colors"
+                                  >
+                                    <Upload className="w-3.5 h-3.5" />
+                                    <span>
+                                      {primaryHeroSlot.isDeleted ? 'Upload Slide #1' : 'Change Image'}
+                                    </span>
+                                  </button>
+                                  {(primaryHeroSlot.isModified || primaryHeroSlot.isDeleted) && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleResetSingleSlot(primaryHeroSlot)}
+                                      className="p-1.5 rounded-md bg-[#161F1A] hover:bg-[#222F28] text-[#9CA9A1] hover:text-[#F1F5F2] border border-[#24322A]"
+                                      title="Restore default Slide #1"
+                                    >
+                                      <RotateCcw className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                  {!primaryHeroSlot.isDeleted && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteSingleSlot(primaryHeroSlot)}
+                                      className="p-1.5 rounded-md bg-[#161F1A] hover:bg-[#2A1616] text-[#9CA9A1] hover:text-[#FCA5A5] border border-[#24322A]"
+                                      title="Delete Slide #1"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                </div>
+                              </article>
+                            )}
+
+                            {pageHeroSlides.map((slide, idx) => (
+                              <article
+                                key={slide.itemId}
+                                className="bg-[#0E1411] border border-[#26352D] rounded-lg overflow-hidden flex flex-col justify-between group"
+                              >
+                                <div>
+                                  <div
+                                    onClick={() => openEditSectionImageModal(slide)}
+                                    className="relative h-44 bg-[#090D0B] border-b border-[#1A231E] overflow-hidden cursor-pointer flex items-center justify-center"
+                                  >
+                                    <img
+                                      src={resolveImageUrl(slide.src)}
+                                      alt={slide.alt || slide.title}
+                                      className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+                                      loading="lazy"
+                                    />
+                                    <div className="absolute top-2.5 left-2.5 bg-[#13261C]/95 border border-[#2B4739] text-[#86EFAC] px-2 py-0.5 rounded text-[11px] font-semibold">
+                                      Hero Slide #{idx + 2} (4s Crossfade)
+                                    </div>
+                                  </div>
+
+                                  <div className="p-3.5 space-y-1">
+                                    <div className="text-[11px] font-medium text-[#E59819]">
+                                      {pageMeta.title} · Top Hero Slideshow
+                                    </div>
+                                    <h4
+                                      className="text-xs font-semibold text-[#F1F5F2] truncate"
+                                      title={slide.title}
+                                    >
+                                      {slide.title}
+                                    </h4>
+                                  </div>
+                                </div>
+
+                                <div className="px-3.5 pb-3.5 pt-1 flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => openEditSectionImageModal(slide)}
+                                    className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#1B2620] hover:bg-[#E59819] text-[#F1F5F2] hover:text-[#0B0F0D] border border-[#2A3A31] hover:border-[#E59819] font-medium text-xs py-1.5 px-2.5 rounded-md transition-colors"
+                                  >
+                                    <Upload className="w-3.5 h-3.5" />
+                                    <span>Change Image</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteSectionImage(slide)}
+                                    className="p-1.5 rounded-md bg-[#161F1A] hover:bg-[#2A1616] text-[#9CA9A1] hover:text-[#FCA5A5] border border-[#24322A]"
+                                    title="Delete this Hero Slide"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </article>
+                            ))}
+
+                            {/* Add Next Hero Slide Card */}
+                            <button
+                              type="button"
+                              onClick={() => openNewHeroSlideModal(pageMeta.file)}
+                              className="min-h-[220px] rounded-lg bg-[#0B0F0D] border border-dashed border-[#2F4237] hover:border-[#E59819] flex flex-col items-center justify-center p-4 text-center transition-colors group"
+                            >
+                              <div className="w-9 h-9 rounded-full bg-[#18221D] group-hover:bg-[#E59819] text-[#E59819] group-hover:text-[#0B0F0D] flex items-center justify-center mb-2 transition-colors">
+                                <Plus className="w-5 h-5" />
+                              </div>
+                              <span className="text-xs font-semibold text-[#F1F5F2]">
+                                + Add Hero Slide #{pageHeroSlides.length + 2}
+                              </span>
+                              <span className="text-[11px] text-[#9CA9A1] mt-1">
+                                Slides every 4 seconds at the top of {pageMeta.title}
+                              </span>
+                            </button>
+                          </div>
+                        </section>
+                      )}
+
+                      {/* SECTIONS 2..N: PAGE CONTENT SECTIONS IN TOP-TO-BOTTOM ORDER */}
+                      {sectionGroups.map((group, secIdx) => (
+                        <section
+                          key={`${pageMeta.file}__${group.sectionName}`}
+                          className="bg-[#121915] border border-[#1F2923] rounded-lg overflow-hidden"
+                        >
+                          <div className="px-5 py-3.5 bg-[#151D19] border-b border-[#1F2923] flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase bg-[#1B2821] text-[#E59819] border border-[#2B3E33]">
+                                  Section {showHeroSection ? secIdx + 2 : secIdx + 1} on {pageMeta.title}
+                                </span>
+                                <span className="text-xs text-[#9CA9A1]">
+                                  {group.slots.length} Image{group.slots.length === 1 ? '' : 's'}
+                                </span>
+                              </div>
+                              <h3 className="text-sm sm:text-base font-semibold text-[#F1F5F2] mt-0.5">
+                                {group.sectionName}
+                              </h3>
+                            </div>
+                          </div>
+
+                          <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                            {group.slots.map((slot) => (
+                              <article
+                                key={slot.id}
+                                className="bg-[#0E1411] border border-[#24322A] hover:border-[#384E41] rounded-lg overflow-hidden flex flex-col justify-between transition-colors group"
+                              >
+                                <div>
+                                  <div
+                                    onClick={() => openSlotEditor(slot)}
+                                    className="relative h-44 bg-[#090D0B] border-b border-[#1A231E] overflow-hidden cursor-pointer flex items-center justify-center"
+                                  >
+                                    {slot.isDeleted || !slot.src ? (
+                                      <div className="flex flex-col items-center justify-center text-center p-4 space-y-1.5">
+                                        <Trash2 className="w-6 h-6 text-[#F87171]" />
+                                        <span className="text-xs font-semibold text-[#FCA5A5]">
+                                          Image Deleted / Hidden
+                                        </span>
+                                        <span className="text-[11px] text-[#9CA9A1]">
+                                          Click to upload a new image here
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <img
+                                        src={resolveImageUrl(slot.src)}
+                                        alt={slot.alt || slot.label}
+                                        className={`w-full h-full transition-transform duration-200 group-hover:scale-[1.02] ${
+                                          slot.type === 'logo' ? 'object-contain p-6' : 'object-cover'
+                                        }`}
+                                        loading="lazy"
+                                      />
+                                    )}
+                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                      <span className="inline-flex items-center gap-1.5 bg-[#E59819] text-[#0B0F0D] font-semibold text-xs px-3 py-1.5 rounded-md shadow-md">
+                                        <Upload className="w-3.5 h-3.5" />
+                                        <span>
+                                          {slot.isDeleted ? 'Upload Image' : 'Change This Image'}
+                                        </span>
+                                      </span>
+                                    </div>
+                                    <div className="absolute top-2.5 left-2.5 bg-[#0B0F0D]/90 border border-[#26332B] px-2 py-0.5 rounded text-[11px] font-mono text-[#D5E0D9]">
+                                      Image #{slot.slotIndex + 1} · {getSlotTypeLabel(slot.type)}
+                                    </div>
+                                  </div>
+
+                                  <div className="p-4 space-y-1">
+                                    <div
+                                      className="text-[11px] font-medium text-[#E59819] truncate"
+                                      title={`${slot.pageTitle} — ${slot.sectionContext}`}
+                                    >
+                                      {slot.sectionContext}
+                                    </div>
+                                    <h4
+                                      className="text-sm font-semibold text-[#F1F5F2] truncate"
+                                      title={slot.label}
+                                    >
+                                      {slot.label}
+                                    </h4>
+                                    <p
+                                      className="text-xs text-[#9CA9A1] truncate"
+                                      title={slot.alt || slot.label}
+                                    >
+                                      {slot.isDeleted
+                                        ? 'Hidden on live page'
+                                        : slot.alt || 'Click Change Image to update photo or alt text'}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="px-4 pb-4 pt-1 flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => openSlotEditor(slot)}
+                                    className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#1B2620] hover:bg-[#E59819] text-[#F1F5F2] hover:text-[#0B0F0D] border border-[#2A3A31] hover:border-[#E59819] font-medium text-xs py-2 px-3 rounded-md transition-colors whitespace-nowrap shrink-0"
+                                  >
+                                    <Upload className="w-3.5 h-3.5" />
+                                    <span>{slot.isDeleted ? 'Upload Image' : 'Change Image'}</span>
+                                  </button>
+                                  {(slot.isModified || slot.isDeleted) && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleResetSingleSlot(slot)}
+                                      className="p-2 rounded-md bg-[#161F1A] hover:bg-[#222F28] text-[#9CA9A1] hover:text-[#F1F5F2] border border-[#24322A] transition-colors"
+                                      title="Restore default image"
+                                    >
+                                      <RotateCcw className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                  {!slot.isDeleted && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteSingleSlot(slot)}
+                                      className="p-2 rounded-md bg-[#161F1A] hover:bg-[#2A1616] text-[#9CA9A1] hover:text-[#FCA5A5] border border-[#24322A] transition-colors"
+                                      title="Delete / hide image on page"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                </div>
+                              </article>
+                            ))}
+                          </div>
+                        </section>
+                      ))}
+
+                      {/* BOTTOM SECTION: EXTRA CURATED PHOTO GALLERY ON THIS PAGE */}
+                      {selectedType === 'all' && pageExtraGallery.length > 0 && (
+                        <section className="bg-[#121915] border border-[#1F2923] rounded-lg overflow-hidden">
+                          <div className="px-5 py-3.5 bg-[#151D19] border-b border-[#1F2923] flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase bg-[#1B2821] text-[#86EFAC] border border-[#2B3E33]">
+                                Bottom Gallery Section on {pageMeta.title}
+                              </span>
+                              <h3 className="text-sm sm:text-base font-semibold text-[#F1F5F2] mt-0.5">
+                                Additional Featured Safari Photos ({pageExtraGallery.length})
+                              </h3>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => openNewSectionImageModal(pageMeta.file)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-[#182820] hover:bg-[#22382D] text-[#86EFAC] border border-[#2B4739]"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>Add Photo to Bottom Gallery</span>
+                            </button>
+                          </div>
+
+                          <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                            {pageExtraGallery.map((item) => (
+                              <article
+                                key={item.itemId}
+                                className="bg-[#0E1411] border border-[#24322A] rounded-lg overflow-hidden flex flex-col justify-between group"
+                              >
+                                <div>
+                                  <div
+                                    onClick={() => openEditSectionImageModal(item)}
+                                    className="relative h-44 bg-[#090D0B] border-b border-[#1A231E] overflow-hidden cursor-pointer flex items-center justify-center"
+                                  >
+                                    <img
+                                      src={resolveImageUrl(item.src)}
+                                      alt={item.alt}
+                                      className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+                                      loading="lazy"
+                                    />
+                                  </div>
+                                  <div className="p-4 space-y-1">
+                                    <div className="text-[11px] font-medium text-[#E59819] truncate">
+                                      {item.sectionTitle}
+                                    </div>
+                                    <h4 className="text-sm font-semibold text-[#F1F5F2] truncate">
+                                      {item.title}
+                                    </h4>
+                                    <p className="text-xs text-[#9CA9A1] line-clamp-2">
+                                      {item.caption}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="px-4 pb-4 pt-1 flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => openEditSectionImageModal(item)}
+                                    className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#1B2620] hover:bg-[#E59819] text-[#F1F5F2] hover:text-[#0B0F0D] border border-[#2A3A31] hover:border-[#E59819] font-medium text-xs py-2 px-3 rounded-md transition-colors"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                    <span>Change Photo</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteSectionImage(item)}
+                                    className="p-2 rounded-md bg-[#161F1A] hover:bg-[#2A1616] text-[#9CA9A1] hover:text-[#FCA5A5] border border-[#24322A]"
+                                    title="Delete photo"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </article>
+                            ))}
+                          </div>
+                        </section>
+                      )}
+                    </div>
+                  );
+                }
+              )}
+            </div>
           ) : viewMode === 'hero-slideshow' ? (
-            /* Hero Section 4-Second Multi-Image Slideshow Manager */
+            /* Hero Section 4-Second Multi-Image Slideshow Dedicated View */
             <div className="space-y-6">
               {(selectedPage === 'all' ? pages : pages.filter((p) => p.file === selectedPage)).map(
                 (pageMeta) => {
@@ -2500,7 +3023,7 @@ export default function AdminCmsStudioPage() {
                         <div>
                           <div className="flex items-center gap-2">
                             <h2 className="text-sm font-semibold text-[#F1F5F2]">
-                              {pageMeta.title}
+                              {pageMeta.title} — Top Hero Banner Slideshow
                             </h2>
                             <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#182820] text-[#86EFAC] border border-[#2B4739]">
                               {totalSlidesCount} Slide{totalSlidesCount === 1 ? '' : 's'} · 4s Interval
@@ -2508,7 +3031,7 @@ export default function AdminCmsStudioPage() {
                           </div>
                           <p className="text-xs text-[#9CA9A1] mt-0.5">
                             Page: <span className="font-mono text-[#E59819]">{pageMeta.file}</span> ·
-                            Add multiple hero images to automatically crossfade every 4 seconds.
+                            These images automatically crossfade every 4 seconds at the top of the page.
                           </p>
                         </div>
 
@@ -2551,25 +3074,15 @@ export default function AdminCmsStudioPage() {
                                 <div className="absolute top-2 left-2 bg-[#E59819] text-[#0B0F0D] px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
                                   Slide #1 (Primary Hero)
                                 </div>
-                                {!primaryHeroSlot.isDeleted && primaryHeroSlot.r2Key && (
-                                  <div className="absolute bottom-2 left-2 bg-[#13261C]/90 border border-[#234734] px-2 py-0.5 rounded text-[10px] font-mono text-[#86EFAC] truncate max-w-[90%]">
-                                    R2: {primaryHeroSlot.r2Key}
-                                  </div>
-                                )}
                               </div>
 
                               <div className="p-3.5 space-y-1">
+                                <div className="text-[11px] text-[#E59819] font-medium">
+                                  {pageMeta.title} · Hero Banner
+                                </div>
                                 <h3 className="text-xs font-semibold text-[#F1F5F2] truncate">
                                   {primaryHeroSlot.label}
                                 </h3>
-                                <div
-                                  className="text-[11px] font-mono text-[#68756D] truncate"
-                                  title={primaryHeroSlot.src || 'Deleted'}
-                                >
-                                  {primaryHeroSlot.isDeleted || !primaryHeroSlot.src
-                                    ? 'Deleted (Hidden from Hero Slideshow)'
-                                    : `CDN: ${primaryHeroSlot.src}`}
-                                </div>
                               </div>
                             </div>
 
@@ -2627,26 +3140,18 @@ export default function AdminCmsStudioPage() {
                                 <div className="absolute top-2 left-2 bg-[#13261C]/95 border border-[#2B4739] text-[#86EFAC] px-2 py-0.5 rounded text-[10px] font-mono font-semibold">
                                   Slide #{idx + 2} · 4s Auto-Slide
                                 </div>
-                                {slide.r2Key && (
-                                  <div className="absolute bottom-2 left-2 bg-[#13261C]/90 border border-[#234734] px-2 py-0.5 rounded text-[10px] font-mono text-[#86EFAC] truncate max-w-[90%]">
-                                    R2: {slide.r2Key}
-                                  </div>
-                                )}
                               </div>
 
                               <div className="p-3.5 space-y-1">
+                                <div className="text-[11px] text-[#E59819] font-medium">
+                                  {pageMeta.title} · Hero Slideshow
+                                </div>
                                 <h3
                                   className="text-xs font-semibold text-[#F1F5F2] truncate"
                                   title={slide.title}
                                 >
                                   {slide.title}
                                 </h3>
-                                <div
-                                  className="text-[11px] font-mono text-[#68756D] truncate"
-                                  title={slide.src}
-                                >
-                                  CDN: {slide.src}
-                                </div>
                               </div>
                             </div>
 
@@ -2657,7 +3162,7 @@ export default function AdminCmsStudioPage() {
                                 className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#1B2620] hover:bg-[#E59819] text-[#F1F5F2] hover:text-[#0B0F0D] border border-[#2A3A31] hover:border-[#E59819] font-medium text-xs py-1.5 px-2.5 rounded-md transition-colors"
                               >
                                 <Edit3 className="w-3.5 h-3.5" />
-                                <span>Edit / Replace</span>
+                                <span>Change Image</span>
                               </button>
                               <button
                                 type="button"
@@ -2684,7 +3189,7 @@ export default function AdminCmsStudioPage() {
                             + Add Hero Slide Image
                           </span>
                           <span className="text-[11px] text-[#9CA9A1] mt-1">
-                            Uploads to R2 & slides every 4s on {pageMeta.title}
+                            Slides every 4s on {pageMeta.title}
                           </span>
                         </button>
                       </div>
@@ -2693,138 +3198,6 @@ export default function AdminCmsStudioPage() {
                 }
               )}
             </div>
-          ) : viewMode === 'slots' ? (
-            filteredSlots.length === 0 ? (
-              <div className="bg-[#121915] border border-[#1F2923] rounded-lg p-12 text-center max-w-md mx-auto my-8">
-                <ImageIcon className="w-8 h-8 text-[#68756D] mx-auto mb-3" />
-                <h2 className="text-sm font-semibold text-[#F1F5F2]">No matching image slots</h2>
-                <p className="text-xs text-[#9CA9A1] mt-1">
-                  Try clearing your search filter or switching to All Website Pages.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                {filteredSlots.map((slot) => (
-                  <article
-                    key={slot.id}
-                    className="bg-[#121915] border border-[#1F2923] hover:border-[#314238] rounded-lg overflow-hidden flex flex-col justify-between transition-colors group"
-                  >
-                    <div>
-                      <div
-                        onClick={() => openSlotEditor(slot)}
-                        className="relative h-44 bg-[#090D0B] border-b border-[#1A231E] overflow-hidden cursor-pointer flex items-center justify-center"
-                      >
-                        {slot.isDeleted || !slot.src ? (
-                          <div className="flex flex-col items-center justify-center text-center p-4 space-y-1.5">
-                            <Trash2 className="w-6 h-6 text-[#F87171]" />
-                            <span className="text-xs font-semibold text-[#FCA5A5]">
-                              Deleted from R2 Bucket
-                            </span>
-                            <span className="text-[11px] text-[#9CA9A1]">
-                              Click to upload a new image from device to R2
-                            </span>
-                          </div>
-                        ) : (
-                          <img
-                            src={resolveImageUrl(slot.src)}
-                            alt={slot.alt || slot.label}
-                            className={`w-full h-full transition-transform duration-200 group-hover:scale-[1.02] ${
-                              slot.type === 'logo' ? 'object-contain p-6' : 'object-cover'
-                            }`}
-                            loading="lazy"
-                          />
-                        )}
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <span className="inline-flex items-center gap-1.5 bg-[#E59819] text-[#0B0F0D] font-semibold text-xs px-3 py-1.5 rounded-md shadow-md">
-                            <Upload className="w-3.5 h-3.5" />
-                            <span>{slot.isDeleted ? 'Upload New to R2' : 'Upload to R2 & Link'}</span>
-                          </span>
-                        </div>
-                        <div className="absolute top-2.5 left-2.5 bg-[#0B0F0D]/85 backdrop-blur-xs border border-[#26332B] px-2 py-0.5 rounded text-[11px] font-mono tabular-nums text-[#D5E0D9]">
-                          #{slot.slotIndex + 1} · {getSlotTypeLabel(slot.type)}
-                        </div>
-                        {slot.isDeleted ? (
-                          <div className="absolute bottom-2 left-2 bg-[#2A1616]/90 border border-[#5C2424] px-2 py-0.5 rounded text-[10px] font-mono text-[#FCA5A5]">
-                            Deleted from R2
-                          </div>
-                        ) : (
-                          slot.r2Key && (
-                            <div className="absolute bottom-2 left-2 bg-[#13261C]/90 border border-[#234734] px-2 py-0.5 rounded text-[10px] font-mono text-[#86EFAC] truncate max-w-[90%]">
-                              R2: {slot.r2Key}
-                            </div>
-                          )
-                        )}
-                      </div>
-
-                      <div className="p-4 space-y-1.5">
-                        <div className="text-[11px] text-[#9CA9A1] flex items-center gap-1.5 truncate">
-                          <span className="font-medium text-[#E59819]">{slot.pageTitle}</span>
-                          <span>·</span>
-                          <span className="truncate" title={slot.sectionContext}>
-                            {slot.sectionContext}
-                          </span>
-                        </div>
-
-                        <h3
-                          className="text-sm font-medium text-[#F1F5F2] truncate"
-                          title={slot.label}
-                        >
-                          {slot.label}
-                        </h3>
-
-                        <div
-                          className="text-xs font-mono text-[#68756D] truncate"
-                          title={slot.src || 'Deleted from R2'}
-                        >
-                          {slot.isDeleted ? 'Deleted (Hidden on Live Page)' : slot.src}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="px-4 pb-4 pt-1 flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => openSlotEditor(slot)}
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#1B2620] hover:bg-[#E59819] text-[#F1F5F2] hover:text-[#0B0F0D] border border-[#2A3A31] hover:border-[#E59819] font-medium text-xs py-2 px-3 rounded-md transition-colors whitespace-nowrap shrink-0"
-                      >
-                        <Upload className="w-3.5 h-3.5" />
-                        <span>{slot.isDeleted ? 'Add Image to R2' : 'Update via R2'}</span>
-                      </button>
-                      {slot.type === 'hero-bg' && (
-                        <button
-                          type="button"
-                          onClick={() => openNewHeroSlideModal(slot.page)}
-                          className="px-2.5 py-2 rounded-md bg-[#182820] hover:bg-[#22382D] text-[#86EFAC] border border-[#2B4739] text-xs font-semibold transition-colors whitespace-nowrap shrink-0"
-                          title="Add another image to this page's 4-second Hero Slideshow"
-                        >
-                          + Slide (4s)
-                        </button>
-                      )}
-                      {(slot.isModified || slot.isDeleted) && (
-                        <button
-                          type="button"
-                          onClick={() => handleResetSingleSlot(slot)}
-                          className="p-2 rounded-md bg-[#161F1A] hover:bg-[#222F28] text-[#9CA9A1] hover:text-[#F1F5F2] border border-[#24322A] transition-colors"
-                          title="Restore default R2 image"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                      {!slot.isDeleted && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteSingleSlot(slot)}
-                          className="p-2 rounded-md bg-[#161F1A] hover:bg-[#2A1616] text-[#9CA9A1] hover:text-[#FCA5A5] border border-[#24322A] transition-colors"
-                          title="Delete image from R2 bucket & hide on page"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  </article>
-                ))}
-              </div>
-            )
           ) : viewMode === 'section-images' ? (
             /* Section Wildlife Galleries View */
             <div className="space-y-4">
@@ -2847,20 +3220,9 @@ export default function AdminCmsStudioPage() {
                             className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
                             loading="lazy"
                           />
-                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <span className="inline-flex items-center gap-1.5 bg-[#E59819] text-[#0B0F0D] font-semibold text-xs px-3 py-1.5 rounded-md shadow-md">
-                              <Edit3 className="w-3.5 h-3.5" />
-                              <span>Edit / Replace in R2</span>
-                            </span>
-                          </div>
                           <div className="absolute top-2.5 left-2.5 bg-[#0B0F0D]/85 backdrop-blur-xs border border-[#26332B] px-2 py-0.5 rounded text-[11px] font-mono text-[#E59819]">
                             {pMeta ? pMeta.title : item.page}
                           </div>
-                          {item.r2Key && (
-                            <div className="absolute bottom-2 left-2 bg-[#13261C]/90 border border-[#234734] px-2 py-0.5 rounded text-[10px] font-mono text-[#86EFAC] truncate max-w-[90%]">
-                              R2: {item.r2Key}
-                            </div>
-                          )}
                         </div>
 
                         <div className="p-4 space-y-1.5">
@@ -2873,9 +3235,6 @@ export default function AdminCmsStudioPage() {
                           <p className="text-xs text-[#9CA9A1] line-clamp-2 leading-relaxed">
                             {item.caption}
                           </p>
-                          <div className="text-[11px] font-mono text-[#68756D] truncate" title={item.src}>
-                            CDN: {item.src}
-                          </div>
                         </div>
                       </div>
 
@@ -2886,13 +3245,13 @@ export default function AdminCmsStudioPage() {
                           className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#1B2620] hover:bg-[#E59819] text-[#F1F5F2] hover:text-[#0B0F0D] border border-[#2A3A31] hover:border-[#E59819] font-medium text-xs py-2 px-3 rounded-md transition-colors"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
-                          <span>Edit / R2 Upload</span>
+                          <span>Change Photo</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDeleteSectionImage(item)}
                           className="p-2 rounded-md bg-[#161F1A] hover:bg-[#2A1616] text-[#9CA9A1] hover:text-[#FCA5A5] border border-[#24322A] transition-colors"
-                          title="Delete section photo from R2 & Firebase"
+                          title="Delete section photo"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -2903,83 +3262,114 @@ export default function AdminCmsStudioPage() {
               </div>
             </div>
           ) : viewMode === 'texts' ? (
-            /* Site Text Editor View */
-            <div className="space-y-3">
+            /* Site Text Editor View — Grouped by Section */
+            <div className="space-y-5">
               {filteredTexts.length === 0 ? (
                 <div className="bg-[#121915] border border-[#1F2923] rounded-lg p-12 text-center max-w-md mx-auto my-8">
                   <Type className="w-8 h-8 text-[#68756D] mx-auto mb-3" />
                   <h2 className="text-sm font-semibold text-[#F1F5F2]">No matching text elements</h2>
                   <p className="text-xs text-[#9CA9A1] mt-1">
-                    Try clearing your search query or selecting All Text Elements.
+                    Try clearing your search query or selecting All Page Text.
                   </p>
                 </div>
               ) : (
-                <div className="bg-[#121915] border border-[#1F2923] rounded-lg divide-y divide-[#1F2923]">
-                  {filteredTexts.map((t) => (
-                    <div
-                      key={t.textId}
-                      className={`p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#151E19] transition-colors ${
-                        t.isDeleted ? 'opacity-50' : ''
-                      }`}
+                (() => {
+                  const textGroups: { key: string; pageTitle: string; sectionName: string; items: SiteTextSlot[] }[] = [];
+                  for (const t of filteredTexts) {
+                    const secName = t.sectionContext || 'Page Content';
+                    const key = `${t.page}__${secName}`;
+                    const existing = textGroups.find((g) => g.key === key);
+                    if (existing) {
+                      existing.items.push(t);
+                    } else {
+                      textGroups.push({
+                        key,
+                        pageTitle: t.pageTitle,
+                        sectionName: secName,
+                        items: [t],
+                      });
+                    }
+                  }
+                  return textGroups.map((group, gIdx) => (
+                    <section
+                      key={group.key}
+                      className="bg-[#121915] border border-[#1F2923] rounded-lg overflow-hidden"
                     >
-                      <div className="space-y-1 min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2 text-xs">
-                          <span className="font-semibold text-[#E59819]">{t.pageTitle}</span>
-                          <span className="text-[#3B4740]">·</span>
-                          <span className="font-mono text-[11px] text-[#9CA9A1] bg-[#18221D] px-1.5 py-0.5 rounded border border-[#26352D]">
-                            {t.isCustomAdded ? 'ADDED BLOCK' : t.tagName}
+                      <div className="px-5 py-3 bg-[#16201B] border-b border-[#223029] flex items-center justify-between">
+                        <div>
+                          <span className="text-[11px] font-semibold uppercase tracking-wider text-[#E59819]">
+                            {group.pageTitle} · Section #{gIdx + 1}
                           </span>
-                          <span className="text-[#3B4740]">·</span>
-                          <span className="text-[#9CA9A1] truncate">{t.sectionContext}</span>
-                          {t.isDeleted && (
-                            <span className="text-[#F87171] font-medium">· Deleted / Hidden</span>
-                          )}
-                          {!t.isDeleted && t.isModified && (
-                            <span className="text-[#86EFAC] font-medium">· Edited via Firebase</span>
-                          )}
+                          <h3 className="text-sm font-semibold text-[#F1F5F2]">
+                            {group.sectionName}
+                          </h3>
                         </div>
-                        <p className="text-sm text-[#F1F5F2] leading-relaxed break-words">
-                          {t.content}
-                        </p>
+                        <span className="text-xs font-mono text-[#9CA9A1]">
+                          {group.items.length} text item{group.items.length === 1 ? '' : 's'}
+                        </span>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => openEditTextModal(t)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-[#1B2620] hover:bg-[#E59819] text-[#F1F5F2] hover:text-[#0B0F0D] border border-[#2A3A31] hover:border-[#E59819] transition-colors whitespace-nowrap"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                          <span>Edit Text</span>
-                        </button>
-                        {t.isModified && !t.isCustomAdded && (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteOrRestoreText(t, true)}
-                            className="p-1.5 rounded-md bg-[#161F1A] hover:bg-[#222F28] text-[#9CA9A1] hover:text-[#F1F5F2] border border-[#24322A]"
-                            title="Restore default text"
+                      <div className="divide-y divide-[#1F2923]">
+                        {group.items.map((t) => (
+                          <div
+                            key={t.textId}
+                            className={`p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#151E19] transition-colors ${
+                              t.isDeleted ? 'opacity-50' : ''
+                            }`}
                           >
-                            <RotateCcw className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        {!t.isDeleted && (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteOrRestoreText(t, false)}
-                            className="p-1.5 rounded-md bg-[#161F1A] hover:bg-[#2A1616] text-[#9CA9A1] hover:text-[#FCA5A5] border border-[#24322A]"
-                            title={
-                              t.isCustomAdded
-                                ? 'Delete added text block'
-                                : 'Delete / hide this text on page'
-                            }
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
+                            <div className="space-y-1 min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2 text-xs">
+                                <span className="font-mono text-[11px] text-[#E59819] bg-[#18221D] px-2 py-0.5 rounded border border-[#26352D]">
+                                  {t.isCustomAdded ? 'ADDED BLOCK' : t.tagName}
+                                </span>
+                                {t.isDeleted && (
+                                  <span className="text-[#F87171] font-medium">· Hidden on Page</span>
+                                )}
+                                {!t.isDeleted && t.isModified && (
+                                  <span className="text-[#86EFAC] font-medium">· Customized</span>
+                                )}
+                              </div>
+                              <p className="text-sm text-[#F1F5F2] leading-relaxed break-words">
+                                {t.content}
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => openEditTextModal(t)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-[#1B2620] hover:bg-[#E59819] text-[#F1F5F2] hover:text-[#0B0F0D] border border-[#2A3A31] hover:border-[#E59819] transition-colors whitespace-nowrap"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                                <span>Edit Text</span>
+                              </button>
+                              {t.isModified && !t.isCustomAdded && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteOrRestoreText(t, true)}
+                                  className="p-1.5 rounded-md bg-[#161F1A] hover:bg-[#222F28] text-[#9CA9A1] hover:text-[#F1F5F2] border border-[#24322A]"
+                                  title="Restore default text"
+                                >
+                                  <RotateCcw className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              {!t.isDeleted && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteOrRestoreText(t, false)}
+                                  className="p-1.5 rounded-md bg-[#161F1A] hover:bg-[#2A1616] text-[#9CA9A1] hover:text-[#FCA5A5] border border-[#24322A]"
+                                  title="Hide / delete this text on page"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    </section>
+                  ));
+                })()
               )}
             </div>
           ) : (
@@ -2988,9 +3378,9 @@ export default function AdminCmsStudioPage() {
               {filteredR2Objects.length === 0 ? (
                 <div className="bg-[#121915] border border-[#1F2923] rounded-lg p-12 text-center max-w-md mx-auto my-8 space-y-3">
                   <FolderOpen className="w-8 h-8 text-[#E59819] mx-auto" />
-                  <h2 className="text-sm font-semibold text-[#F1F5F2]">No matching R2 bucket objects</h2>
+                  <h2 className="text-sm font-semibold text-[#F1F5F2]">No matching uploaded files</h2>
                   <p className="text-xs text-[#9CA9A1]">
-                    Upload an image from your device to push it directly to the Cloudflare R2 bucket.
+                    Upload an image from your device to store it in the R2 bucket.
                   </p>
                   <button
                     type="button"
@@ -2998,7 +3388,7 @@ export default function AdminCmsStudioPage() {
                     className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md text-xs font-semibold bg-[#E59819] hover:bg-[#F5A623] text-[#0B0F0D]"
                   >
                     <Upload className="w-3.5 h-3.5" />
-                    <span>Upload Image to R2 Bucket</span>
+                    <span>Upload Image</span>
                   </button>
                 </div>
               ) : (
@@ -3019,15 +3409,6 @@ export default function AdminCmsStudioPage() {
                             className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
                             loading="lazy"
                           />
-                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <span className="inline-flex items-center gap-1.5 bg-[#E59819] text-[#0B0F0D] font-semibold text-xs px-3 py-1.5 rounded-md shadow-md">
-                              <Edit3 className="w-3.5 h-3.5" />
-                              <span>Edit / Replace in R2</span>
-                            </span>
-                          </div>
-                          <div className="absolute top-2.5 left-2.5 bg-[#0B0F0D]/85 backdrop-blur-xs border border-[#26332B] px-2 py-0.5 rounded text-[10px] font-mono text-[#86EFAC] truncate max-w-[85%]">
-                            R2: {obj.r2Key}
-                          </div>
                         </div>
 
                         <div className="p-4 space-y-1.5">
@@ -3043,18 +3424,11 @@ export default function AdminCmsStudioPage() {
                             {formatBytes(obj.sizeBytes)} · Used {obj.usageCount}x
                           </div>
 
-                          <div
-                            className="text-[11px] font-mono text-[#E59819] truncate"
-                            title={obj.cdnUrl}
-                          >
-                            CDN: {obj.cdnUrl}
-                          </div>
-
-                          <div className="text-[11px] text-[#68756D] truncate">
-                            Pages:{' '}
+                          <div className="text-[11px] text-[#E59819] truncate">
+                            Used on:{' '}
                             {obj.usedInPages.length > 0
                               ? obj.usedInPages.join(', ')
-                              : obj.page || 'R2 Bucket Object'}
+                              : obj.page || 'Available in bucket'}
                           </div>
                         </div>
                       </div>
@@ -3066,13 +3440,13 @@ export default function AdminCmsStudioPage() {
                           className="flex-1 inline-flex items-center justify-center gap-1.5 bg-[#1B2620] hover:bg-[#E59819] text-[#F1F5F2] hover:text-[#0B0F0D] border border-[#2A3A31] hover:border-[#E59819] font-medium text-xs py-2 px-2.5 rounded-md transition-colors whitespace-nowrap"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
-                          <span>Edit / Replace</span>
+                          <span>Replace / Edit</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => copyCdnLink(obj.cdnUrl)}
                           className="p-2 rounded-md bg-[#161F1A] hover:bg-[#222F28] text-[#9CA9A1] hover:text-[#F1F5F2] border border-[#24322A] transition-colors"
-                          title="Copy R2 CDN URL"
+                          title="Copy Image Link"
                         >
                           <Copy className="w-3.5 h-3.5" />
                         </button>
@@ -3080,7 +3454,7 @@ export default function AdminCmsStudioPage() {
                           type="button"
                           onClick={() => handleDeleteR2Object(obj)}
                           className="p-2 rounded-md bg-[#161F1A] hover:bg-[#2A1616] text-[#9CA9A1] hover:text-[#FCA5A5] border border-[#24322A] transition-colors"
-                          title="Delete object from R2 bucket"
+                          title="Delete file"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -3099,12 +3473,19 @@ export default function AdminCmsStudioPage() {
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-[#121915] border border-[#26352D] rounded-lg max-w-xl w-full overflow-hidden shadow-2xl">
             <div className="px-6 py-4 bg-[#161F1A] border-b border-[#222F28] flex items-center justify-between">
-              <div>
-                <div className="text-xs text-[#E59819] font-medium">
-                  {editingSlot.pageTitle} · Slot #{editingSlot.slotIndex + 1} (
-                  {getSlotTypeLabel(editingSlot.type)})
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                  <span className="px-2 py-0.5 rounded bg-[#E59819] text-[#0B0F0D] font-bold">
+                    Page: {editingSlot.pageTitle}
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-[#1F2D25] text-[#86EFAC] border border-[#2E4237] font-medium">
+                    Section: {editingSlot.sectionContext}
+                  </span>
+                  <span className="text-[#9CA9A1] font-mono">
+                    · Image #{editingSlot.slotIndex + 1} ({getSlotTypeLabel(editingSlot.type)})
+                  </span>
                 </div>
-                <h2 className="text-base font-semibold text-[#F1F5F2] mt-0.5">
+                <h2 className="text-base font-semibold text-[#F1F5F2]">
                   {editingSlot.label}
                 </h2>
               </div>

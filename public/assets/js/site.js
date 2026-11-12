@@ -290,11 +290,14 @@
   }
 
   // 5. Firebase CMS Live Hydrator, Floating Admin Dock, On-Page Image Editor & On-Page Text Editor
-  const pathname = window.location.pathname;
+  const pathname = window.location.pathname || "/";
+  const rawSlug = pathname.replace(/^\/+|\/+$/g, "");
   const currentPageFile =
-    pathname === "/" || pathname === ""
+    !rawSlug || rawSlug === "index" || rawSlug === "index.html"
       ? "index.html"
-      : pathname.replace(/^\/+/, "") || "index.html";
+      : rawSlug.endsWith(".html")
+        ? rawSlug
+        : `${rawSlug}.html`;
   const safePagePrefix = currentPageFile.replace(/[^a-zA-Z0-9_-]/g, "_");
 
   const params = new URLSearchParams(window.location.search);
@@ -786,9 +789,232 @@
   const initialHeroMatch = initialHeroStyle.match(/url\(['"]?([^'")]+)['"]?\)/i);
   let primaryHeroBannerSrc = initialHeroMatch ? initialHeroMatch[1] : "";
 
-  function normalizeSlideSrc(src) {
+  const DEFAULT_HERO_SLIDES_BY_PAGE = {
+    "index.html": [
+      {
+        itemId: "hero_slide_home_2",
+        src: "/assets/r2-bucket/sections/home_hero_1.jpg",
+        r2Key: "sections/home_hero_1.jpg",
+        alt: "Yala Leopard Safari — Sri Lankan Leopard resting on granite rock in Yala National Park",
+        order: 1,
+      },
+      {
+        itemId: "hero_slide_home_3",
+        src: "/assets/r2-bucket/sections/home_parks_1.jpg",
+        r2Key: "sections/home_parks_1.jpg",
+        alt: "Udawalawe National Park Safari — Wild Sri Lankan elephant herd",
+        order: 2,
+      },
+      {
+        itemId: "hero_slide_home_4",
+        src: "/assets/r2-bucket/sections/home_welcome_2.jpg",
+        r2Key: "sections/home_welcome_2.jpg",
+        alt: "Yala National Park Jeep Safari — Custom 4x4 safari jeep in Sri Lanka",
+        order: 3,
+      },
+    ],
+    "yala-safari.html": [
+      {
+        itemId: "hero_slide_yala_2",
+        src: "/assets/r2-bucket/sections/yala_sec_leopard_1.jpg",
+        r2Key: "sections/yala_sec_leopard_1.jpg",
+        alt: "Yala Leopard Safari in Yala National Park Sri Lanka",
+        order: 1,
+      },
+      {
+        itemId: "hero_slide_yala_3",
+        src: "/assets/r2-bucket/sections/yala_sec_packages_3.jpg",
+        r2Key: "sections/yala_sec_packages_3.jpg",
+        alt: "Yala National Park Safari landscape at sunrise",
+        order: 2,
+      },
+      {
+        itemId: "hero_slide_yala_4",
+        src: "/assets/r2-bucket/sections/yala_sec_bear_2.jpg",
+        r2Key: "sections/yala_sec_bear_2.jpg",
+        alt: "Yala Safari Tours — Sloth bear in Yala National Park",
+        order: 3,
+      },
+    ],
+    "udawalawe-safari.html": [
+      {
+        itemId: "hero_slide_udawalawe_2",
+        src: "/assets/r2-bucket/sections/udawalawe_sec_1.jpg",
+        r2Key: "sections/udawalawe_sec_1.jpg",
+        alt: "Udawalawe National Park Safari — Wild elephant herd",
+        order: 1,
+      },
+      {
+        itemId: "hero_slide_udawalawe_3",
+        src: "/assets/r2-bucket/sections/udawalawe_sec_2.jpg",
+        r2Key: "sections/udawalawe_sec_2.jpg",
+        alt: "Udawalawe Safari Tours — Reservoir wildlife",
+        order: 2,
+      },
+    ],
+    "bundala-birding-safari.html": [
+      {
+        itemId: "hero_slide_bundala_2",
+        src: "/assets/r2-bucket/sections/bundala_sec_1.jpg",
+        r2Key: "sections/bundala_sec_1.jpg",
+        alt: "Bundala National Park Safari — Wetland birdlife",
+        order: 1,
+      },
+      {
+        itemId: "hero_slide_bundala_3",
+        src: "/assets/r2-bucket/sections/bundala_sec_2.jpg",
+        r2Key: "sections/bundala_sec_2.jpg",
+        alt: "Bundala Wildlife Safari — Lagoon crocodile",
+        order: 2,
+      },
+    ],
+    "wilpattu-safari.html": [
+      {
+        itemId: "hero_slide_wilpattu_2",
+        src: "/assets/r2-bucket/sections/wilpattu_sec_1.jpg",
+        r2Key: "sections/wilpattu_sec_1.jpg",
+        alt: "Wilpattu National Park Safari — Sri Lankan Leopard",
+        order: 1,
+      },
+      {
+        itemId: "hero_slide_wilpattu_3",
+        src: "/assets/r2-bucket/sections/wilpattu_sec_2.jpg",
+        r2Key: "sections/wilpattu_sec_2.jpg",
+        alt: "Wilpattu Safari Tours — Spotted deer in forest clearing",
+        order: 2,
+      },
+    ],
+    "minneriya-safari.html": [
+      {
+        itemId: "hero_slide_minneriya_2",
+        src: "/assets/r2-bucket/sections/minneriya_sec_1.jpg",
+        r2Key: "sections/minneriya_sec_1.jpg",
+        alt: "Minneriya Elephant Safari — Elephant gathering",
+        order: 1,
+      },
+      {
+        itemId: "hero_slide_minneriya_3",
+        src: "/assets/r2-bucket/sections/minneriya_sec_2.jpg",
+        r2Key: "sections/minneriya_sec_2.jpg",
+        alt: "Minneriya National Park Safari at sunset",
+        order: 2,
+      },
+    ],
+    "kumana-birding-safari.html": [
+      {
+        itemId: "hero_slide_kumana_2",
+        src: "/assets/r2-bucket/sections/kumana_sec_1.jpg",
+        r2Key: "sections/kumana_sec_1.jpg",
+        alt: "Kumana Bird Watching Safari — Waterbirds in Kumana",
+        order: 1,
+      },
+      {
+        itemId: "hero_slide_kumana_3",
+        src: "/assets/r2-bucket/sections/kumana_sec_2.jpg",
+        r2Key: "sections/kumana_sec_2.jpg",
+        alt: "Kumana National Park Safari — Wild elephant on trail",
+        order: 2,
+      },
+    ],
+    "safari-parks.html": [
+      {
+        itemId: "hero_slide_parks_2",
+        src: "/assets/r2-bucket/sections/parks_overview_1.jpg",
+        r2Key: "sections/parks_overview_1.jpg",
+        alt: "Sri Lanka Safari Tours across 6 national parks",
+        order: 1,
+      },
+      {
+        itemId: "hero_slide_parks_3",
+        src: "/assets/r2-bucket/sections/parks_overview_2.jpg",
+        r2Key: "sections/parks_overview_2.jpg",
+        alt: "Sri Lanka Wildlife Safari landscape",
+        order: 2,
+      },
+    ],
+    "about.html": [
+      {
+        itemId: "hero_slide_about_2",
+        src: "/assets/r2-bucket/sections/about_sec_1.jpg",
+        r2Key: "sections/about_sec_1.jpg",
+        alt: "About Nisha Safari Jeep Tours team",
+        order: 1,
+      },
+      {
+        itemId: "hero_slide_about_3",
+        src: "/assets/r2-bucket/sections/about_sec_2.jpg",
+        r2Key: "sections/about_sec_2.jpg",
+        alt: "Sri Lankan leopard wildlife photography with Nisha Safari",
+        order: 2,
+      },
+    ],
+    "gallery.html": [
+      {
+        itemId: "hero_slide_gallery_2",
+        src: "/assets/r2-bucket/sections/gallery_sec_1.jpg",
+        r2Key: "sections/gallery_sec_1.jpg",
+        alt: "Yala Safari Gallery — Leopard in golden light",
+        order: 1,
+      },
+      {
+        itemId: "hero_slide_gallery_3",
+        src: "/assets/r2-bucket/sections/gallery_sec_2.jpg",
+        r2Key: "sections/gallery_sec_2.jpg",
+        alt: "Sri Lanka Safari Gallery — Peacock in Yala",
+        order: 2,
+      },
+    ],
+    "reviews.html": [
+      {
+        itemId: "hero_slide_reviews_2",
+        src: "/assets/r2-bucket/sections/reviews_sec_1.jpg",
+        r2Key: "sections/reviews_sec_1.jpg",
+        alt: "Nisha Safari Guest Reviews — Elephant safari encounter",
+        order: 1,
+      },
+      {
+        itemId: "hero_slide_reviews_3",
+        src: "/assets/r2-bucket/sections/home_welcome_2.jpg",
+        r2Key: "sections/home_welcome_2.jpg",
+        alt: "Nisha Safari custom 4x4 safari jeep",
+        order: 2,
+      },
+    ],
+  };
+
+  function extractR2KeyClient(src, explicitKey) {
+    if (explicitKey && String(explicitKey).trim()) {
+      return String(explicitKey).trim().replace(/^\/+/, "");
+    }
+    if (!src) return "";
+    const clean = String(src).split("?")[0].trim();
+    if (clean.includes("/api/r2/file/")) {
+      return clean.slice(clean.indexOf("/api/r2/file/") + "/api/r2/file/".length).replace(/^\/+/, "");
+    }
+    if (clean.includes("/assets/r2-bucket/")) {
+      return clean.slice(clean.indexOf("/assets/r2-bucket/") + "/assets/r2-bucket/".length).replace(/^\/+/, "");
+    }
+    const cdnMatch = clean.match(/^https?:\/\/[^/]+\/((?:slots|sections|media|uploads|index|yala-safari|udawalawe-safari|bundala-birding-safari|wilpattu-safari|minneriya-safari|kumana-birding-safari|safari-parks|about|gallery|reviews|contact)\/.+)$/i);
+    if (cdnMatch && cdnMatch[1]) {
+      return cdnMatch[1].replace(/^\/+/, "");
+    }
+    return "";
+  }
+
+  function normalizeSlideSrc(src, r2Key) {
     if (!src) return "";
     const trimmed = String(src).trim();
+    if (trimmed === "/deleted") return "";
+    const key = extractR2KeyClient(trimmed, r2Key);
+    // Built-in static R2 bucket folders (sections/* and slots/*) are always present in /assets/r2-bucket/
+    // Using /assets/r2-bucket/<key> directly guarantees instant loading on static Cloudflare Pages, Workers, and Next.js
+    if (
+      key &&
+      (key.startsWith("sections/") || key.startsWith("slots/")) &&
+      trimmed.startsWith("/api/r2/file/")
+    ) {
+      return `/assets/r2-bucket/${key}`;
+    }
     if (
       trimmed.startsWith("http://") ||
       trimmed.startsWith("https://") ||
@@ -803,6 +1029,20 @@
     return "/" + trimmed;
   }
 
+  function buildFallbackUrls(primaryUrl, r2Key) {
+    const candidates = [primaryUrl];
+    const key = extractR2KeyClient(primaryUrl, r2Key);
+    if (key) {
+      const staticBucketUrl = `/assets/r2-bucket/${key}`;
+      const workerApiUrl = `/api/r2/file/${key}`;
+      const cdnUrl = `https://cdn.srilankabestsafari.com/${key}`;
+      [staticBucketUrl, cdnUrl, workerApiUrl].forEach((u) => {
+        if (!candidates.includes(u)) candidates.push(u);
+      });
+    }
+    return candidates;
+  }
+
   function initOrUpdateHeroSlideshow(slidesList) {
     if (!heroHeaderSectionEl || document.body.classList.contains("janaka-contact")) return;
 
@@ -814,14 +1054,18 @@
     const seen = new Set();
     const validSlides = [];
     (slidesList || []).forEach((item) => {
-      const normalized = normalizeSlideSrc(typeof item === "string" ? item : item && item.src);
+      const rawSrc = typeof item === "string" ? item : item && item.src;
+      const rawKey = typeof item === "object" && item ? item.r2Key : "";
+      const normalized = normalizeSlideSrc(rawSrc, rawKey);
       if (!normalized || /^data:/i.test(normalized) || /payment-|visa|mastercard/i.test(normalized)) {
         return;
       }
-      if (!seen.has(normalized)) {
-        seen.add(normalized);
+      const dedupeKey = extractR2KeyClient(normalized, rawKey) || normalized;
+      if (!seen.has(dedupeKey)) {
+        seen.add(dedupeKey);
         validSlides.push({
           src: normalized,
+          r2Key: rawKey || extractR2KeyClient(normalized, ""),
           alt: (typeof item === "object" && item && (item.alt || item.title)) || "Sri Lanka Safari Hero Slide",
         });
       }
@@ -853,6 +1097,32 @@
       layer.setAttribute("role", "img");
       layer.setAttribute("aria-label", slide.alt);
       stage.appendChild(layer);
+
+      // Verify image URL loads and automatically fall back if needed on Cloudflare Pages
+      const fallbacks = buildFallbackUrls(slide.src, slide.r2Key);
+      if (fallbacks.length > 1) {
+        let attempt = 0;
+        const testLoad = (urlToTry) => {
+          const probe = new Image();
+          probe.onload = () => {
+            if (attempt > 0) {
+              slide.src = urlToTry;
+              layer.style.backgroundImage = `url("${urlToTry}")`;
+              if (activeHeroSlideIndex === idx) {
+                heroHeaderSectionEl.style.backgroundImage = `url("${urlToTry}")`;
+              }
+            }
+          };
+          probe.onerror = () => {
+            attempt++;
+            if (attempt < fallbacks.length) {
+              testLoad(fallbacks[attempt]);
+            }
+          };
+          probe.src = urlToTry;
+        };
+        testLoad(fallbacks[0]);
+      }
     });
 
     heroHeaderSectionEl.style.backgroundImage = `url("${validSlides[0].src}")`;
@@ -913,12 +1183,177 @@
     }
   }
 
+  // Immediately start 4-Second Hero Slideshow on initial render using default slides for this page
+  if (heroHeaderSectionEl && !document.body.classList.contains("janaka-contact")) {
+    const initialSlides = [];
+    if (primaryHeroBannerSrc) {
+      initialSlides.push({
+        src: primaryHeroBannerSrc,
+        alt: document.title || "Sri Lanka Safari Hero Banner",
+      });
+    }
+    const defaultExtraSlides = DEFAULT_HERO_SLIDES_BY_PAGE[currentPageFile] || [];
+    defaultExtraSlides.forEach((s) => initialSlides.push(s));
+    if (initialSlides.length > 0) {
+      initOrUpdateHeroSlideshow(initialSlides);
+    }
+  }
+
+  // Direct Firebase Firestore REST API reader so Cloudflare Pages deployments always reflect live /admin edits
+  const FIRESTORE_BASE_URL =
+    "https://firestore.googleapis.com/v1/projects/gen-lang-client-0113753106/databases/ai-studio-janakasafarijeep-76940b71-abf8-4b59-aaeb-d5237818c8d7/documents";
+
+  function parseFirestoreRestDoc(docObj) {
+    if (!docObj || !docObj.fields) return null;
+    const out = {};
+    for (const [k, v] of Object.entries(docObj.fields)) {
+      if (!v || typeof v !== "object") continue;
+      if ("stringValue" in v) out[k] = v.stringValue;
+      else if ("integerValue" in v) out[k] = Number(v.integerValue);
+      else if ("doubleValue" in v) out[k] = Number(v.doubleValue);
+      else if ("booleanValue" in v) out[k] = Boolean(v.booleanValue);
+      else if ("timestampValue" in v) out[k] = v.timestampValue;
+      else if ("nullValue" in v) out[k] = null;
+    }
+    return out;
+  }
+
+  async function fetchFirestorePublicCollection(collectionName) {
+    try {
+      const res = await fetch(`${FIRESTORE_BASE_URL}/${collectionName}?pageSize=300`, {
+        cache: "no-store",
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      if (!Array.isArray(data.documents)) return [];
+      return data.documents.map(parseFirestoreRestDoc).filter(Boolean);
+    } catch {
+      return [];
+    }
+  }
+
+  async function fetchBaseCmsState() {
+    try {
+      const res = await fetch(`/api/admin/cms?t=${Date.now()}`, { cache: "no-store" });
+      if (res.ok) {
+        const ct = res.headers.get("content-type") || "";
+        if (ct.includes("application/json")) {
+          return await res.json();
+        }
+      }
+    } catch {
+      // fallback to static JSON asset on Cloudflare Pages
+    }
+    try {
+      const fallbackRes = await fetch(`/assets/firebase-cms-state.json?t=${Date.now()}`, {
+        cache: "no-store",
+      });
+      if (fallbackRes.ok) {
+        return await fallbackRes.json();
+      }
+    } catch {
+      // ignore
+    }
+    return {
+      sectionGalleryItems: [],
+      imageOverrides: {},
+      textSlots: [],
+      customTexts: [],
+    };
+  }
+
   // Hydrate page with Firebase CMS state (slot image R2 CDN overrides, 4s hero slideshow, section wildlife galleries, text edits, and custom text blocks)
   async function hydrateFromFirebaseCms() {
     try {
-      const res = await fetch(`/api/admin/cms?t=${Date.now()}`, { cache: "no-store" });
-      if (!res.ok) return;
-      const cms = await res.json();
+      const [cms, fbSiteImages, fbSectionItems, fbSiteTexts] = await Promise.all([
+        fetchBaseCmsState(),
+        fetchFirestorePublicCollection("site_images"),
+        fetchFirestorePublicCollection("section_gallery_items"),
+        fetchFirestorePublicCollection("site_texts"),
+      ]);
+
+      if (!cms.imageOverrides) cms.imageOverrides = {};
+      if (!Array.isArray(cms.sectionGalleryItems)) cms.sectionGalleryItems = [];
+
+      // Merge default hero slides for this page if not already in cms.sectionGalleryItems
+      const defaultPageSlides = DEFAULT_HERO_SLIDES_BY_PAGE[currentPageFile] || [];
+      const existingSecIds = new Set(cms.sectionGalleryItems.map((i) => i && i.itemId));
+      defaultPageSlides.forEach((ds) => {
+        if (!existingSecIds.has(ds.itemId)) {
+          cms.sectionGalleryItems.push({
+            ...ds,
+            page: currentPageFile,
+            sectionKey: "hero_slideshow",
+            sectionTitle: "Hero Section Slideshow (4s)",
+            title: ds.alt,
+            caption: "",
+          });
+        }
+      });
+
+      // Merge live Firestore site_images on top of cms.imageOverrides
+      fbSiteImages.forEach((docItem) => {
+        if (!docItem || !docItem.slotId) return;
+        if (docItem.src === "/deleted") {
+          cms.imageOverrides[docItem.slotId] = {
+            ...docItem,
+            src: "",
+            lightboxHref: "",
+            isDeleted: true,
+          };
+        } else if (docItem.src && !/^data:/i.test(docItem.src)) {
+          const existingOv = cms.imageOverrides[docItem.slotId];
+          if (!existingOv || !existingOv.isDeleted) {
+            cms.imageOverrides[docItem.slotId] = {
+              ...existingOv,
+              ...docItem,
+              isDeleted: false,
+            };
+          }
+        }
+      });
+
+      // Merge live Firestore section_gallery_items (including hero_slideshow additions & deletions)
+      if (fbSectionItems.length > 0) {
+        const secMap = new Map();
+        cms.sectionGalleryItems.forEach((item) => {
+          if (item && item.itemId) secMap.set(item.itemId, item);
+        });
+        fbSectionItems.forEach((fbItem) => {
+          if (!fbItem || !fbItem.itemId) return;
+          if (fbItem.sectionKey === "deleted_section_item" || fbItem.src === "/deleted") {
+            secMap.delete(fbItem.itemId);
+          } else {
+            secMap.set(fbItem.itemId, fbItem);
+          }
+        });
+        cms.sectionGalleryItems = Array.from(secMap.values());
+      }
+
+      // Merge live Firestore site_texts
+      if (fbSiteTexts.length > 0) {
+        if (!Array.isArray(cms.textSlots)) cms.textSlots = [];
+        if (!Array.isArray(cms.customTexts)) cms.customTexts = [];
+        const textSlotMap = new Map(cms.textSlots.map((t) => [t.textId, t]));
+        const customTextMap = new Map(cms.customTexts.map((t) => [t.textId, t]));
+
+        fbSiteTexts.forEach((ft) => {
+          if (!ft || !ft.textId) return;
+          if (ft.isCustomAdded) {
+            customTextMap.set(ft.textId, { ...ft, isModified: true });
+          } else if (textSlotMap.has(ft.textId)) {
+            textSlotMap.set(ft.textId, {
+              ...textSlotMap.get(ft.textId),
+              ...ft,
+              isModified: true,
+            });
+          } else {
+            textSlotMap.set(ft.textId, { ...ft, isModified: true });
+          }
+        });
+        cms.textSlots = Array.from(textSlotMap.values());
+        cms.customTexts = Array.from(customTextMap.values());
+      }
 
       let heroSlotDeleted = false;
 
@@ -929,7 +1364,7 @@
           const entry = slotElementMap.get(ov.slotId);
           if (!entry) return;
 
-          if (ov.isDeleted) {
+          if (ov.isDeleted || ov.src === "/deleted") {
             if (entry.type === "hero-bg") {
               heroSlotDeleted = true;
               primaryHeroBannerSrc = "";
@@ -949,13 +1384,14 @@
           }
 
           if (!ov.src || /^data:/i.test(ov.src)) return;
+          const resolvedOvSrc = normalizeSlideSrc(ov.src, ov.r2Key);
 
           if (entry.type === "hero-bg") {
-            if (/payment-|visa|mastercard/i.test(ov.src)) return;
+            if (/payment-|visa|mastercard/i.test(resolvedOvSrc)) return;
             if (entry.element.classList.contains("wsite-body-section")) return;
             if (document.body.classList.contains("janaka-contact")) return;
-            primaryHeroBannerSrc = ov.src;
-            entry.element.style.backgroundImage = `url("${ov.src}")`;
+            primaryHeroBannerSrc = resolvedOvSrc;
+            entry.element.style.backgroundImage = `url("${resolvedOvSrc}")`;
             entry.element.style.backgroundSize = "cover";
             entry.element.style.backgroundPosition = "center center";
           } else {
@@ -973,10 +1409,10 @@
             if (holder) {
               holder.style.display = "";
             }
-            entry.element.src = ov.src;
+            entry.element.src = resolvedOvSrc;
             if (ov.alt) entry.element.alt = ov.alt;
             const parentAnchor = entry.element.closest("a[data-lightbox]");
-            if (parentAnchor) parentAnchor.href = ov.lightboxHref || ov.src;
+            if (parentAnchor) parentAnchor.href = normalizeSlideSrc(ov.lightboxHref || ov.src, ov.r2Key);
           }
         });
       }
@@ -989,6 +1425,7 @@
                 item.page === currentPageFile &&
                 item.sectionKey === "hero_slideshow" &&
                 item.src &&
+                item.src !== "/deleted" &&
                 !/^data:/i.test(item.src)
             )
             .sort((a, b) => (a.order || 0) - (b.order || 0))
@@ -1004,6 +1441,7 @@
       pageHeroSlides.forEach((s) => {
         combinedHeroSlides.push({
           src: s.src,
+          r2Key: s.r2Key,
           alt: s.alt || s.title || "Sri Lanka Safari Hero Slide",
         });
       });
@@ -1072,7 +1510,9 @@
             (item) =>
               item.page === currentPageFile &&
               item.sectionKey !== "hero_slideshow" &&
+              item.sectionKey !== "deleted_section_item" &&
               item.src &&
+              item.src !== "/deleted" &&
               !/^data:/i.test(item.src)
           )
         : [];
@@ -1101,10 +1541,11 @@
         pageSectionItems.forEach((item) => {
           const card = document.createElement("article");
           card.className = "firebase-section-card";
+          const displaySecSrc = normalizeSlideSrc(item.src, item.r2Key);
           card.innerHTML = `
             <div>
               <div class="firebase-section-card-media">
-                <img src="${item.src}" alt="${item.alt || item.title}" loading="lazy" />
+                <img src="${displaySecSrc}" alt="${item.alt || item.title}" loading="lazy" />
               </div>
               <div class="firebase-section-card-body">
                 <div class="firebase-section-card-tag">${item.sectionTitle}</div>

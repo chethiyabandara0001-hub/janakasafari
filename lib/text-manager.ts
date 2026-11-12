@@ -156,18 +156,25 @@ export function parsePageTextSlots(html: string): ParsedTextMatch[] {
 export async function getCmsState(): Promise<CmsPersistedState> {
   try {
     const raw = await fs.readFile(CMS_STATE_PATH, 'utf8');
-    const parsed = JSON.parse(raw) as CmsPersistedState & { heroSlidesSeeded?: boolean };
+    const parsed = JSON.parse(raw) as CmsPersistedState & {
+      heroSlidesAllPagesSeeded?: boolean;
+      deletedSectionItemIds?: string[];
+    };
+    const deletedSet = new Set(parsed.deletedSectionItemIds || []);
     if (!Array.isArray(parsed.sectionGalleryItems)) {
       parsed.sectionGalleryItems = [...INITIAL_FIREBASE_SECTION_IMAGES];
-    } else if (!parsed.heroSlidesSeeded) {
+    } else if (!parsed.heroSlidesAllPagesSeeded) {
       const existingIds = new Set(parsed.sectionGalleryItems.map((i) => i.itemId));
       const heroSeedItems = INITIAL_FIREBASE_SECTION_IMAGES.filter(
-        (i) => i.sectionKey === 'hero_slideshow' && !existingIds.has(i.itemId)
+        (i) =>
+          i.sectionKey === 'hero_slideshow' &&
+          !existingIds.has(i.itemId) &&
+          !deletedSet.has(i.itemId)
       );
       if (heroSeedItems.length > 0) {
         parsed.sectionGalleryItems = [...heroSeedItems, ...parsed.sectionGalleryItems];
       }
-      parsed.heroSlidesSeeded = true;
+      parsed.heroSlidesAllPagesSeeded = true;
       await saveCmsState(parsed);
     }
     if (!parsed.textOverrides) parsed.textOverrides = {};
