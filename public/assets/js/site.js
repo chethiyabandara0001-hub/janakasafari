@@ -810,10 +810,6 @@
             entry.element.style.backgroundImage = `url("${ov.src}")`;
             entry.element.style.backgroundSize = "cover";
             entry.element.style.backgroundPosition = "center center";
-            if (document.body.classList.contains("wsite-page-index") && window.innerWidth > 767) {
-              entry.element.style.minHeight = "135vh";
-              entry.element.style.height = "135vh";
-            }
           } else {
             if (
               entry.element.closest(".hero-cross-bridge-wrap") ||
@@ -1926,9 +1922,10 @@
         const heroBtn = document.querySelector(".banner .wsite-button");
         const heroBg = document.querySelector(".banner-wrap .wsite-header-section");
         const isHome = document.body.classList.contains("wsite-page-index");
-        const contentCounterScale = isHome ? 0.81967 : 0.89285;
+        const isFullDesktop = window.innerWidth >= 921;
+        const contentCounterScale = isFullDesktop ? (isHome ? 0.81967 : 0.89285) : 1;
 
-        if (heroBg) {
+        if (heroBg && isFullDesktop) {
           const baseScale = isHome ? 1.22 : 1.12;
           gsap.fromTo(
             heroBg,

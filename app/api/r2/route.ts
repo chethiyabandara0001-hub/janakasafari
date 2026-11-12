@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  DEFAULT_R2_BUCKET_NAME,
+  getR2ConfigStatus,
   listR2Objects,
   putR2Object,
   putR2ObjectFromDataUrl,
   updateR2ObjectMetadata,
   deleteR2Object,
   extractR2KeyFromCdnUrl,
+  syncAllObjectsToRemoteR2,
 } from '@/lib/r2-storage';
 import { getCmsState, saveCmsState } from '@/lib/text-manager';
 
@@ -100,11 +101,16 @@ async function syncCmsStateOnR2Delete(deletedKey: string) {
 
 export async function GET() {
   try {
+    const status = getR2ConfigStatus();
     const objects = await listR2Objects();
     return NextResponse.json(
       {
         ok: true,
-        bucketName: DEFAULT_R2_BUCKET_NAME,
+        bucketName: status.bucketName,
+        accountId: status.accountId,
+        authMode: status.authMode,
+        remoteConfigured: status.remoteConfigured,
+        cdnBaseUrl: status.cdnBaseUrl,
         objects,
       },
       {
@@ -229,6 +235,14 @@ export async function POST(req: NextRequest) {
         ok: true,
         deletedKey: result.deletedKey,
         objects,
+      });
+    }
+
+    if (body.action === 'sync-remote-r2') {
+      const syncResult = await syncAllObjectsToRemoteR2();
+      return NextResponse.json({
+        ok: true,
+        ...syncResult,
       });
     }
 

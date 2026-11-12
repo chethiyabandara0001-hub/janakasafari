@@ -1,123 +1,110 @@
-/* Sri Lanka Yala Safaris — Safari Parks Overview Grid */
-body.header-page #wsite-content .wsite-background-73 {
-  background: #faf5ec !important;
+/* ==========================================================================
+   SAFARI-PARKS.CSS — Six National Parks Directory Grid
+   Mobile-First Responsive Architecture
+   ========================================================================== */
+
+.wsite-background-73 {
+  background-color: var(--bg-primary) !important;
 }
 
+.wsite-background-73 > .wsite-section-content > .container > .wsite-section-elements > .paragraph {
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Mobile-First Parks Overview Grid (1 -> 2 -> 3 cols) */
 .parks-overview-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
-  width: 100%;
-  margin-top: 32px;
-  counter-reset: parks-idx;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  margin-top: 24px;
+}
+
+@media screen and (min-width: 640px) {
+  .parks-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+    margin-top: 28px;
+  }
+}
+
+@media screen and (min-width: 1024px) {
+  .parks-overview-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 28px;
+    margin-top: 32px;
+  }
 }
 
 .parks-overview-card {
-  position: relative;
   display: flex;
   flex-direction: column;
-  min-width: 0;
-  padding: 30px;
-  background: #ffffff;
-  border: 1px solid #dfd3bd;
-  border-top: 5px solid #18382b;
-  border-radius: 14px;
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 10px 28px rgba(24, 56, 43, 0.08);
-  counter-increment: parks-idx;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-}
-
-.parks-overview-card:nth-child(even) {
-  border-top-color: #f5a623;
+  box-shadow: var(--shadow-subtle);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .parks-overview-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 18px 38px rgba(24, 56, 43, 0.14);
-}
-
-.parks-overview-card::before {
-  content: "NATIONAL PARK 0" counter(parks-idx);
-  display: block;
-  margin-bottom: 14px;
-  color: #b85d19;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-card);
 }
 
 .parks-overview-card .wsite-image {
-  margin: 0 0 22px !important;
-  padding: 0 !important;
-  border-radius: 10px;
+  aspect-ratio: 16 / 10;
   overflow: hidden;
-  border: 1px solid #dfd3bd;
+  border-radius: 0;
 }
 
 .parks-overview-card .wsite-image img {
-  display: block;
   width: 100% !important;
-  height: auto !important;
-  aspect-ratio: 674 / 322;
+  height: 100% !important;
   object-fit: cover;
-  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  border-radius: 0 !important;
+  transition: transform 0.5s ease;
 }
 
 .parks-overview-card:hover .wsite-image img {
-  transform: scale(1.04);
+  transform: scale(1.05);
 }
 
-.parks-overview-card > .paragraph {
-  padding: 0 !important;
+.parks-card-title {
+  padding: 22px 20px 6px !important;
+  margin: 0 !important;
   text-align: left !important;
-  margin: 0 0 18px !important;
 }
 
-.parks-overview-card > .parks-card-title,
-.parks-overview-card > .parks-card-title * {
-  margin: 0 0 12px !important;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 26px !important;
-  font-weight: 700 !important;
-  line-height: 1.2 !important;
-  color: #18382b !important;
+.parks-card-title strong,
+.parks-card-title font {
+  font-family: var(--font-display) !important;
+  font-size: 1.55rem !important;
+  font-weight: 400 !important;
+  color: var(--text-primary) !important;
 }
 
 .parks-overview-card > .paragraph:not(.parks-card-title) {
-  flex-grow: 1;
-  color: #2c352d !important;
-  font-size: 15px !important;
-  line-height: 1.75 !important;
+  padding: 0 20px 20px !important;
+  margin: 0 !important;
+  flex: 1;
+  text-align: left !important;
+  font-size: 14.5px !important;
+  line-height: 1.65 !important;
 }
 
 .parks-card-button {
-  margin: auto 0 0 !important;
-  padding-top: 20px;
-  border-top: 1px solid #e6dbc8;
-}
-
-.parks-card-button > div {
-  display: none !important;
+  padding: 0 20px 24px !important;
+  text-align: left !important;
+  margin-top: auto;
 }
 
 .parks-card-button .wsite-button {
-  display: block;
   width: 100%;
 }
 
-@media screen and (max-width: 979px) {
-  .parks-overview-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media screen and (max-width: 680px) {
-  .parks-overview-grid {
-    grid-template-columns: 1fr;
-  }
-  .parks-overview-card {
-    padding: 24px 20px;
-  }
+.wsite-background-74 {
+  background-color: var(--bg-elevated) !important;
+  border-top: 1px solid var(--border-hairline);
 }

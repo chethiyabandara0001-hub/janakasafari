@@ -1,345 +1,99 @@
-/* Sri Lanka Yala Safaris — Reviews Widgets & Carousels */
-.reviews-widget {
-  background: #ffffff;
-  border: 1px solid #dfd3bd;
-  border-top: 5px solid #00aa6c;
-  border-radius: 14px;
-  padding: 36px;
-  box-shadow: 0 12px 32px rgba(24, 56, 43, 0.08);
+/* ==========================================================================
+   REVIEWS.CSS — Guest Reviews, Travel Blog Features & Guidebook Mentions
+   Mobile-First Responsive Architecture
+   ========================================================================== */
+
+.wsite-background-78 {
+  background-color: var(--bg-primary) !important;
+  padding-bottom: 28px !important;
 }
 
-.reviews-google {
-  border-top-color: #f5a623;
+.wsite-background-79 {
+  background-color: var(--bg-elevated) !important;
+  border-top: 1px solid var(--border-hairline);
+  border-bottom: 1px solid var(--border-hairline);
 }
 
-.reviews-widget-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 28px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #e6dbc8;
+.wsite-background-80 {
+  background-color: var(--bg-primary) !important;
 }
 
-.reviews-widget-head h3 {
-  margin: 0 0 6px;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 26px;
-  font-weight: 700;
-  color: #18382b;
+.wsite-background-81 {
+  background-color: var(--bg-elevated) !important;
+  border-top: 1px solid var(--border-hairline);
+  border-bottom: 1px solid var(--border-hairline);
 }
 
-.reviews-rating {
-  font-size: 14px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-weight: 700;
-  color: #18382b;
+.wsite-background-82 {
+  background-color: var(--bg-primary) !important;
 }
 
-.reviews-tripadvisor .reviews-rating span,
-.reviews-tripadvisor .review-stars {
-  color: #00aa6c;
-  letter-spacing: 2px;
+.wsite-background-83 {
+  background-color: var(--bg-deep-forest) !important;
 }
 
-.reviews-google .reviews-rating span,
-.reviews-google .review-stars {
-  color: #f5a623;
-  letter-spacing: 2px;
+/* Mobile-First Travel Stories & Guidebook Features (1 -> 2 cols) */
+.wsite-background-80 .wsite-multicol-table,
+.wsite-background-80 .wsite-multicol-tbody,
+.wsite-background-81 .wsite-multicol-table,
+.wsite-background-81 .wsite-multicol-tbody,
+.wsite-background-82 .wsite-multicol-table,
+.wsite-background-82 .wsite-multicol-tbody {
+  display: block !important;
+  width: 100% !important;
 }
 
-.reviews-post {
-  display: inline-block;
-  padding: 12px 22px;
-  background: linear-gradient(135deg, #f7aa19 0%, #f5980c 100%);
-  color: #08291f !important;
-  border: 1px solid #e08900;
-  border-radius: 6px;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  box-shadow: 0 4px 12px rgba(245, 166, 35, 0.25);
-  transition: transform 0.2s ease, background 0.2s ease;
+.wsite-background-80 .wsite-multicol-tr,
+.wsite-background-81 .wsite-multicol-tr {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 24px !important;
+  align-items: center !important;
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 20px 18px;
+  box-shadow: var(--shadow-subtle);
+  margin-top: 20px;
 }
 
-.reviews-post:hover {
-  background: #18382b;
-  color: #faf5ec !important;
-  border-color: #18382b;
-  transform: translateY(-1px);
+.wsite-background-80 .wsite-multicol-col,
+.wsite-background-81 .wsite-multicol-col {
+  width: 100% !important;
+  padding: 0 !important;
 }
 
-.review-carousel {
-  position: relative;
-}
-
-.review-track {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: calc(33.333% - 14px);
-  gap: 20px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scroll-behavior: smooth;
-  padding-bottom: 8px;
-  scrollbar-width: none;
-}
-
-.review-track::-webkit-scrollbar {
-  display: none;
-}
-
-.review-card {
-  scroll-snap-align: start;
-  background: #faf5ec;
-  border: 1px solid #e4d8c3;
-  border-radius: 12px;
-  padding: 26px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  box-shadow: 0 4px 14px rgba(24, 56, 43, 0.05);
-}
-
-.review-author {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.review-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #18382b;
-  color: #f5a623;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-weight: 700;
-  font-size: 13px;
-  flex-shrink: 0;
-  border: 2px solid #f5a623;
-}
-
-.review-author a {
-  font-weight: 700;
-  font-size: 14.5px;
-  color: #18382b;
-}
-
-.review-date {
-  font-size: 11px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #92501e;
-}
-
-.review-title {
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 19px;
-  font-weight: 700;
-  color: #18382b;
-}
-
-.review-summary {
-  margin: 0;
-  font-size: 14.5px;
-  color: #2c352d;
-  line-height: 1.75;
-  flex-grow: 1;
-}
-
-.review-read {
-  align-self: flex-start;
-  background: transparent;
-  border: 0;
-  padding: 0;
-  color: #b85d19;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 4px;
-}
-
-.review-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 2px solid #f5a623;
-  background: #18382b;
-  color: #faf5ec;
-  font-size: 20px;
-  line-height: 1;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.review-prev {
-  left: -16px;
-}
-
-.review-next {
-  right: -16px;
-}
-
-.review-dots {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 18px;
-}
-
-.review-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  border: 0;
-  padding: 0;
-  background: #d8cbb4;
-  cursor: pointer;
-}
-
-.review-dot[aria-current="true"] {
-  background: #f5a623;
-  transform: scale(1.2);
-}
-
-/* GetYourGuide Section */
-.janaka-gyg {
-  background: #ffffff;
-  border: 1px solid #dfd3bd;
-  border-top: 5px solid #ff5533;
-  border-radius: 14px;
-  padding: 36px;
-  margin: 0 32px;
-  box-shadow: 0 12px 32px rgba(24, 56, 43, 0.08);
-}
-
-.janaka-gyg-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 24px;
-  padding-bottom: 18px;
-  border-bottom: 1px solid #e6dbc8;
-}
-
-.janaka-gyg-header h3 {
-  margin: 0 0 4px;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 26px;
-  font-weight: 700;
-  color: #18382b;
-}
-
-.janaka-gyg-note {
-  font-size: 13.5px;
-  color: #5b665d;
-}
-
-.janaka-gyg-link {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #b85d19;
-  text-decoration: underline;
-  text-underline-offset: 4px;
-}
-
-.janaka-gyg-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
-}
-
-.janaka-gyg-card {
-  background: #faf5ec;
-  border: 1px solid #e4d8c3;
-  border-radius: 12px;
-  padding: 26px;
-}
-
-.janaka-gyg-name {
-  font-weight: 700;
-  color: #18382b;
-}
-
-.janaka-gyg-date {
-  font-size: 11px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #92501e;
-  margin-bottom: 8px;
-}
-
-.janaka-gyg-stars {
-  color: #f5a623;
-  margin-bottom: 10px;
-  letter-spacing: 2px;
-}
-
-.janaka-gyg-card blockquote {
-  margin: 0 0 12px;
-  font-size: 14.5px;
-  line-height: 1.75;
-  color: #2c352d;
-}
-
-.janaka-gyg-source {
-  font-size: 11px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-weight: 600;
-  color: #18382b;
-}
-
-@media screen and (max-width: 900px) {
-  .review-track {
-    grid-auto-columns: calc(50% - 10px);
-  }
-  .janaka-gyg-grid {
-    grid-template-columns: 1fr;
+@media screen and (min-width: 801px) {
+  .wsite-background-80 .wsite-multicol-tr,
+  .wsite-background-81 .wsite-multicol-tr {
+    grid-template-columns: 0.85fr 1.15fr !important;
+    gap: 36px !important;
+    padding: 32px;
+    margin-top: 24px;
   }
 }
 
-@media screen and (max-width: 640px) {
-  .reviews-widget {
-    padding: 22px 16px;
-  }
-  .review-track {
-    grid-auto-columns: 100%;
-  }
-  .review-card {
-    padding: 20px 16px;
-  }
-  .review-prev {
-    left: 4px;
-  }
-  .review-next {
-    right: 4px;
-  }
-  .janaka-gyg {
-    margin: 0;
-    padding: 22px 16px;
-  }
-  .janaka-gyg-card {
-    padding: 20px 16px;
+/* Share Your Safari Experience 2-Button Row (.wsite-background-82) */
+.wsite-background-82 .wsite-multicol-tr {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 14px !important;
+  max-width: 580px;
+  margin: 20px auto 0 !important;
+}
+
+.wsite-background-82 .wsite-multicol-col {
+  width: 100% !important;
+  padding: 0 !important;
+}
+
+.wsite-background-82 .wsite-button {
+  width: 100% !important;
+}
+
+@media screen and (min-width: 560px) {
+  .wsite-background-82 .wsite-multicol-tr {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 20px !important;
   }
 }

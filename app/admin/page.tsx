@@ -449,6 +449,13 @@ export default function AdminCmsStudioPage() {
       }
       setSyncingSeed(true);
       try {
+        // Trigger background sync to remote Cloudflare R2 bucket if credentials/bindings are present
+        void fetch('/api/r2', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'sync-remote-r2' }),
+        }).catch(() => {});
+
         // 1. Remove any Firestore section docs that were deleted or don't use R2 CDN links
         const activeSectionIds = new Set(sectionImages.map((s) => s.itemId));
         for (const fbSec of firestoreSectionDocs) {
