@@ -300,155 +300,6 @@
         : `${rawSlug}.html`;
   const safePagePrefix = currentPageFile.replace(/[^a-zA-Z0-9_-]/g, "_");
 
-  const params = new URLSearchParams(window.location.search);
-  let editModeActive = params.get("editImages") === "1";
-  let textEditModeActive = params.get("editText") === "1";
-
-  // Floating Admin Dock removed per user request (accessible via /admin)
-
-  // Create Inline Image Editor Modal
-  const editorDialog = document.createElement("dialog");
-  editorDialog.className = "admin-inline-dialog";
-  editorDialog.innerHTML = `
-    <div class="admin-modal-header">
-      <div>
-        <div class="admin-modal-kicker" id="admin-slot-kicker">Firebase Image Slot</div>
-        <h3 id="admin-slot-title">Change Image</h3>
-      </div>
-      <button type="button" class="admin-modal-close" aria-label="Close">&times;</button>
-    </div>
-    <form class="admin-modal-body" id="admin-slot-form">
-      <div class="admin-preview-grid">
-        <div>
-          <span class="admin-field-label">Current Image</span>
-          <div class="admin-preview-box">
-            <img id="admin-current-preview" src="" alt="Current" />
-          </div>
-        </div>
-        <div>
-          <span class="admin-field-label">New Upload / Transfer</span>
-          <div class="admin-preview-box is-upload" id="admin-upload-trigger">
-            <img id="admin-new-preview" src="" alt="New preview" hidden />
-            <span id="admin-upload-prompt">Click to upload image<br/><small>JPG, PNG, WebP, SVG</small></span>
-          </div>
-          <input type="file" id="admin-file-input" accept="image/*" hidden />
-        </div>
-      </div>
-      <div class="admin-scope-row">
-        <label>
-          <input type="radio" name="adminScope" value="slot" checked />
-          <span>Update only this slot</span>
-        </label>
-        <label>
-          <input type="radio" name="adminScope" value="global" />
-          <span>Update everywhere file is used</span>
-        </label>
-      </div>
-      <div>
-        <label class="admin-field-label" for="admin-url-input">Or Direct Image URL</label>
-        <input type="text" id="admin-url-input" class="admin-input" placeholder="https://images.unsplash.com/... (direct web image link)" />
-      </div>
-      <div id="admin-alt-wrap">
-        <label class="admin-field-label" for="admin-alt-input">Alt Text</label>
-        <input type="text" id="admin-alt-input" class="admin-input" placeholder="Describe image..." />
-      </div>
-      <div class="admin-modal-footer">
-        <div style="display:flex;gap:8px;align-items:center;">
-          <a href="/admin" class="admin-dock-btn">Open R2 + Firebase Studio</a>
-          <button type="button" class="admin-dock-btn" id="admin-slot-delete-btn" style="color:#fca5a5;border-color:#5c2424;">Delete from R2</button>
-        </div>
-        <div style="display:flex;gap:8px;">
-          <button type="button" class="admin-dock-btn" id="admin-cancel-btn">Cancel</button>
-          <button type="submit" class="admin-dock-btn is-primary" id="admin-save-btn">Push to R2 &amp; Save</button>
-        </div>
-      </div>
-    </form>
-  `;
-  document.body.appendChild(editorDialog);
-
-  // Create Inline Text Editor Modal
-  const textEditorDialog = document.createElement("dialog");
-  textEditorDialog.className = "admin-inline-dialog";
-  textEditorDialog.innerHTML = `
-    <div class="admin-modal-header">
-      <div>
-        <div class="admin-modal-kicker" id="admin-text-kicker">Firebase Text Element</div>
-        <h3 id="admin-text-title">Edit Site Text</h3>
-      </div>
-      <button type="button" class="admin-modal-close" id="admin-text-close" aria-label="Close">&times;</button>
-    </div>
-    <form class="admin-modal-body" id="admin-text-form">
-      <div>
-        <label class="admin-field-label" for="admin-text-textarea">Text Content</label>
-        <textarea id="admin-text-textarea" rows="5" class="admin-input" placeholder="Enter text content..." required></textarea>
-      </div>
-      <div class="admin-modal-footer">
-        <button type="button" class="admin-dock-btn" id="admin-text-delete-btn" style="color:#fca5a5;border-color:#5c2424;">Delete / Hide Text</button>
-        <div style="display:flex;gap:8px;">
-          <button type="button" class="admin-dock-btn" id="admin-text-cancel-btn">Cancel</button>
-          <button type="submit" class="admin-dock-btn is-primary" id="admin-text-save-btn">Save Text</button>
-        </div>
-      </div>
-    </form>
-  `;
-  document.body.appendChild(textEditorDialog);
-
-  const closeInlineBtn = editorDialog.querySelector(".admin-modal-close");
-  const cancelInlineBtn = document.getElementById("admin-cancel-btn");
-  const slotDeleteBtn = document.getElementById("admin-slot-delete-btn");
-  const uploadTrigger = document.getElementById("admin-upload-trigger");
-  const fileInput = document.getElementById("admin-file-input");
-  const newPreviewImg = document.getElementById("admin-new-preview");
-  const uploadPrompt = document.getElementById("admin-upload-prompt");
-  const currentPreviewImg = document.getElementById("admin-current-preview");
-  const urlInput = document.getElementById("admin-url-input");
-  const altInput = document.getElementById("admin-alt-input");
-  const altWrap = document.getElementById("admin-alt-wrap");
-  const slotForm = document.getElementById("admin-slot-form");
-  const saveBtn = document.getElementById("admin-save-btn");
-  const slotKicker = document.getElementById("admin-slot-kicker");
-  const slotTitle = document.getElementById("admin-slot-title");
-
-  const textCloseBtn = document.getElementById("admin-text-close");
-  const textCancelBtn = document.getElementById("admin-text-cancel-btn");
-  const textDeleteBtn = document.getElementById("admin-text-delete-btn");
-  const textSaveBtn = document.getElementById("admin-text-save-btn");
-  const textForm = document.getElementById("admin-text-form");
-  const textArea = document.getElementById("admin-text-textarea");
-  const textKicker = document.getElementById("admin-text-kicker");
-  const textTitle = document.getElementById("admin-text-title");
-
-  let activeDomSlot = null;
-  let selectedUploadFile = null;
-  let activeDomTextSlot = null;
-
-  if (closeInlineBtn) closeInlineBtn.addEventListener("click", () => editorDialog.close());
-  if (cancelInlineBtn) cancelInlineBtn.addEventListener("click", () => editorDialog.close());
-  editorDialog.addEventListener("click", (e) => {
-    if (e.target === editorDialog) editorDialog.close();
-  });
-
-  if (textCloseBtn) textCloseBtn.addEventListener("click", () => textEditorDialog.close());
-  if (textCancelBtn) textCancelBtn.addEventListener("click", () => textEditorDialog.close());
-  textEditorDialog.addEventListener("click", (e) => {
-    if (e.target === textEditorDialog) textEditorDialog.close();
-  });
-
-  if (uploadTrigger && fileInput) {
-    uploadTrigger.addEventListener("click", () => fileInput.click());
-    fileInput.addEventListener("change", () => {
-      const f = fileInput.files && fileInput.files[0];
-      if (!f) return;
-      selectedUploadFile = f;
-      if (urlInput) urlInput.value = "";
-      if (newPreviewImg) {
-        newPreviewImg.src = URL.createObjectURL(f);
-        newPreviewImg.hidden = false;
-      }
-      if (uploadPrompt) uploadPrompt.hidden = true;
-    });
-  }
-
   // Bind all editable image slots in exact DOM document order (matching parsePageSlots in lib/image-manager.ts)
   const slotElementMap = new Map();
   function bindEditableSlots() {
@@ -480,31 +331,6 @@
         if (initStyle.includes("empty-slot.svg")) {
           el.style.backgroundImage = "none";
         }
-        let heroBtn = el.querySelector(".admin-hero-edit-btn");
-        if (!heroBtn) {
-          heroBtn = document.createElement("button");
-          heroBtn.type = "button";
-          heroBtn.className = "admin-hero-edit-btn";
-          heroBtn.textContent = "Change Hero Banner Image";
-          el.appendChild(heroBtn);
-          heroBtn.addEventListener("click", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const styleAttr = el.getAttribute("style") || "";
-            const match = styleAttr.match(/url\(['"]?([^'")]+)['"]?\)/i);
-            const rawBg = match ? match[1] : "";
-            const currentBg = rawBg.includes("empty-slot.svg") ? "" : rawBg;
-            openInlineEditor({
-              slotId,
-              slotIndex: idx,
-              type: "hero-bg",
-              label: "Hero Background Banner",
-              src: currentBg,
-              alt: "",
-              element: el,
-            });
-          });
-        }
       } else {
         slotElementMap.set(slotId, { type: "img", element: el, slotIndex: idx });
         const initSrc = el.getAttribute("src") || "";
@@ -518,25 +344,6 @@
             holder.style.display = "none";
           }
         }
-        el.addEventListener(
-          "click",
-          (e) => {
-            if (!editModeActive) return;
-            e.preventDefault();
-            e.stopPropagation();
-            const rawSrc = el.getAttribute("src") || el.src || "";
-            openInlineEditor({
-              slotId,
-              slotIndex: idx,
-              type: "img",
-              label: el.getAttribute("alt") || `Image Slot #${idx + 1}`,
-              src: rawSrc.includes("empty-slot.svg") ? "" : rawSrc,
-              alt: el.getAttribute("alt") || "",
-              element: el,
-            });
-          },
-          true
-        );
       }
     });
   }
@@ -551,7 +358,6 @@
       if (el.closest("dialog") || el.closest(".firebase-section-showcase") || el.closest(".firebase-custom-texts-wrap")) {
         return false;
       }
-      // Skip elements containing nested block elements
       if (el.querySelector("p, div, ul, ol, table, h1, h2, h3, h4")) {
         return false;
       }
@@ -564,236 +370,6 @@
       el.setAttribute("data-admin-text-slot", String(idx));
       el.setAttribute("data-admin-text-id", textId);
       textElementMap.set(textId, { element: el, textIndex: idx, tagName: el.tagName.toUpperCase() });
-
-      el.addEventListener(
-        "click",
-        (e) => {
-          if (!textEditModeActive) return;
-          e.preventDefault();
-          e.stopPropagation();
-          openInlineTextEditor({
-            textId,
-            textIndex: idx,
-            tagName: el.tagName.toUpperCase(),
-            content: (el.textContent || "").trim(),
-            element: el,
-          });
-        },
-        true
-      );
-    });
-  }
-
-  function openInlineEditor(slotInfo) {
-    activeDomSlot = slotInfo;
-    selectedUploadFile = null;
-    if (fileInput) fileInput.value = "";
-    if (newPreviewImg) {
-      newPreviewImg.src = "";
-      newPreviewImg.hidden = true;
-    }
-    if (uploadPrompt) uploadPrompt.hidden = false;
-    if (currentPreviewImg) currentPreviewImg.src = slotInfo.src;
-    if (urlInput) urlInput.value = "";
-    if (altInput) altInput.value = slotInfo.alt || "";
-    if (altWrap) altWrap.hidden = slotInfo.type === "hero-bg";
-    if (slotKicker) {
-      slotKicker.textContent = `${currentPageFile} · Slot #${slotInfo.slotIndex + 1}`;
-    }
-    if (slotTitle) {
-      slotTitle.textContent = slotInfo.label;
-    }
-    if (typeof editorDialog.showModal === "function") {
-      editorDialog.showModal();
-    }
-  }
-
-  function openInlineTextEditor(textInfo) {
-    activeDomTextSlot = textInfo;
-    if (textKicker) {
-      textKicker.textContent = `${currentPageFile} · ${textInfo.tagName} (#${textInfo.textIndex + 1})`;
-    }
-    if (textTitle) {
-      textTitle.textContent = "Edit or Delete Site Text via Firebase";
-    }
-    if (textArea) {
-      textArea.value = textInfo.content;
-    }
-    if (typeof textEditorDialog.showModal === "function") {
-      textEditorDialog.showModal();
-    }
-  }
-
-  if (slotDeleteBtn) {
-    slotDeleteBtn.addEventListener("click", async () => {
-      if (!activeDomSlot) return;
-      try {
-        await fetch("/api/admin/images", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "delete-slot",
-            page: currentPageFile,
-            slotIndex: activeDomSlot.slotIndex,
-            slotId: activeDomSlot.slotId,
-          }),
-        });
-        if (activeDomSlot.type === "hero-bg") {
-          activeDomSlot.element.style.backgroundImage = "none";
-        } else {
-          activeDomSlot.element.removeAttribute("src");
-          activeDomSlot.element.style.display = "none";
-        }
-        editorDialog.close();
-      } catch (err) {
-        console.error(err);
-      }
-    });
-  }
-
-  if (slotForm) {
-    slotForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      if (!activeDomSlot) return;
-      if (saveBtn) {
-        saveBtn.disabled = true;
-        saveBtn.textContent = "Uploading to R2...";
-      }
-      try {
-        const scopeInput = slotForm.querySelector('input[name="adminScope"]:checked');
-        const scope = scopeInput ? scopeInput.value : "slot";
-        const newAlt = altInput ? altInput.value : "";
-        const customUrl = urlInput ? urlInput.value.trim() : "";
-
-        let updatedSrc = activeDomSlot.src;
-        let updatedR2Key = undefined;
-
-        if (selectedUploadFile) {
-          const r2Fd = new FormData();
-          r2Fd.append("file", selectedUploadFile);
-          r2Fd.append("replaceKey", `slots/${activeDomSlot.slotId}`);
-          r2Fd.append("alt", newAlt || activeDomSlot.label || "");
-          r2Fd.append("title", activeDomSlot.label || selectedUploadFile.name);
-          r2Fd.append("page", currentPageFile);
-
-          const r2Res = await fetch("/api/r2", {
-            method: "POST",
-            body: r2Fd,
-          });
-          const r2Data = await r2Res.json();
-          if (!r2Res.ok || !r2Data.cdnUrl) {
-            throw new Error(r2Data.error || "R2 bucket upload failed");
-          }
-          updatedSrc = r2Data.cdnUrl;
-          updatedR2Key = r2Data.r2Key;
-        } else if (customUrl) {
-          updatedSrc = customUrl;
-        }
-
-        const res = await fetch("/api/admin/images", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "update-slot-meta",
-            page: currentPageFile,
-            slotIndex: activeDomSlot.slotIndex,
-            scope,
-            altText: newAlt,
-            externalUrl: updatedSrc,
-            r2Key: updatedR2Key,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Update failed");
-        const cacheUrl = updatedSrc.includes("?")
-          ? `${updatedSrc}&v=${Date.now()}`
-          : `${updatedSrc}?v=${Date.now()}`;
-
-        if (activeDomSlot.type === "hero-bg") {
-          activeDomSlot.element.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)), url("${cacheUrl}")`;
-        } else {
-          activeDomSlot.element.style.display = "";
-          activeDomSlot.element.src = cacheUrl;
-          activeDomSlot.element.alt = newAlt;
-          const parentAnchor = activeDomSlot.element.closest("a[data-lightbox]");
-          if (parentAnchor) {
-            parentAnchor.href = cacheUrl;
-          }
-        }
-        editorDialog.close();
-      } catch (err) {
-        console.error(err);
-      } finally {
-        if (saveBtn) {
-          saveBtn.disabled = false;
-          saveBtn.textContent = "Push to R2 & Save";
-        }
-      }
-    });
-  }
-
-  if (textForm) {
-    textForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      if (!activeDomTextSlot || !textArea) return;
-      if (textSaveBtn) {
-        textSaveBtn.disabled = true;
-        textSaveBtn.textContent = "Saving...";
-      }
-      try {
-        const newContent = textArea.value;
-        const res = await fetch("/api/admin/cms", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "save-text",
-            textId: activeDomTextSlot.textId,
-            page: currentPageFile,
-            textIndex: activeDomTextSlot.textIndex,
-            tagName: activeDomTextSlot.tagName,
-            sectionContext: "Live Page Edit",
-            content: newContent,
-            isDeleted: false,
-            isCustomAdded: Boolean(activeDomTextSlot.isCustomAdded),
-          }),
-        });
-        if (!res.ok) throw new Error("Failed to save text");
-        activeDomTextSlot.element.textContent = newContent;
-        activeDomTextSlot.element.style.display = "";
-        textEditorDialog.close();
-      } catch (err) {
-        console.error(err);
-      } finally {
-        if (textSaveBtn) {
-          textSaveBtn.disabled = false;
-          textSaveBtn.textContent = "Save Text";
-        }
-      }
-    });
-  }
-
-  if (textDeleteBtn) {
-    textDeleteBtn.addEventListener("click", async () => {
-      if (!activeDomTextSlot) return;
-      try {
-        await fetch("/api/admin/cms", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "delete-text",
-            textId: activeDomTextSlot.textId,
-            page: currentPageFile,
-            textIndex: activeDomTextSlot.textIndex,
-            tagName: activeDomTextSlot.tagName,
-            content: activeDomTextSlot.content,
-            restoreDefault: false,
-          }),
-        });
-        activeDomTextSlot.element.style.display = "none";
-        textEditorDialog.close();
-      } catch (err) {
-        console.error(err);
-      }
     });
   }
 
@@ -1237,19 +813,22 @@
         : [];
 
       const combinedHeroSlides = [];
-      if (!heroSlotDeleted && primaryHeroBannerSrc) {
+      if (pageHeroSlides.length > 0) {
+        // Use strictly the hero slideshow photos uploaded by the user (no extra blank or default slide)
+        pageHeroSlides.forEach((s) => {
+          combinedHeroSlides.push({
+            src: s.src,
+            r2Key: s.r2Key,
+            alt: s.alt || s.title || "Sri Lanka Safari Hero Slide",
+          });
+        });
+      } else if (!heroSlotDeleted && primaryHeroBannerSrc && !primaryHeroBannerSrc.includes("empty-slot.svg")) {
+        // Only use single banner if no slideshow slides are configured
         combinedHeroSlides.push({
           src: primaryHeroBannerSrc,
           alt: document.title || "Sri Lanka Safari Hero Banner",
         });
       }
-      pageHeroSlides.forEach((s) => {
-        combinedHeroSlides.push({
-          src: s.src,
-          r2Key: s.r2Key,
-          alt: s.alt || s.title || "Sri Lanka Safari Hero Slide",
-        });
-      });
       initOrUpdateHeroSlideshow(combinedHeroSlides);
 
       // 2. Apply text overrides & deletions for this page
@@ -1290,19 +869,6 @@
           const p = document.createElement("p");
           p.textContent = block.content;
           p.setAttribute("data-admin-text-slot", "custom");
-          p.addEventListener("click", (e) => {
-            if (!textEditModeActive) return;
-            e.preventDefault();
-            e.stopPropagation();
-            openInlineTextEditor({
-              textId: block.textId,
-              textIndex: -1,
-              tagName: "CUSTOM",
-              content: block.content,
-              isCustomAdded: true,
-              element: p,
-            });
-          });
           card.appendChild(h3);
           card.appendChild(p);
           customTextWrap.appendChild(card);
@@ -1335,10 +901,9 @@
         showcase.innerHTML = `
           <div class="firebase-section-header">
             <div>
-              <div class="firebase-section-kicker">R2 Bucket + Firebase Section Gallery</div>
+              <div class="firebase-section-kicker">Sri Lanka Wildlife Gallery</div>
               <h2 class="firebase-section-title">${sectionGroupsTitle}</h2>
             </div>
-            <a href="/admin" class="admin-dock-btn">Manage R2 Photos in Studio</a>
           </div>
           <div class="firebase-section-grid" id="firebase-section-grid"></div>
         `;
@@ -1359,26 +924,7 @@
                 <p class="firebase-section-card-caption">${item.caption || ""}</p>
               </div>
             </div>
-            <div class="firebase-section-card-actions">
-              <a href="/admin" class="admin-dock-btn is-primary">Edit / Replace in R2 Studio</a>
-              <button type="button" class="admin-dock-btn" data-delete-sec-img="${item.itemId}">Delete</button>
-            </div>
           `;
-          const delBtn = card.querySelector("[data-delete-sec-img]");
-          if (delBtn) {
-            delBtn.addEventListener("click", async () => {
-              await fetch("/api/admin/cms", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  action: "delete-section-image",
-                  itemId: item.itemId,
-                  r2Key: item.r2Key,
-                }),
-              });
-              card.remove();
-            });
-          }
           if (grid) grid.appendChild(card);
         });
       } else {
@@ -1388,11 +934,6 @@
     } catch (err) {
       console.error("Failed to hydrate Firebase CMS state:", err);
     }
-  }
-
-  function applyEditModeState() {
-    document.body.classList.toggle("admin-edit-mode", editModeActive);
-    document.body.classList.toggle("admin-text-edit-mode", textEditModeActive);
   }
 
   function initUltraSmoothScroll() {
@@ -3417,7 +2958,6 @@
 
   bindEditableSlots();
   bindEditableTextSlots();
-  applyEditModeState();
   initUltraSmoothScroll();
   void initDistinctGsapAnimations();
   void hydrateFromFirebaseCms().then(() => {

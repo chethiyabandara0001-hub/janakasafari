@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "janakasafari",
+  "name": "nishatravels",
   "main": ".cloudflare/worker.mjs",
   "compatibility_date": "2025-04-01",
   "observability": {

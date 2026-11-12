@@ -441,15 +441,14 @@ header.dusk-header {
   }
 }
 
-/* Hero Banner — Reduced by 10% from Bottom on Home Page & Inner Pages (Excluding Contact Page) */
+/* Hero Banner — Clean, cohesive, responsive viewport presentation */
 body:not(.janaka-contact) .banner-wrap,
 body:not(.janaka-contact) .banner-wrap > .wsite-elements,
 body:not(.janaka-contact) .banner-wrap .wsite-header-elements,
 body:not(.janaka-contact) .banner-wrap .wsite-section-wrap {
   position: relative;
   width: 100%;
-  min-height: 111vh;
-  height: 111vh;
+  min-height: 82vh;
   margin: 0;
   border-radius: 0;
   overflow: hidden !important;
@@ -461,16 +460,14 @@ body.wsite-page-index .banner-wrap,
 body.wsite-page-index .banner-wrap > .wsite-elements,
 body.wsite-page-index .banner-wrap .wsite-header-elements,
 body.wsite-page-index .banner-wrap .wsite-section-wrap {
-  min-height: 121.5vh !important;
-  height: 121.5vh !important;
+  min-height: 86vh;
 }
 
 body:not(.janaka-contact) .banner-wrap .wsite-header-section {
-  position: absolute !important;
-  inset: 0 !important;
+  position: relative !important;
+  inset: auto !important;
   width: 100% !important;
-  min-height: 111vh;
-  height: 100% !important;
+  min-height: 82vh;
   margin: 0 !important;
   display: flex;
   flex-direction: column;
@@ -478,14 +475,11 @@ body:not(.janaka-contact) .banner-wrap .wsite-header-section {
   background-size: cover !important;
   background-position: center 35%;
   background-repeat: no-repeat !important;
-  transform: scale(1.12);
-  transform-origin: center center;
   filter: saturate(1.15) contrast(1.05) brightness(1.02);
 }
 
 body.wsite-page-index .banner-wrap .wsite-header-section {
-  min-height: 121.5vh !important;
-  transform: scale(1.22);
+  min-height: 86vh;
   filter: saturate(1.18) contrast(1.06) brightness(1.03);
 }
 
@@ -563,7 +557,7 @@ body:not(.janaka-contact) .banner-wrap::after {
 .hero-slideshow-dots {
   position: absolute;
   left: 50%;
-  bottom: clamp(106px, 13vh, 158px);
+  bottom: clamp(24px, 4vh, 48px);
   transform: translateX(-50%);
   z-index: 6;
   display: inline-flex;
@@ -578,7 +572,7 @@ body:not(.janaka-contact) .banner-wrap::after {
 }
 
 body:not(.wsite-page-index) .hero-slideshow-dots {
-  bottom: clamp(24px, 4vh, 46px);
+  bottom: clamp(20px, 3.5vh, 40px);
 }
 
 .hero-slideshow-dot {
@@ -601,27 +595,21 @@ body:not(.wsite-page-index) .hero-slideshow-dots {
   background: #f5a623;
 }
 
-body:not(.janaka-contact) .wsite-header-section .wsite-section-content,
-body:not(.janaka-contact) div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) {
+body:not(.janaka-contact) .wsite-header-section .wsite-section-content {
   position: relative;
   z-index: 4;
   width: 100%;
   flex: 1;
   display: flex;
   align-items: center;
-  min-height: 111vh;
-  padding-bottom: 36px;
-  transform: scale(0.89285);
-  transform-origin: center center;
+  min-height: 82vh;
+  padding-top: 48px;
+  padding-bottom: 48px;
 }
 
-body.wsite-page-index .wsite-header-section .wsite-section-content,
-body.wsite-page-index div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) {
-  min-height: 121.5vh !important;
-  height: 121.5vh !important;
-  padding-bottom: 108px;
-  /* Counteract parent 1.22 zoom scale so text and buttons remain crisp at 1:1 scale */
-  transform: scale(0.81967);
+body.wsite-page-index .wsite-header-section .wsite-section-content {
+  min-height: 86vh;
+  padding-bottom: 64px;
 }
 
 body:not(.janaka-contact) .wsite-header-section .container {

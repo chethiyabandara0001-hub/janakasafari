@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import Link from 'next/link';
 import {
   Search,
   Upload,
@@ -730,7 +731,7 @@ export default function AdminStudioPage() {
           page: selectedPage,
           sectionKey: 'hero_slideshow',
           sectionTitle: 'Hero Section Slideshow (4s)',
-          title: `Hero Slide #${currentOrder + 1}`,
+          title: `Hero Slide #${currentOrder}`,
           caption: '4-second auto-advancing hero banner slide',
           src: uploaded.cdnUrl,
           r2Key: uploaded.r2Key,
@@ -1119,13 +1120,13 @@ export default function AdminStudioPage() {
           </form>
 
           <div className="pt-3 border-t border-slate-800 text-center">
-            <a
+            <Link
               href="/index.html"
               className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-100 transition-colors whitespace-nowrap shrink-0"
             >
               <span>Back to Website</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
-            </a>
+            </Link>
           </div>
         </div>
       </div>
@@ -1133,19 +1134,22 @@ export default function AdminStudioPage() {
   }
 
   const totalHeroSlidesCount =
-    (primaryHeroSlot && !primaryHeroSlot.isDeleted && primaryHeroSlot.src ? 1 : 0) +
-    pageHeroSlides.length;
+    pageHeroSlides.length > 0
+      ? pageHeroSlides.length
+      : primaryHeroSlot && !primaryHeroSlot.isDeleted && primaryHeroSlot.src
+      ? 1
+      : 0;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       {/* Top Navigation Bar (Strict 3-Zone Contract) */}
       <header className="flex items-center justify-between gap-8 px-6 py-3.5 bg-slate-900 border-b border-slate-800">
-        <a
+        <Link
           href="/admin"
           className="text-base font-semibold tracking-tight text-slate-100 whitespace-nowrap shrink-0"
         >
           Nisha Safari Admin
-        </a>
+        </Link>
 
         <nav className="hidden md:flex items-center gap-6 text-xs font-medium text-slate-400">
           <button
@@ -1510,28 +1514,20 @@ export default function AdminStudioPage() {
                   </div>
 
                   <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                    {/* Slide 1: Primary Hero Background Slot */}
-                    {primaryHeroSlot && (
-                      <article className="bg-slate-950 border border-slate-800 rounded-lg overflow-hidden flex flex-col justify-between">
-                        <div>
-                          <label className="relative h-44 bg-slate-900 border-b border-slate-800 overflow-hidden cursor-pointer flex items-center justify-center group">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => handleDirectSlotFileSelected(primaryHeroSlot, e)}
-                              className="hidden"
-                            />
-                            {primaryHeroSlot.isDeleted || !primaryHeroSlot.src ? (
-                              <div className="flex flex-col items-center justify-center text-center p-4 space-y-1.5">
-                                <ImageIcon className="w-6 h-6 text-slate-500" />
-                                <span className="text-xs font-medium text-slate-300">
-                                  Empty Hero Slide 01
-                                </span>
-                                <span className="text-[11px] text-slate-500">
-                                  Click to upload Slide 01 photo
-                                </span>
-                              </div>
-                            ) : (
+                    {/* Fallback Single Banner if no multi-slides exist yet */}
+                    {pageHeroSlides.length === 0 &&
+                      primaryHeroSlot &&
+                      !primaryHeroSlot.isDeleted &&
+                      primaryHeroSlot.src && (
+                        <article className="bg-slate-950 border border-slate-800 rounded-lg overflow-hidden flex flex-col justify-between">
+                          <div>
+                            <label className="relative h-44 bg-slate-900 border-b border-slate-800 overflow-hidden cursor-pointer flex items-center justify-center group">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleDirectSlotFileSelected(primaryHeroSlot, e)}
+                                className="hidden"
+                              />
                               <img
                                 src={resolveImageUrl(primaryHeroSlot.src)}
                                 alt={primaryHeroSlot.alt || primaryHeroSlot.label}
@@ -1539,61 +1535,55 @@ export default function AdminStudioPage() {
                                 className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
                                 loading="lazy"
                               />
-                            )}
-                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <span className="inline-flex items-center gap-1.5 bg-amber-500 text-slate-950 font-semibold text-xs px-3 py-1.5 rounded-md">
-                                <Upload className="w-3.5 h-3.5" />
-                                <span>Choose New Image</span>
-                              </span>
-                            </div>
-                          </label>
-
-                          <div className="p-4 space-y-1">
-                            <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                              <span className="font-mono font-semibold text-amber-400">
-                                Slide 01
-                              </span>
-                              <span aria-hidden="true">·</span>
-                              <span>Main Hero Banner</span>
-                            </div>
-                            <h3 className="text-sm font-medium text-slate-100 truncate">
-                              {primaryHeroSlot.label}
-                            </h3>
-                          </div>
-                        </div>
-
-                        <div className="px-4 pb-4 pt-1 flex items-center gap-2">
-                          <label
-                            className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium bg-slate-900 hover:bg-amber-500 text-slate-100 hover:text-slate-950 border border-slate-800 hover:border-amber-500 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                              uploadingTargetId === primaryHeroSlot.slotId
-                                ? 'opacity-50 pointer-events-none'
-                                : ''
-                            }`}
-                          >
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => handleDirectSlotFileSelected(primaryHeroSlot, e)}
-                              className="hidden"
-                            />
-                            {uploadingTargetId === primaryHeroSlot.slotId ? (
-                              <>
-                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                <span>Uploading...</span>
-                              </>
-                            ) : (
-                              <>
-                                <Upload className="w-3.5 h-3.5" />
-                                <span>
-                                  {primaryHeroSlot.isDeleted || !primaryHeroSlot.src
-                                    ? 'Upload Slide 01'
-                                    : 'Replace Photo'}
+                              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <span className="inline-flex items-center gap-1.5 bg-amber-500 text-slate-950 font-semibold text-xs px-3 py-1.5 rounded-md">
+                                  <Upload className="w-3.5 h-3.5" />
+                                  <span>Choose New Image</span>
                                 </span>
-                              </>
-                            )}
-                          </label>
+                              </div>
+                            </label>
 
-                          {!primaryHeroSlot.isDeleted && primaryHeroSlot.src && (
+                            <div className="p-4 space-y-1">
+                              <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                                <span className="font-mono font-semibold text-amber-400">
+                                  Slide 01
+                                </span>
+                                <span aria-hidden="true">·</span>
+                                <span>Main Hero Banner</span>
+                              </div>
+                              <h3 className="text-sm font-medium text-slate-100 truncate">
+                                {primaryHeroSlot.label}
+                              </h3>
+                            </div>
+                          </div>
+
+                          <div className="px-4 pb-4 pt-1 flex items-center gap-2">
+                            <label
+                              className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium bg-slate-900 hover:bg-amber-500 text-slate-100 hover:text-slate-950 border border-slate-800 hover:border-amber-500 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                                uploadingTargetId === primaryHeroSlot.slotId
+                                  ? 'opacity-50 pointer-events-none'
+                                  : ''
+                              }`}
+                            >
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleDirectSlotFileSelected(primaryHeroSlot, e)}
+                                className="hidden"
+                              />
+                              {uploadingTargetId === primaryHeroSlot.slotId ? (
+                                <>
+                                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                  <span>Uploading...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Upload className="w-3.5 h-3.5" />
+                                  <span>Replace Photo</span>
+                                </>
+                              )}
+                            </label>
+
                             <button
                               type="button"
                               onClick={() => handleDeleteSlot(primaryHeroSlot)}
@@ -1603,12 +1593,11 @@ export default function AdminStudioPage() {
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
-                          )}
-                        </div>
-                      </article>
-                    )}
+                          </div>
+                        </article>
+                      )}
 
-                    {/* Slides 02, 03, 04... */}
+                    {/* Sequential Active Hero Slideshow (1..N) */}
                     {pageHeroSlides.map((slide, idx) => (
                       <article
                         key={slide.itemId}
@@ -1640,7 +1629,7 @@ export default function AdminStudioPage() {
                           <div className="p-4 space-y-1">
                             <div className="flex items-center gap-1.5 text-xs text-slate-400">
                               <span className="font-mono font-semibold text-emerald-400">
-                                Slide {String(idx + 2).padStart(2, '0')}
+                                Slide {String(idx + 1).padStart(2, '0')}
                               </span>
                               <span aria-hidden="true">·</span>
                               <span>4s Auto-Slideshow</span>
@@ -1708,7 +1697,7 @@ export default function AdminStudioPage() {
                         <Plus className="w-5 h-5" />
                       </div>
                       <span className="text-xs font-semibold text-slate-100">
-                        Add Slide {String(pageHeroSlides.length + 2).padStart(2, '0')} to Hero Slideshow
+                        Add Slide {String(totalHeroSlidesCount + 1).padStart(2, '0')} to Hero Slideshow
                       </span>
                       <span className="text-[11px] text-slate-400 mt-1">
                         Click to choose one or more photos from your device

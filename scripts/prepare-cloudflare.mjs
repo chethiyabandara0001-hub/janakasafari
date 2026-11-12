@@ -1427,6 +1427,7 @@ export default worker;
 
   await fs.writeFile(path.join(CF_DIR, 'worker.mjs'), workerCode, 'utf8');
   await fs.writeFile(path.join(CF_ASSETS_DIR, '_worker.js'), workerCode, 'utf8');
+  await fs.writeFile(path.join(CF_ASSETS_DIR, '.assetsignore'), '_worker.js\n', 'utf8');
   console.log('Prepared Cloudflare bundle in .cloudflare/ (Workers + Pages _worker.js) successfully.');
 }
 
