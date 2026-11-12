@@ -1433,8 +1433,8 @@
         });
         crossTl.fromTo(
           crossCard,
-          { y: 24, autoAlpha: 0 },
-          { y: 0, autoAlpha: 1, duration: 0.55, ease: "power2.out" }
+          { yPercent: 5, autoAlpha: 0 },
+          { yPercent: -30, autoAlpha: 1, duration: 0.55, ease: "power2.out" }
         );
         const crossSubs = gsap.utils.toArray(".hero-cross-sub-section");
         if (crossSubs.length > 0) {
@@ -1995,8 +1995,8 @@
 
         crossTl.fromTo(
           crossCard,
-          { y: 60, autoAlpha: 0, scale: 0.94, rotateX: 10, transformPerspective: 1100 },
-          { y: 0, autoAlpha: 1, scale: 1, rotateX: 0, transformPerspective: 1100, duration: 0.85, ease: "power3.out" }
+          { yPercent: 10, autoAlpha: 0, scale: 0.94, rotateX: 10, transformPerspective: 1100 },
+          { yPercent: -30, autoAlpha: 1, scale: 1, rotateX: 0, transformPerspective: 1100, duration: 0.85, ease: "power3.out" }
         );
 
         if (subLeft) {
