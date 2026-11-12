@@ -91,9 +91,21 @@ function stripTags(html: string): string {
     .trim();
 }
 
-function findSectionContext(htmlBefore: string, isHeaderLogo: boolean, isFooterLogo: boolean): string {
+function findSectionContext(
+  htmlBefore: string,
+  isHeaderLogo: boolean,
+  isFooterLogo: boolean,
+  imgTag?: string
+): string {
   if (isHeaderLogo) return 'Header Navigation Logo';
   if (isFooterLogo) return 'Footer Brand Logo';
+
+  if (imgTag && (imgTag.includes('cross-top-img') || imgTag.includes('cross-top-'))) {
+    return 'Hero Cross-Section Awards & Trust Badges';
+  }
+  if (htmlBefore.includes('hero-cross-bridge-wrap') && !htmlBefore.includes('</section>')) {
+    return 'Hero Cross-Section Awards & Trust Badges';
+  }
 
   // Find last h2 or strong title before this tag
   const h2Matches = [...htmlBefore.matchAll(/<h2[^>]*>([\s\S]*?)<\/h2>/gi)];
@@ -157,8 +169,8 @@ function parsePageSlots(html: string): RawMatch[] {
       });
     } else if (match[3]) {
       const imgTag = match[3];
-      if (imgTag.includes('photo-full') || imgTag.includes('cross-top-img')) {
-        // Skip empty lightbox dialog template <img class="photo-full"> and cross-section badge icons
+      if (imgTag.includes('photo-full')) {
+        // Skip empty lightbox dialog template <img class="photo-full">
         continue;
       }
       const srcMatch = imgTag.match(/\bsrc="([^"]*)"/i);
@@ -171,6 +183,9 @@ function parsePageSlots(html: string): RawMatch[] {
       const htmlBefore = html.slice(0, startIndex);
       const isHeaderLogo = htmlBefore.includes('<header') && !htmlBefore.includes('</header>');
       const isFooterLogo = htmlBefore.includes('<footer') && !htmlBefore.includes('</footer>');
+      const isCrossBadge =
+        imgTag.includes('cross-top-img') ||
+        (htmlBefore.includes('hero-cross-bridge-wrap') && !htmlBefore.includes('</section>'));
 
       // Check if enclosed in <a ... data-lightbox ... href="...">
       const recentAnchorIndex = htmlBefore.lastIndexOf('<a ');
@@ -195,13 +210,13 @@ function parsePageSlots(html: string): RawMatch[] {
       }
 
       const kind: RawMatch['kind'] =
-        isHeaderLogo || isFooterLogo
+        isHeaderLogo || isFooterLogo || isCrossBadge
           ? 'logo'
           : lightboxHref
           ? 'gallery-img'
           : 'img';
 
-      const sectionContext = findSectionContext(htmlBefore, isHeaderLogo, isFooterLogo);
+      const sectionContext = findSectionContext(htmlBefore, isHeaderLogo, isFooterLogo, imgTag);
 
       results.push({
         slotIndex: slotIndex++,

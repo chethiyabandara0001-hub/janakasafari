@@ -307,8 +307,7 @@
     const candidates = Array.from(
       document.querySelectorAll('div[style*="background-image"], img')
     ).filter((el) => {
-      if (el.closest("dialog") || el.closest(".firebase-section-showcase") || el.closest(".hero-cross-bridge-wrap")) return false;
-      if (el.classList.contains("cross-top-img")) return false;
+      if (el.closest("dialog") || el.closest(".firebase-section-showcase")) return false;
       if (el.tagName.toLowerCase() === "div") {
         const styleAttr = el.getAttribute("style") || "";
         if (!/background-image\s*:\s*url\(/i.test(styleAttr)) return false;
@@ -335,13 +334,15 @@
         slotElementMap.set(slotId, { type: "img", element: el, slotIndex: idx });
         const initSrc = el.getAttribute("src") || "";
         if (initSrc.includes("empty-slot.svg")) {
-          el.style.display = "none";
-          const holder =
-            el.closest(".galleryImageHolder") ||
-            el.closest("a[data-lightbox]") ||
-            el.closest(".wsite-image");
-          if (holder) {
-            holder.style.display = "none";
+          if (!el.classList.contains("janaka-brand-logo") && !el.classList.contains("cross-top-img")) {
+            el.style.display = "none";
+            const holder =
+              el.closest(".galleryImageHolder") ||
+              el.closest("a[data-lightbox]") ||
+              el.closest(".wsite-image");
+            if (holder) {
+              holder.style.display = "none";
+            }
           }
         }
       }

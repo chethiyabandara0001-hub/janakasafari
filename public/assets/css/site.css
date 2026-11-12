@@ -157,6 +157,29 @@ header.dusk-header {
   box-shadow: none !important;
 }
 
+/* Inner Pages Without a Hero Banner (gallery.html, reviews.html) */
+body.no-header-page .dusk-header,
+body.no-header-page header.dusk-header {
+  position: sticky !important;
+  top: 0 !important;
+  background: #012f23 !important;
+  background-color: #012f23 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+
+body.no-header-page .dusk-header .nav-wrap {
+  background: #012f23 !important;
+  background-color: #012f23 !important;
+}
+
+body.no-header-page .site-canvas,
+body.no-header-page .main-wrap {
+  padding-top: 20px !important;
+  min-height: 75vh;
+}
+
 .dusk-header .nav-wrap {
   background: transparent !important;
   background-color: transparent !important;
@@ -196,32 +219,36 @@ header.dusk-header {
 
 @media screen and (min-width: 921px) {
   .dusk-header .nav-wrap > .container {
-    display: grid;
-    grid-template-columns: minmax(180px, auto) 1fr minmax(140px, auto);
-    gap: 20px;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: clamp(12px, 2vw, 28px) !important;
   }
 
   .dusk-header .logo {
-    grid-column: 1;
-    justify-self: start;
-    order: initial;
+    display: flex !important;
+    align-items: center !important;
+    flex-shrink: 0 !important;
+    order: 1 !important;
   }
 
   .dusk-header .desktop-nav,
   .dusk-header .desktop-nav-center {
-    grid-column: 2;
-    justify-self: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    order: 2 !important;
+    margin: 0 auto !important;
   }
 
   .dusk-header .header-action-contact {
-    grid-column: 3;
-    justify-self: end;
-    order: initial;
-    margin-left: auto;
+    display: flex !important;
+    align-items: center !important;
+    flex-shrink: 0 !important;
+    order: 3 !important;
+    margin-left: auto !important;
   }
 }
 
@@ -324,20 +351,33 @@ header.dusk-header {
   }
 }
 
-.desktop-nav .wsite-menu-default {
-  display: flex;
-  align-items: center;
-  list-style: none;
-  margin: 0;
+.desktop-nav .wsite-menu-default,
+.dusk-header .desktop-nav .wsite-menu-default {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-wrap: nowrap !important;
+  white-space: nowrap !important;
+  gap: clamp(10px, 1.8vw, 28px) !important;
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
-.desktop-nav .wsite-menu-item-wrap {
-  position: relative;
+.desktop-nav .wsite-menu-item-wrap,
+.dusk-header .desktop-nav .wsite-menu-item-wrap {
+  position: relative !important;
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
 }
 
-.desktop-nav .wsite-menu-item {
-  display: inline-flex;
-  align-items: center;
+.desktop-nav .wsite-menu-item,
+.dusk-header .desktop-nav .wsite-menu-item {
+  display: inline-flex !important;
+  align-items: center !important;
+  white-space: nowrap !important;
+  padding: 8px clamp(4px, 0.6vw, 10px) !important;
+  font-size: clamp(12px, 0.92vw, 13px) !important;
 }
 
 .desktop-nav .wsite-menu-item-wrap.has-submenu > .wsite-menu-item::after {

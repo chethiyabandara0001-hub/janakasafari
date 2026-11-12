@@ -51,6 +51,13 @@ function findSectionContext(htmlBefore, isHeaderLogo, isFooterLogo) {
   const lastStrong =
     strongMatches.length > 0 ? stripTags(strongMatches[strongMatches.length - 1][1]) : '';
 
+  if (imgTag && (imgTag.includes('cross-top-img') || imgTag.includes('cross-top-'))) {
+    return 'Hero Cross-Section Awards & Trust Badges';
+  }
+  if (htmlBefore.includes('hero-cross-bridge-wrap') && !htmlBefore.includes('</section>')) {
+    return 'Hero Cross-Section Awards & Trust Badges';
+  }
+
   if (lastH2 && lastStrong && lastH2 !== lastStrong && lastStrong.length < 60) {
     return `${lastH2} · ${lastStrong}`;
   }
@@ -82,7 +89,7 @@ function parsePageSlots(html) {
       });
     } else if (match[3]) {
       const imgTag = match[3];
-      if (imgTag.includes('photo-full') || imgTag.includes('cross-top-img')) {
+      if (imgTag.includes('photo-full')) {
         continue;
       }
       const srcMatch = imgTag.match(/\bsrc="([^"]*)"/i);
@@ -95,6 +102,9 @@ function parsePageSlots(html) {
       const htmlBefore = html.slice(0, startIndex);
       const isHeaderLogo = htmlBefore.includes('<header') && !htmlBefore.includes('</header>');
       const isFooterLogo = htmlBefore.includes('<footer') && !htmlBefore.includes('</footer>');
+      const isCrossBadge =
+        imgTag.includes('cross-top-img') ||
+        (htmlBefore.includes('hero-cross-bridge-wrap') && !htmlBefore.includes('</section>'));
 
       const recentAnchorIndex = htmlBefore.lastIndexOf('<a ');
       const recentAnchorClose = htmlBefore.lastIndexOf('</a>');
@@ -112,8 +122,8 @@ function parsePageSlots(html) {
       }
 
       const kind =
-        isHeaderLogo || isFooterLogo ? 'logo' : lightboxHref ? 'gallery-img' : 'img';
-      const sectionContext = findSectionContext(htmlBefore, isHeaderLogo, isFooterLogo);
+        isHeaderLogo || isFooterLogo || isCrossBadge ? 'logo' : lightboxHref ? 'gallery-img' : 'img';
+      const sectionContext = findSectionContext(htmlBefore, isHeaderLogo, isFooterLogo, imgTag);
 
       results.push({
         slotIndex: slotIndex++,
