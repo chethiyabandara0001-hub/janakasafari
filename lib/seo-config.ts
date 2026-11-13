@@ -94,7 +94,7 @@ const ORGANIZATION_JSON_LD = {
   logo: `${SITE_BASE_URL}/favicon-96x96.png`,
   description:
     'Nisha Travelling offers private Sri Lanka travel experiences, curated wildlife & nature tours, national park expeditions, scenic transfers, and shore excursions across Sri Lanka.',
-  telephone: '+94717390327',
+  telephone: '+94788729414',
   email: 'safarinisha@gmail.com',
   priceRange: '$$',
   address: {

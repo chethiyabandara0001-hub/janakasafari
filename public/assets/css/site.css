@@ -1330,16 +1330,24 @@ div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > div
   width: 100% !important;
 }
 
-#CDSWIDCOELOGO,
-.tripadvisor-user-award-img,
-.home-review-award img {
+#CDSWIDCOELOGO[src^="data:"],
+.tripadvisor-user-award-img[src^="data:"],
+.home-review-award img[src^="data:"] {
+  display: none !important;
+}
+
+#CDSWIDCOELOGO:not([src^="data:"]),
+.tripadvisor-user-award-img:not([src^="data:"]),
+.home-review-award img:not([src^="data:"]) {
   display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
   width: 100% !important;
   max-width: 300px !important;
   height: auto !important;
-  max-height: 220px !important;
+  max-height: 240px !important;
   object-fit: contain !important;
-  margin: 8px auto 0 !important;
+  margin: 12px auto 0 !important;
 }
 
 /* Body Sections — Preserve Authentic Sri Lanka Yala Safaris Color Rhythm */
@@ -1713,10 +1721,59 @@ hr.styled-hr {
 .footer-wrap {
   width: 100%;
   background-color: #011c15 !important;
-  color: #c8d3cf !important;
+  color: #dce7e2 !important;
   position: relative;
   z-index: 10;
   overflow: hidden;
+}
+
+.footer-wrap .paragraph,
+.footer-wrap p,
+.footer-wrap li,
+.footer-wrap div:not(.wsite-button) {
+  color: #dce7e2 !important;
+}
+
+.footer-wrap .paragraph font,
+.footer-wrap .paragraph span:not(.wsite-button-inner):not(.footer-contact-icon) {
+  color: inherit !important;
+}
+
+.footer-wrap .paragraph strong,
+.footer-wrap .paragraph strong font,
+.footer-wrap .paragraph font[size="4"],
+.footer-wrap h2,
+.footer-wrap h3,
+.footer-wrap h4 {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+.footer-wrap a:not(.wsite-button) {
+  color: #e8f2ee !important;
+  text-decoration: none !important;
+  transition: color 0.2s ease;
+}
+
+.footer-wrap a:not(.wsite-button):hover {
+  color: #f5a623 !important;
+  text-decoration: underline !important;
+}
+
+.footer-wrap .wsite-button,
+.footer-wrap .wsite-button .wsite-button-inner {
+  color: #08291f !important;
+}
+
+.footer-wrap .wsite-button:hover,
+.footer-wrap .wsite-button:hover .wsite-button-inner {
+  background: #ffffff !important;
+  color: #08291f !important;
+  border-color: #ffffff !important;
+}
+
+.footer-wrap hr.styled-hr {
+  border-top-color: rgba(220, 231, 226, 0.18) !important;
 }
 
 .footer-wrap .container {
@@ -1760,10 +1817,11 @@ hr.styled-hr {
   margin-bottom: 10px !important;
   line-height: 1.5 !important;
   font-size: 14px !important;
+  color: #e8f2ee !important;
 }
 
 .footer-contact-row a {
-  color: #e2e8e5 !important;
+  color: #e8f2ee !important;
   text-decoration: none !important;
   transition: color 0.2s ease;
   word-break: break-word;

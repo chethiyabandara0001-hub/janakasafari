@@ -428,12 +428,17 @@
     if (iconEl) {
       const linkEl = el.querySelector("a");
       if (linkEl && !textVal.includes("\n")) {
-        linkEl.textContent = textVal;
-        if (linkEl.getAttribute("href")?.startsWith("tel:")) {
-          const digits = textVal.replace(/[^+\d]/g, "");
+        const isTelLink = linkEl.getAttribute("href")?.startsWith("tel:");
+        const resolvedText =
+          isTelLink && /71\s*739\s*0327/.test(textVal)
+            ? "+94 78 872 9414"
+            : textVal;
+        linkEl.textContent = resolvedText;
+        if (isTelLink) {
+          const digits = resolvedText.replace(/[^+\d]/g, "");
           if (digits) linkEl.setAttribute("href", `tel:${digits}`);
-        } else if (linkEl.getAttribute("href")?.startsWith("mailto:") && textVal.includes("@")) {
-          linkEl.setAttribute("href", `mailto:${textVal.trim()}`);
+        } else if (linkEl.getAttribute("href")?.startsWith("mailto:") && resolvedText.includes("@")) {
+          linkEl.setAttribute("href", `mailto:${resolvedText.trim()}`);
         }
         return;
       }
@@ -765,16 +770,19 @@
           entry.element.style.backgroundSize = "cover";
           entry.element.style.backgroundPosition = "center center";
         } else {
-          if (entry.element.id === "CDSWIDCOELOGO") {
-            return;
-          }
           entry.element.style.display = "";
+          entry.element.style.visibility = "visible";
+          entry.element.style.opacity = "1";
           const holder =
             entry.element.closest(".galleryImageHolder") ||
             entry.element.closest("a[data-lightbox]") ||
-            entry.element.closest(".wsite-image");
+            entry.element.closest(".wsite-image") ||
+            entry.element.closest(".home-review-award") ||
+            entry.element.closest(".home-review-summary");
           if (holder) {
             holder.style.display = "";
+            holder.style.visibility = "visible";
+            holder.style.opacity = "1";
           }
           const wrapContainer = entry.element.closest('[id*="-imageContainer"]');
           if (wrapContainer) {
