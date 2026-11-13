@@ -259,7 +259,7 @@ function enrichAndCleanHtmlFile(filePath, pageFile) {
   // 4. Strip all saved local image paths (/assets/media/..., /assets/aistudio/..., /assets/r2-bucket/...)
   html = html.replace(
     /background-image:\s*url\((?:&quot;|"|')?\/?assets\/(?:media|aistudio|r2-bucket)\/[^"')&\s]+(?:&quot;|"|')?\)/gi,
-    `background-image: url("${EMPTY_SLOT_DATA_URI}")`
+    'background-image: url(data:image/svg+xml,%3Csvg/%3E)'
   );
   html = html.replace(
     /(\bsrc=)(["'])\/?assets\/(?:media|aistudio|r2-bucket)\/[^"']+\2/gi,

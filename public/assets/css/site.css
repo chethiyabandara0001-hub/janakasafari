@@ -863,9 +863,7 @@ body:not(.janaka-contact) .banner .paragraph * {
   }
 
   body:not(.janaka-contact) .wsite-header-section .wsite-section-content,
-  body:not(.janaka-contact) div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2),
-  body.wsite-page-index .wsite-header-section .wsite-section-content,
-  body.wsite-page-index div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) {
+  body.wsite-page-index .wsite-header-section .wsite-section-content {
     min-height: 320px !important;
     height: auto !important;
     padding-top: 16px !important;
@@ -873,8 +871,7 @@ body:not(.janaka-contact) .banner .paragraph * {
     transform: none;
   }
 
-  body.wsite-page-index .wsite-header-section .wsite-section-content,
-  body.wsite-page-index div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) {
+  body.wsite-page-index .wsite-header-section .wsite-section-content {
     position: relative !important;
     align-items: flex-start !important;
     min-height: 380px !important;
@@ -888,7 +885,7 @@ body:not(.janaka-contact) .banner .paragraph * {
 
   body.wsite-page-index .wsite-header-section .container {
     position: static !important;
-    padding: 76px 18px 140px !important;
+    padding: 68px 18px 110px !important;
   }
 
   body.wsite-page-index .wsite-header-section .banner,
@@ -927,10 +924,11 @@ body:not(.janaka-contact) .banner .paragraph * {
     text-align: center !important;
   }
 
-  body.wsite-page-index .banner .wsite-button {
+  body.wsite-page-index .banner .wsite-button,
+  body.wsite-page-index div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > table:nth-of-type(1) > tbody:nth-of-type(1) > tr:nth-of-type(1) > td:nth-of-type(1) > div:nth-of-type(2) > a:nth-of-type(1) {
     position: absolute !important;
     left: 18px !important;
-    bottom: 20% !important;
+    bottom: 44px !important;
     margin-top: 0 !important;
     z-index: 6 !important;
     width: 100% !important;
