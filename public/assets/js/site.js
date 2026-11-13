@@ -622,13 +622,30 @@
 
   async function fetchFirestorePublicCollection(collectionName) {
     try {
-      const res = await fetch(`${FIRESTORE_BASE_URL}/${collectionName}?pageSize=300`, {
+      const runQueryUrl = `${FIRESTORE_BASE_URL}:runQuery`;
+      const res = await fetch(runQueryUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         cache: "no-store",
+        body: JSON.stringify({
+          structuredQuery: {
+            from: [{ collectionId: collectionName }],
+            where: {
+              fieldFilter: {
+                field: { fieldPath: "visibility" },
+                op: "EQUAL",
+                value: { stringValue: "public" },
+              },
+            },
+          },
+        }),
       });
       if (!res.ok) return [];
-      const data = await res.json();
-      if (!Array.isArray(data.documents)) return [];
-      return data.documents.map(parseFirestoreRestDoc).filter(Boolean);
+      const rows = await res.json();
+      if (!Array.isArray(rows)) return [];
+      return rows
+        .map((row) => (row && row.document ? parseFirestoreRestDoc(row.document) : null))
+        .filter(Boolean);
     } catch {
       return [];
     }
@@ -718,7 +735,7 @@
         cms.sectionGalleryItems = Array.from(secMap.values());
       }
 
-      // Merge live Firestore site_texts
+      // Merge live Firestore site_texts (skip pre-redesign legacy bulk-seed docs before 2026-11-12T18:00Z unless present in local overrides)
       if (fbSiteTexts.length > 0) {
         if (!Array.isArray(cms.textSlots)) cms.textSlots = [];
         if (!Array.isArray(cms.customTexts)) cms.customTexts = [];
@@ -727,11 +744,21 @@
 
         fbSiteTexts.forEach((ft) => {
           if (!ft || !ft.textId) return;
+          const isLegacySeed =
+            !ft.isCustomAdded &&
+            ft.updatedAt &&
+            String(ft.updatedAt) < "2026-11-12T18:00:00Z";
+          if (isLegacySeed) return;
+
           if (ft.isCustomAdded) {
             customTextMap.set(ft.textId, { ...ft, isModified: true });
           } else if (textSlotMap.has(ft.textId)) {
+            const existingSlot = textSlotMap.get(ft.textId);
+            if (ft.tagName && existingSlot.tagName && ft.tagName !== existingSlot.tagName) {
+              return;
+            }
             textSlotMap.set(ft.textId, {
-              ...textSlotMap.get(ft.textId),
+              ...existingSlot,
               ...ft,
               isModified: true,
             });
@@ -861,6 +888,9 @@
           .forEach((t) => {
             const entry = textElementMap.get(t.textId);
             if (!entry) return;
+            if (!t.isCustomAdded && t.tagName && entry.tagName && t.tagName !== entry.tagName) {
+              return;
+            }
             if (t.isDeleted) {
               entry.element.style.display = "none";
             } else {
@@ -896,6 +926,8 @@
           card.appendChild(p);
           customTextWrap.appendChild(card);
         });
+      } else if (customTextWrap) {
+        customTextWrap.remove();
       }
 
       // 4. Render Curated Firebase Section Wildlife Gallery for this page (excluding hero_slideshow items)
@@ -1084,57 +1116,87 @@
       });
     }
 
-    // Animated counters helper (plays once on downward scroll per page load/refresh)
+    // Animated counters helper (runs after Firebase CMS hydration so admin edits are never overwritten)
     function initCrossBridgeCounters(toggleMode = "play none none none") {
-      const crossCard = document.querySelector(".hero-cross-bridge-card");
-      if (!crossCard) return;
+      const startCounters = () => {
+        const crossCard = document.querySelector(".hero-cross-bridge-card");
+        if (!crossCard || crossCard.dataset.countersBound === "true") return;
+        crossCard.dataset.countersBound = "true";
 
-      const scoreEl = crossCard.querySelector(".cross-score");
-      if (scoreEl) {
-        const scoreObj = { val: 0 };
-        const t1 = gsap.fromTo(
-          scoreObj,
-          { val: 0 },
-          {
-            val: 4.9,
-            duration: 1.5,
-            ease: "power2.out",
-            scrollTrigger: {
-              trigger: crossCard,
-              start: "top 95%",
-              toggleActions: toggleMode,
-              once: true,
-            },
-            onUpdate: () => {
-              scoreEl.textContent = scoreObj.val.toFixed(1);
-            },
+        const scoreEl = crossCard.querySelector(".cross-score");
+        if (scoreEl) {
+          const rawScore = (scoreEl.textContent || "").trim();
+          const numMatch = rawScore.match(/^(\d+(?:\.\d+)?)(.*)$/);
+          if (numMatch) {
+            const targetVal = parseFloat(numMatch[1]);
+            const decimals = (numMatch[1].split(".")[1] || "").length;
+            const suffix = numMatch[2] || "";
+            const scoreObj = { val: 0 };
+            const t1 = gsap.fromTo(
+              scoreObj,
+              { val: 0 },
+              {
+                val: targetVal,
+                duration: 1.5,
+                ease: "power2.out",
+                scrollTrigger: {
+                  trigger: crossCard,
+                  start: "top 95%",
+                  toggleActions: toggleMode,
+                  once: true,
+                },
+                onUpdate: () => {
+                  scoreEl.textContent = `${scoreObj.val.toFixed(decimals)}${suffix}`;
+                },
+                onComplete: () => {
+                  scoreEl.textContent = rawScore;
+                },
+              }
+            );
+            registerForViewportReplay(t1, crossCard);
           }
-        );
-        registerForViewportReplay(t1, crossCard);
-      }
+        }
 
-      const metricEl = crossCard.querySelector(".cross-metric");
-      if (metricEl) {
-        const countObj = { val: 0 };
-        const t2 = gsap.fromTo(
-          countObj,
-          { val: 0 },
-          {
-            val: 12500,
-            duration: 1.7,
-            ease: "power2.out",
-            scrollTrigger: {
-              trigger: crossCard,
-              start: "top 95%",
-              toggleActions: toggleMode,
-              once: true,
-            },
-            onUpdate: () => {
-              metricEl.textContent = `${Math.round(countObj.val).toLocaleString()}+`;
-            },
+        const metricEl = crossCard.querySelector(".cross-metric");
+        if (metricEl) {
+          const rawMetric = (metricEl.textContent || "").trim();
+          const metricMatch = rawMetric.match(/^([\d,]+)(.*)$/);
+          if (metricMatch) {
+            const targetCount = parseInt(metricMatch[1].replace(/,/g, ""), 10);
+            const suffix = metricMatch[2] || "";
+            if (!Number.isNaN(targetCount)) {
+              const countObj = { val: 0 };
+              const t2 = gsap.fromTo(
+                countObj,
+                { val: 0 },
+                {
+                  val: targetCount,
+                  duration: 1.7,
+                  ease: "power2.out",
+                  scrollTrigger: {
+                    trigger: crossCard,
+                    start: "top 95%",
+                    toggleActions: toggleMode,
+                    once: true,
+                  },
+                  onUpdate: () => {
+                    metricEl.textContent = `${Math.round(countObj.val).toLocaleString()}${suffix}`;
+                  },
+                  onComplete: () => {
+                    metricEl.textContent = rawMetric;
+                  },
+                }
+              );
+              registerForViewportReplay(t2, crossCard);
+            }
           }
-        );
-        registerForViewportReplay(t2, crossCard);
+        }
+      };
+
+      if (window.__firebaseCmsHydrationPromise) {
+        window.__firebaseCmsHydrationPromise.then(startCounters);
+      } else {
+        startCounters();
       }
     }
 
@@ -3025,8 +3087,9 @@
   bindEditableSlots();
   bindEditableTextSlots();
   initUltraSmoothScroll();
+  window.__firebaseCmsHydrationPromise = hydrateFromFirebaseCms();
   void initDistinctGsapAnimations();
-  void hydrateFromFirebaseCms().then(() => {
+  void window.__firebaseCmsHydrationPromise.then(() => {
     if (typeof window.__animateFirebaseSectionGallery === "function") {
       window.__animateFirebaseSectionGallery();
     }

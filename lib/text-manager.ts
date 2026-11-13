@@ -221,18 +221,106 @@ function detectTextLocation(
   };
 }
 
+const VOID_HTML_TAGS = new Set([
+  'area',
+  'base',
+  'br',
+  'col',
+  'embed',
+  'hr',
+  'img',
+  'input',
+  'link',
+  'meta',
+  'param',
+  'source',
+  'track',
+  'wbr',
+]);
+
+const EDITABLE_TEXT_BLOCK_TAGS = new Set(['h1', 'h2', 'h3', 'h4', 'p', 'blockquote', 'li']);
+const EDITABLE_TEXT_CLASS_TOKENS = new Set([
+  'paragraph',
+  'hero-editorial-kicker',
+  'cross-score',
+  'cross-metric',
+  'cross-title',
+  'cross-caption',
+]);
+
 /**
- * Extracts editable text elements from a page's <main> and hero banner in deterministic order.
- * Matches headings (h1-h4), paragraphs (p), leaf div.paragraph, blockquotes, list items (li),
- * button labels (.wsite-button-inner), hero kicker, and Hero Cross-Section stats/titles/captions.
+ * Extracts editable text elements from a page's <main> in exact DOM document order
+ * matching browser `mainEl.querySelectorAll(...)` in site.js 1:1.
  */
 export function parsePageTextSlots(html: string): ParsedTextMatch[] {
   const results: ParsedTextMatch[] = [];
   const mainMatch = html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i);
   const targetRegion = mainMatch ? mainMatch[1] : html;
 
-  const regex =
-    /<(h1|h2|h3|h4|p|blockquote|li)\b[^>]*>([\s\S]*?)<\/\1>|<span\b[^>]*class="[^"]*\bwsite-button-inner\b[^"]*"[^>]*>([\s\S]*?)<\/span>|<(div|span)\b[^>]*class="[^"]*\b(?:paragraph|hero-editorial-kicker|cross-score|cross-metric|cross-title|cross-caption)\b[^"]*"[^>]*>([\s\S]*?)<\/\4>/gi;
+  const tagRe = /<\/?([a-zA-Z0-9]+)([^>]*)>/g;
+  const stack: {
+    tag: string;
+    start: number;
+    innerStart: number;
+    isCand: boolean;
+    insideExcluded: boolean;
+  }[] = [];
+  const candidates: {
+    tag: string;
+    start: number;
+    inner: string;
+  }[] = [];
+
+  let tagMatch: RegExpExecArray | null;
+  while ((tagMatch = tagRe.exec(targetRegion)) !== null) {
+    const full = tagMatch[0];
+    const tag = tagMatch[1].toLowerCase();
+    const attrs = tagMatch[2] || '';
+    const isClose = full.startsWith('</');
+    const selfClose = full.endsWith('/>') || VOID_HTML_TAGS.has(tag);
+
+    if (isClose) {
+      for (let i = stack.length - 1; i >= 0; i--) {
+        if (stack[i].tag === tag) {
+          const node = stack.splice(i)[0];
+          if (node.isCand && !node.insideExcluded) {
+            candidates.push({
+              tag: node.tag,
+              start: node.start,
+              inner: targetRegion.slice(node.innerStart, tagMatch.index),
+            });
+          }
+          break;
+        }
+      }
+    } else {
+      const clsMatch = attrs.match(/\bclass\s*=\s*"([^"]*)"/i);
+      const clsList = (clsMatch ? clsMatch[1] : '').trim().split(/\s+/);
+      const inExcludedParent = stack.some((s) => s.insideExcluded);
+      const isExcludedNode =
+        tag === 'dialog' ||
+        clsList.includes('firebase-section-showcase') ||
+        clsList.includes('firebase-custom-texts-wrap');
+
+      const isCand =
+        EDITABLE_TEXT_BLOCK_TAGS.has(tag) ||
+        (tag === 'span' && clsList.includes('wsite-button-inner')) ||
+        ((tag === 'div' || tag === 'span') &&
+          clsList.some((cls) => EDITABLE_TEXT_CLASS_TOKENS.has(cls)));
+
+      if (!selfClose) {
+        stack.push({
+          tag,
+          start: tagMatch.index,
+          innerStart: tagMatch.index + full.length,
+          isCand,
+          insideExcluded: inExcludedParent || isExcludedNode,
+        });
+      }
+    }
+  }
+
+  candidates.sort((a, b) => a.start - b.start);
 
   const locState = {
     sectionName: 'Hero Banner',
@@ -240,31 +328,25 @@ export function parsePageTextSlots(html: string): ParsedTextMatch[] {
     inCrossBridge: false,
   };
   let textIndex = 0;
-  let match: RegExpExecArray | null;
 
-  while ((match = regex.exec(targetRegion)) !== null) {
-    const rawTag = match[1]
-      ? match[1].toUpperCase()
-      : match[3] !== undefined
-      ? 'SPAN'
-      : (match[4] || 'DIV').toUpperCase();
-    const innerHtml = match[1] ? match[2] : match[3] !== undefined ? match[3] : match[5];
-    if (/<(p|div|ul|ol|table|h1|h2|h3|h4)\b/i.test(innerHtml)) {
+  for (const cand of candidates) {
+    if (/<(p|div|ul|ol|table|h1|h2|h3|h4)\b/i.test(cand.inner)) {
       continue;
     }
 
-    const cleanText = decodeHtmlEntities(innerHtml);
+    const cleanText = decodeHtmlEntities(cand.inner);
     if (!cleanText || cleanText.length < 2) {
       continue;
     }
 
+    const rawTag = cand.tag.toUpperCase();
     const tagName = (
       ['H1', 'H2', 'H3', 'H4', 'P', 'SPAN', 'LI', 'DIV', 'BLOCKQUOTE'].includes(rawTag)
         ? rawTag
         : 'DIV'
     ) as SiteTextSlot['tagName'];
 
-    const loc = detectTextLocation(targetRegion, match.index, rawTag, cleanText, locState);
+    const loc = detectTextLocation(targetRegion, cand.start, rawTag, cleanText, locState);
 
     results.push({
       textIndex: textIndex++,
@@ -332,10 +414,10 @@ export async function getAllSiteTexts(): Promise<{
   for (const page of SITE_PAGES) {
     let defaultHtml = '';
     try {
-      defaultHtml = await fs.readFile(path.join(DEFAULTS_HTML_DIR, page.file), 'utf8');
+      defaultHtml = await fs.readFile(path.join(PUBLIC_DIR, page.file), 'utf8');
     } catch {
       try {
-        defaultHtml = await fs.readFile(path.join(PUBLIC_DIR, page.file), 'utf8');
+        defaultHtml = await fs.readFile(path.join(DEFAULTS_HTML_DIR, page.file), 'utf8');
       } catch {
         continue;
       }

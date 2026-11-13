@@ -16,8 +16,6 @@ import {
   extractR2KeyFromCdnUrl,
 } from '@/lib/r2-storage';
 import {
-  saveSiteTextInFirestore,
-  deleteSiteTextInFirestore,
   saveSectionGalleryItemInFirestore,
   deleteSectionGalleryItemInFirestore,
   saveSiteImageInFirestore,
@@ -85,16 +83,6 @@ export async function POST(req: NextRequest) {
       };
 
       await saveCmsState(state);
-      await saveSiteTextInFirestore({
-        textId,
-        page,
-        textIndex,
-        tagName,
-        sectionContext: String(body.sectionContext || 'Page Content'),
-        content: String(body.content ?? ''),
-        isDeleted: Boolean(body.isDeleted),
-        isCustomAdded,
-      }).catch(() => {});
 
       const updated = await getAllSiteTexts();
       return NextResponse.json({ ok: true, textId, ...updated });
@@ -105,12 +93,8 @@ export async function POST(req: NextRequest) {
       const restoreDefault = Boolean(body.restoreDefault);
       const wasCustom = Boolean(state.textOverrides[textId]?.isCustomAdded);
 
-      if (restoreDefault) {
+      if (restoreDefault || wasCustom) {
         delete state.textOverrides[textId];
-        await deleteSiteTextInFirestore(textId).catch(() => {});
-      } else if (wasCustom) {
-        delete state.textOverrides[textId];
-        await deleteSiteTextInFirestore(textId).catch(() => {});
       } else {
         const page = String(body.page || 'index.html');
         const textIndex = typeof body.textIndex === 'number' ? body.textIndex : 0;
@@ -139,16 +123,6 @@ export async function POST(req: NextRequest) {
           isCustomAdded: false,
           updatedAt: new Date().toISOString(),
         };
-        await saveSiteTextInFirestore({
-          textId,
-          page,
-          textIndex,
-          tagName,
-          sectionContext: String(body.sectionContext || 'Page Content'),
-          content: String(body.content ?? ''),
-          isDeleted: true,
-          isCustomAdded: false,
-        }).catch(() => {});
       }
 
       await saveCmsState(state);

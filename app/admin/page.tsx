@@ -95,7 +95,9 @@ export default function AdminStudioPage() {
   // Live Firestore Overrides
   const [firestoreImageDocs, setFirestoreImageDocs] = useState<Record<string, Partial<ImageSlot>>>({});
   const [firestoreSectionDocs, setFirestoreSectionDocs] = useState<SeedSectionGalleryItem[]>([]);
-  const [firestoreTextDocs, setFirestoreTextDocs] = useState<Record<string, Partial<SiteTextSlot>>>({});
+  const [firestoreTextDocs, setFirestoreTextDocs] = useState<
+    Record<string, Partial<SiteTextSlot> & { updatedAt?: unknown }>
+  >({});
 
   // Navigation & Filters
   const [selectedPage, setSelectedPage] = useState<string>('index.html');
@@ -264,18 +266,17 @@ export default function AdminStudioPage() {
       }
     );
 
-    const unsubTexts = subscribePublicCollection<Partial<SiteTextSlot> & { textId: string }>(
-      'site_texts',
-      (items) => {
-        const next: Record<string, Partial<SiteTextSlot>> = {};
-        for (const item of items) {
-          if (item.textId) {
-            next[item.textId] = item;
-          }
+    const unsubTexts = subscribePublicCollection<
+      Partial<SiteTextSlot> & { textId: string; updatedAt?: unknown }
+    >('site_texts', (items) => {
+      const next: Record<string, Partial<SiteTextSlot> & { updatedAt?: unknown }> = {};
+      for (const item of items) {
+        if (item.textId) {
+          next[item.textId] = item;
         }
-        setFirestoreTextDocs(next);
       }
-    );
+      setFirestoreTextDocs(next);
+    });
 
     return () => {
       unsubImages();
@@ -405,15 +406,35 @@ export default function AdminStudioPage() {
   }, [sectionImages, firestoreSectionDocs]);
 
   const mergedTexts = useMemo(() => {
+    const isLegacyPreRedesignText = (fbDoc: Partial<SiteTextSlot> & { updatedAt?: unknown }) => {
+      if (fbDoc.isCustomAdded) return false;
+      const rawTs = fbDoc.updatedAt as { toDate?: () => Date; seconds?: number } | string | undefined;
+      if (!rawTs) return false;
+      let iso = '';
+      if (typeof rawTs === 'string') {
+        iso = rawTs;
+      } else if (typeof rawTs === 'object' && typeof rawTs.toDate === 'function') {
+        iso = rawTs.toDate().toISOString();
+      } else if (typeof rawTs === 'object' && typeof rawTs.seconds === 'number') {
+        iso = new Date(rawTs.seconds * 1000).toISOString();
+      }
+      return Boolean(iso && iso < '2026-11-12T18:00:00Z');
+    };
+
     const baseList = [...textSlots, ...customTexts].map((t) => {
       const fbDoc = firestoreTextDocs[t.textId];
-      if (!fbDoc) return t;
+      if (!fbDoc || isLegacyPreRedesignText(fbDoc)) return t;
+      if (!t.isCustomAdded && fbDoc.tagName && t.tagName && fbDoc.tagName !== t.tagName) {
+        return t;
+      }
+      const nextContent = fbDoc.content !== undefined ? fbDoc.content : t.content;
+      const nextDeleted = fbDoc.isDeleted !== undefined ? fbDoc.isDeleted : t.isDeleted;
       return {
         ...t,
-        content: fbDoc.content !== undefined ? fbDoc.content : t.content,
-        isDeleted: fbDoc.isDeleted !== undefined ? fbDoc.isDeleted : t.isDeleted,
+        content: nextContent,
+        isDeleted: nextDeleted,
         sectionContext: fbDoc.sectionContext || t.sectionContext,
-        isModified: true,
+        isModified: t.isCustomAdded || nextContent !== t.defaultContent || Boolean(nextDeleted),
       };
     });
 
@@ -1015,8 +1036,15 @@ export default function AdminStudioPage() {
       if (!res.ok) throw new Error('Failed to save text');
 
       await saveSiteTextInFirestore(payload);
+      setFirestoreTextDocs((prev) => ({
+        ...prev,
+        [payload.textId]: {
+          ...payload,
+          updatedAt: new Date().toISOString(),
+        },
+      }));
       setEditingTextId(null);
-      showNotice(`Saved text in "${slot.sectionContext}".`);
+      showNotice(`Saved and synced "${slot.sectionContext}" to Firestore.`);
       await fetchInventory();
     } catch (err) {
       showNotice(err instanceof Error ? err.message : 'Failed to save text', 'error');
@@ -1045,6 +1073,11 @@ export default function AdminStudioPage() {
 
       if (restoreDefault || slot.isCustomAdded) {
         await deleteSiteTextInFirestore(slot.textId);
+        setFirestoreTextDocs((prev) => {
+          const next = { ...prev };
+          delete next[slot.textId];
+          return next;
+        });
       } else {
         await saveSiteTextInFirestore({
           textId: slot.textId,
@@ -1056,6 +1089,20 @@ export default function AdminStudioPage() {
           isDeleted: true,
           isCustomAdded: false,
         });
+        setFirestoreTextDocs((prev) => ({
+          ...prev,
+          [slot.textId]: {
+            textId: slot.textId,
+            page: slot.page,
+            textIndex: slot.textIndex,
+            tagName: slot.tagName,
+            sectionContext: slot.sectionContext,
+            content: slot.content,
+            isDeleted: true,
+            isCustomAdded: false,
+            updatedAt: new Date().toISOString(),
+          },
+        }));
       }
 
       showNotice(
@@ -1094,6 +1141,13 @@ export default function AdminStudioPage() {
       if (!res.ok) throw new Error('Failed to create custom text block');
 
       await saveSiteTextInFirestore(payload);
+      setFirestoreTextDocs((prev) => ({
+        ...prev,
+        [payload.textId]: {
+          ...payload,
+          updatedAt: new Date().toISOString(),
+        },
+      }));
       setCustomTextValue('');
       setShowCustomTextForm(false);
       showNotice(`Added custom text note to "${payload.sectionContext}".`);

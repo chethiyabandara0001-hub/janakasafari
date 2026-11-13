@@ -15,6 +15,7 @@ import {
   collection,
   doc,
   getDoc,
+  getDocFromServer,
   setDoc,
   deleteDoc,
   onSnapshot,
@@ -110,6 +111,14 @@ function getAuthorizedCmsAuthorId(): string {
     return user.uid;
   }
   return 'nisha-cms-admin';
+}
+
+async function readExistingDoc(docRef: ReturnType<typeof doc>) {
+  try {
+    return await getDocFromServer(docRef);
+  } catch {
+    return await getDoc(docRef);
+  }
 }
 
 export function extractR2KeyFromUrl(url?: string): string | undefined {
@@ -329,8 +338,8 @@ export async function saveSiteImageInFirestore(input: {
   const path = `site_images/${input.slotId}`;
   const docRef = doc(db, 'site_images', input.slotId);
   try {
-    const existing = await getDoc(docRef);
-    const createdAt = existing.exists() ? existing.data().createdAt : serverTimestamp();
+    const existing = await readExistingDoc(docRef);
+    const createdAt = existing.exists() && existing.data().createdAt ? existing.data().createdAt : serverTimestamp();
 
     const resolvedR2Key = input.r2Key || extractR2KeyFromUrl(input.src);
 
@@ -418,8 +427,8 @@ export async function saveSectionGalleryItemInFirestore(input: {
   const path = `section_gallery_items/${input.itemId}`;
   const docRef = doc(db, 'section_gallery_items', input.itemId);
   try {
-    const existing = await getDoc(docRef);
-    const createdAt = existing.exists() ? existing.data().createdAt : serverTimestamp();
+    const existing = await readExistingDoc(docRef);
+    const createdAt = existing.exists() && existing.data().createdAt ? existing.data().createdAt : serverTimestamp();
     const resolvedR2Key = input.r2Key || extractR2KeyFromUrl(input.src);
 
     let normalizedSrc = input.src.trim();
@@ -493,16 +502,19 @@ export async function saveSiteTextInFirestore(input: {
   isCustomAdded: boolean;
 }) {
   const authorId = getAuthorizedCmsAuthorId();
-  const path = `site_texts/${input.textId}`;
-  const docRef = doc(db, 'site_texts', input.textId);
+  const safeTextId = input.textId.slice(0, 120);
+  const path = `site_texts/${safeTextId}`;
+  const docRef = doc(db, 'site_texts', safeTextId);
   try {
-    const existing = await getDoc(docRef);
-    const createdAt = existing.exists() ? existing.data().createdAt : serverTimestamp();
+    const existing = await readExistingDoc(docRef);
+    const createdAt =
+      existing.exists() && existing.data().createdAt ? existing.data().createdAt : serverTimestamp();
+    const boundedTextIndex = Math.max(-1, Math.min(5000, Number(input.textIndex ?? 0)));
 
     await setDoc(docRef, {
-      textId: input.textId,
-      page: input.page,
-      textIndex: input.textIndex,
+      textId: safeTextId,
+      page: String(input.page || 'index.html').slice(0, 80),
+      textIndex: boundedTextIndex,
       tagName: input.tagName,
       sectionContext: (input.sectionContext || 'Page Content').slice(0, 300),
       content: (input.content || '').slice(0, 10000),

@@ -798,12 +798,32 @@ body:not(.janaka-contact) .banner .paragraph * {
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35) !important;
 }
 
+@media screen and (min-width: 768px) and (max-width: 1024px) {
+  body:not(.janaka-contact) .banner-wrap,
+  body:not(.janaka-contact) .banner-wrap > .wsite-elements,
+  body:not(.janaka-contact) .banner-wrap .wsite-header-elements,
+  body:not(.janaka-contact) .banner-wrap .wsite-section-wrap,
+  body:not(.janaka-contact) .banner-wrap .wsite-header-section,
+  body:not(.janaka-contact) .wsite-header-section .wsite-section-content {
+    min-height: 500px !important;
+  }
+
+  body.wsite-page-index .banner-wrap,
+  body.wsite-page-index .banner-wrap > .wsite-elements,
+  body.wsite-page-index .banner-wrap .wsite-header-elements,
+  body.wsite-page-index .banner-wrap .wsite-section-wrap,
+  body.wsite-page-index .banner-wrap .wsite-header-section,
+  body.wsite-page-index .wsite-header-section .wsite-section-content {
+    min-height: 600px !important;
+  }
+}
+
 @media screen and (max-width: 767px) {
   body:not(.janaka-contact) .banner-wrap,
   body:not(.janaka-contact) .banner-wrap > .wsite-elements,
   body:not(.janaka-contact) .banner-wrap .wsite-header-elements,
   body:not(.janaka-contact) .banner-wrap .wsite-section-wrap {
-    min-height: 450px !important;
+    min-height: 320px !important;
     height: auto !important;
   }
 
@@ -811,7 +831,7 @@ body:not(.janaka-contact) .banner .paragraph * {
   body.wsite-page-index .banner-wrap > .wsite-elements,
   body.wsite-page-index .banner-wrap .wsite-header-elements,
   body.wsite-page-index .banner-wrap .wsite-section-wrap {
-    min-height: 558px !important;
+    min-height: 380px !important;
     height: auto !important;
   }
 
@@ -819,41 +839,65 @@ body:not(.janaka-contact) .banner .paragraph * {
   body.wsite-page-index .banner-wrap .wsite-header-section {
     position: relative !important;
     inset: auto !important;
-    min-height: 450px !important;
+    min-height: 320px !important;
     height: auto !important;
     transform: none !important;
   }
 
   body.wsite-page-index .banner-wrap .wsite-header-section {
-    min-height: 558px !important;
+    min-height: 380px !important;
   }
 
   body:not(.janaka-contact) .wsite-header-section .wsite-section-content,
   body:not(.janaka-contact) div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2),
   body.wsite-page-index .wsite-header-section .wsite-section-content,
   body.wsite-page-index div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) {
-    min-height: 450px !important;
+    min-height: 320px !important;
     height: auto !important;
-    padding-bottom: 28px !important;
+    padding-top: 16px !important;
+    padding-bottom: 24px !important;
     transform: none;
   }
 
   body.wsite-page-index .wsite-header-section .wsite-section-content,
   body.wsite-page-index div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) {
-    min-height: 558px !important;
-    padding-bottom: 68px !important;
+    position: relative !important;
+    align-items: flex-start !important;
+    min-height: 380px !important;
+    padding-top: 16px !important;
+    padding-bottom: 0 !important;
   }
 
   body:not(.janaka-contact) .wsite-header-section .container {
-    padding: 96px 18px 36px !important;
+    padding: 76px 18px 20px !important;
+  }
+
+  body.wsite-page-index .wsite-header-section .container {
+    position: static !important;
+    padding: 76px 18px 140px !important;
+  }
+
+  body.wsite-page-index .wsite-header-section .banner,
+  body.wsite-page-index .banner-wrap .banner > .wsite-section-elements,
+  body.wsite-page-index .banner .wsite-multicol,
+  body.wsite-page-index .banner .wsite-multicol-table-wrap,
+  body.wsite-page-index .banner .wsite-multicol-table,
+  body.wsite-page-index .banner .wsite-multicol-tbody,
+  body.wsite-page-index .banner .wsite-multicol-tr,
+  body.wsite-page-index .banner .wsite-multicol-col {
+    position: static !important;
+  }
+
+  body:not(.janaka-contact) .banner .wsite-multicol-col {
+    margin-bottom: 0 !important;
   }
 
   body:not(.janaka-contact) .banner h2.wsite-content-title,
   body.wsite-page-index .banner-wrap .banner h2,
   body.wsite-page-index .banner-wrap .banner h2 * {
-    font-size: clamp(30px, 8vw, 44px) !important;
+    font-size: clamp(28px, 7.6vw, 40px) !important;
     line-height: 1.12 !important;
-    margin-bottom: 14px !important;
+    margin-bottom: 12px !important;
   }
 
   body:not(.janaka-contact) .banner .paragraph,
@@ -864,9 +908,19 @@ body:not(.janaka-contact) .banner .paragraph * {
 
   body:not(.janaka-contact) .banner .wsite-button {
     width: 100% !important;
-    max-width: 320px !important;
-    padding: 14px 22px !important;
+    max-width: 300px !important;
+    padding: 13px 20px !important;
     text-align: center !important;
+  }
+
+  body.wsite-page-index .banner .wsite-button {
+    position: absolute !important;
+    left: 18px !important;
+    bottom: 20% !important;
+    margin-top: 0 !important;
+    z-index: 6 !important;
+    width: 100% !important;
+    max-width: min(300px, calc(100% - 36px)) !important;
   }
 }
 
@@ -1134,7 +1188,7 @@ body.wsite-page-index div:nth-of-type(1) > div:nth-of-type(1) > main#main-conten
   body.wsite-page-index div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) {
     margin-top: 0 !important;
     margin-bottom: 0 !important;
-    padding-top: 24px !important;
+    padding-top: 0 !important;
     padding-bottom: 24px !important;
     overflow: visible !important;
     background-color: #012f23 !important;
@@ -1147,81 +1201,85 @@ body.wsite-page-index div:nth-of-type(1) > div:nth-of-type(1) > main#main-conten
     position: relative !important;
     top: 0 !important;
     margin-top: 0 !important;
-    margin-bottom: 0 !important;
-    transform: translateY(-30%) !important;
-    width: calc(100% - 20px) !important;
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 12px !important;
-    padding: 18px 16px !important;
-    border-radius: 18px !important;
+    margin-bottom: -28px !important;
+    transform: translateY(-28px) !important;
+    width: calc(100% - 16px) !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    align-items: stretch !important;
+    gap: 0 !important;
+    padding: 12px 6px !important;
+    border-radius: 16px !important;
   }
 
   .hero-cross-sub-section {
-    padding: 10px 8px !important;
-    justify-content: center !important;
+    padding: 4px 6px !important;
+    justify-content: flex-start !important;
     align-items: center !important;
     text-align: center !important;
     flex-direction: column !important;
-    gap: 6px !important;
+    gap: 4px !important;
     width: 100% !important;
+    min-width: 0 !important;
   }
 
   .hero-cross-sub-section:not(:last-child) {
-    border-right: none !important;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
-    padding-bottom: 14px !important;
+    border-right: 1px solid rgba(0, 0, 0, 0.1) !important;
+    border-bottom: none !important;
+    padding-bottom: 4px !important;
   }
 
   .cross-top-media {
-    margin-bottom: 6px;
-    min-height: 38px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    margin-bottom: 4px !important;
+    min-height: 32px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
 
   .cross-top-google,
   .cross-top-traveler {
-    height: 34px !important;
-    max-height: 34px !important;
+    height: 24px !important;
+    max-height: 24px !important;
   }
 
   .cross-top-tripadvisor {
-    height: 48px !important;
-    max-height: 48px !important;
+    height: 32px !important;
+    max-height: 32px !important;
   }
 
   .cross-metric-row {
-    gap: 8px;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-bottom: 3px;
+    gap: 3px !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    margin-bottom: 2px !important;
   }
 
   .cross-score,
   .cross-metric {
-    font-size: 22px !important;
-    line-height: 1.1;
+    font-size: 15px !important;
+    line-height: 1.1 !important;
   }
 
   .cross-stars {
-    font-size: 15px !important;
-    letter-spacing: 1px;
+    font-size: 10px !important;
+    letter-spacing: 0.5px !important;
   }
 
   .cross-title,
   .cross-title.gold-accent {
-    font-size: 13px !important;
-    letter-spacing: 0.04em;
-    line-height: 1.25;
-    margin-bottom: 2px;
+    font-size: 9.5px !important;
+    letter-spacing: 0.02em !important;
+    line-height: 1.2 !important;
+    margin-bottom: 2px !important;
+    overflow-wrap: break-word;
   }
 
   .cross-caption {
-    font-size: 11.5px !important;
-    line-height: 1.35;
+    font-size: 8.5px !important;
+    line-height: 1.25 !important;
     color: #4b5563 !important;
+    overflow-wrap: break-word;
   }
 }
 

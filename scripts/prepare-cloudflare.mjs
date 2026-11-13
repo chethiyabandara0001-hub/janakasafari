@@ -218,35 +218,109 @@ function parsePageSlots(html) {
   return results;
 }
 
+const VOID_HTML_TAGS = new Set([
+  'area',
+  'base',
+  'br',
+  'col',
+  'embed',
+  'hr',
+  'img',
+  'input',
+  'link',
+  'meta',
+  'param',
+  'source',
+  'track',
+  'wbr',
+]);
+
+const EDITABLE_TEXT_BLOCK_TAGS = new Set(['h1', 'h2', 'h3', 'h4', 'p', 'blockquote', 'li']);
+const EDITABLE_TEXT_CLASS_TOKENS = new Set([
+  'paragraph',
+  'hero-editorial-kicker',
+  'cross-score',
+  'cross-metric',
+  'cross-title',
+  'cross-caption',
+]);
+
 function parsePageTextSlots(html) {
   const results = [];
   const mainMatch = html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i);
   const targetRegion = mainMatch ? mainMatch[1] : html;
-  const regex =
-    /<(h1|h2|h3|h4|p|blockquote|li)\b[^>]*>([\s\S]*?)<\/\1>|<span\b[^>]*class="[^"]*\bwsite-button-inner\b[^"]*"[^>]*>([\s\S]*?)<\/span>|<(div|span)\b[^>]*class="[^"]*\b(?:paragraph|hero-editorial-kicker|cross-score|cross-metric|cross-title|cross-caption)\b[^"]*"[^>]*>([\s\S]*?)<\/\4>/gi;
+
+  const tagRe = /<\/?([a-zA-Z0-9]+)([^>]*)>/g;
+  const stack = [];
+  const candidates = [];
+  let tagMatch;
+
+  while ((tagMatch = tagRe.exec(targetRegion)) !== null) {
+    const full = tagMatch[0];
+    const tag = tagMatch[1].toLowerCase();
+    const attrs = tagMatch[2] || '';
+    const isClose = full.startsWith('</');
+    const selfClose = full.endsWith('/>') || VOID_HTML_TAGS.has(tag);
+
+    if (isClose) {
+      for (let i = stack.length - 1; i >= 0; i--) {
+        if (stack[i].tag === tag) {
+          const node = stack.splice(i)[0];
+          if (node.isCand && !node.insideExcluded) {
+            candidates.push({
+              tag: node.tag,
+              start: node.start,
+              inner: targetRegion.slice(node.innerStart, tagMatch.index),
+            });
+          }
+          break;
+        }
+      }
+    } else {
+      const clsMatch = attrs.match(/\bclass\s*=\s*"([^"]*)"/i);
+      const clsList = (clsMatch ? clsMatch[1] : '').trim().split(/\s+/);
+      const inExcludedParent = stack.some((s) => s.insideExcluded);
+      const isExcludedNode =
+        tag === 'dialog' ||
+        clsList.includes('firebase-section-showcase') ||
+        clsList.includes('firebase-custom-texts-wrap');
+
+      const isCand =
+        EDITABLE_TEXT_BLOCK_TAGS.has(tag) ||
+        (tag === 'span' && clsList.includes('wsite-button-inner')) ||
+        ((tag === 'div' || tag === 'span') &&
+          clsList.some((cls) => EDITABLE_TEXT_CLASS_TOKENS.has(cls)));
+
+      if (!selfClose) {
+        stack.push({
+          tag,
+          start: tagMatch.index,
+          innerStart: tagMatch.index + full.length,
+          isCand,
+          insideExcluded: inExcludedParent || isExcludedNode,
+        });
+      }
+    }
+  }
+
+  candidates.sort((a, b) => a.start - b.start);
 
   let sectionName = 'Hero Banner';
   let subSectionName;
   let inCrossBridge = false;
   let textIndex = 0;
-  let match;
 
-  while ((match = regex.exec(targetRegion)) !== null) {
-    const rawTag = match[1]
-      ? match[1].toUpperCase()
-      : match[3] !== undefined
-      ? 'SPAN'
-      : (match[4] || 'DIV').toUpperCase();
-    const innerHtml = match[1] ? match[2] : match[3] !== undefined ? match[3] : match[5];
-    if (/<(p|div|ul|ol|table|h1|h2|h3|h4)\b/i.test(innerHtml)) {
+  for (const cand of candidates) {
+    if (/<(p|div|ul|ol|table|h1|h2|h3|h4)\b/i.test(cand.inner)) {
       continue;
     }
-    const cleanText = stripTags(innerHtml);
+    const cleanText = stripTags(cand.inner);
     if (!cleanText || cleanText.length < 2) {
       continue;
     }
 
-    const before = targetRegion.slice(Math.max(0, match.index - 2200), match.index);
+    const rawTag = cand.tag.toUpperCase();
+    const before = targetRegion.slice(Math.max(0, cand.start - 2200), cand.start);
     if (before.includes('hero-cross-bridge-wrap') && !before.includes('<div class="main-wrap"')) {
       inCrossBridge = true;
       sectionName = 'Hero Bottom Cross-Section';
@@ -523,10 +597,10 @@ async function buildInventories() {
   for (const page of SITE_PAGES) {
     let html = '';
     try {
-      html = await fs.readFile(path.join(DEFAULTS_HTML_DIR, page.file), 'utf8');
+      html = await fs.readFile(path.join(PUBLIC_DIR, page.file), 'utf8');
     } catch {
       try {
-        html = await fs.readFile(path.join(PUBLIC_DIR, page.file), 'utf8');
+        html = await fs.readFile(path.join(DEFAULTS_HTML_DIR, page.file), 'utf8');
       } catch {
         continue;
       }
@@ -1409,7 +1483,64 @@ const worker = {
         try {
           const body = await request.json();
           const action = String(body.action || '');
-          if (action === 'delete-section-image') {
+          if (action === 'save-text') {
+            const page = String(body.page || 'index.html');
+            const isCustomAdded = Boolean(body.isCustomAdded);
+            const textIndex = typeof body.textIndex === 'number' ? body.textIndex : -1;
+            const textId = String(
+              body.textId ||
+                (isCustomAdded
+                  ? page.replace(/[^a-zA-Z0-9_-]/g, '_') + '__custom_' + Date.now()
+                  : page.replace(/[^a-zA-Z0-9_-]/g, '_') + '__text_' + textIndex)
+            );
+            const tagName = String(body.tagName || (isCustomAdded ? 'CUSTOM' : 'P'));
+            const sectionContext = String(body.sectionContext || 'Page Content');
+            const content = String(body.content ?? '');
+            const isDeleted = Boolean(body.isDeleted);
+            if (isCustomAdded) {
+              if (!Array.isArray(CMS_INVENTORY.customTexts)) CMS_INVENTORY.customTexts = [];
+              const existingIdx = CMS_INVENTORY.customTexts.findIndex((t) => t.textId === textId);
+              const nextCustom = {
+                textId,
+                page,
+                pageTitle: page,
+                textIndex: -1,
+                tagName,
+                sectionContext,
+                content,
+                defaultContent: '',
+                isDeleted,
+                isCustomAdded: true,
+                isModified: true,
+              };
+              if (existingIdx >= 0) CMS_INVENTORY.customTexts[existingIdx] = nextCustom;
+              else CMS_INVENTORY.customTexts.push(nextCustom);
+            } else {
+              const targetSlot = (CMS_INVENTORY.textSlots || []).find((t) => t.textId === textId);
+              if (targetSlot) {
+                targetSlot.content = content;
+                targetSlot.isDeleted = isDeleted;
+                targetSlot.isModified = content !== targetSlot.defaultContent || isDeleted;
+              }
+            }
+          } else if (action === 'delete-text') {
+            const textId = String(body.textId || '');
+            const restoreDefault = Boolean(body.restoreDefault);
+            if (Array.isArray(CMS_INVENTORY.customTexts)) {
+              CMS_INVENTORY.customTexts = CMS_INVENTORY.customTexts.filter((t) => t.textId !== textId);
+            }
+            const targetSlot = (CMS_INVENTORY.textSlots || []).find((t) => t.textId === textId);
+            if (targetSlot) {
+              if (restoreDefault) {
+                targetSlot.content = targetSlot.defaultContent;
+                targetSlot.isDeleted = false;
+                targetSlot.isModified = false;
+              } else {
+                targetSlot.isDeleted = true;
+                targetSlot.isModified = true;
+              }
+            }
+          } else if (action === 'delete-section-image') {
             const itemId = String(body.itemId || '');
             const targetItem = (CMS_INVENTORY.sectionGalleryItems || []).find((i) => i.itemId === itemId);
             const keyToDelete = extractWorkerR2Key(body.r2Key || (targetItem && (targetItem.r2Key || targetItem.src)) || '');
