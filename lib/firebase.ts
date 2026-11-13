@@ -552,6 +552,96 @@ export function subscribePublicCollection<T>(
   );
 }
 
+export async function saveEnquiryInFirestore(input: {
+  enquiryId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  whatsapp?: string;
+  park?: string;
+  adults: string;
+  kids: string;
+  safariDate?: string;
+  message: string;
+  status?: 'new' | 'read' | 'replied';
+  sourcePage?: string;
+}) {
+  const safeId = input.enquiryId.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 120);
+  const path = `enquiries/${safeId}`;
+  const docRef = doc(db, 'enquiries', safeId);
+  try {
+    await setDoc(docRef, {
+      enquiryId: safeId,
+      firstName: (input.firstName || 'Guest').trim().slice(0, 100),
+      lastName: (input.lastName || '-').trim().slice(0, 100),
+      email: (input.email || '').trim().slice(0, 256),
+      whatsapp: (input.whatsapp || '').trim().slice(0, 60),
+      park: (input.park || '').trim().slice(0, 100),
+      adults: (input.adults || '1').trim().slice(0, 20),
+      kids: (input.kids || '0').trim().slice(0, 20),
+      safariDate: (input.safariDate || '').trim().slice(0, 60),
+      message: (input.message || '').trim().slice(0, 4000),
+      status: input.status || 'new',
+      sourcePage: (input.sourcePage || 'contact.html').trim().slice(0, 80),
+      adminScope: 'nisha-cms-admin',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.CREATE, path);
+  }
+}
+
+export async function updateEnquiryStatusInFirestore(
+  enquiryId: string,
+  status: 'new' | 'read' | 'replied'
+) {
+  const safeId = enquiryId.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 120);
+  const path = `enquiries/${safeId}`;
+  const docRef = doc(db, 'enquiries', safeId);
+  try {
+    const existing = await readExistingDoc(docRef);
+    if (!existing.exists()) return;
+    const data = existing.data();
+    await setDoc(docRef, {
+      ...data,
+      enquiryId: safeId,
+      status,
+      adminScope: 'nisha-cms-admin',
+      updatedAt: serverTimestamp(),
+    });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.UPDATE, path);
+  }
+}
+
+export async function deleteEnquiryInFirestore(enquiryId: string) {
+  const safeId = enquiryId.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 120);
+  const path = `enquiries/${safeId}`;
+  try {
+    await deleteDoc(doc(db, 'enquiries', safeId));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, path);
+  }
+}
+
+export function subscribeAdminEnquiries<T>(onData: (items: T[]) => void) {
+  const q = query(collection(db, 'enquiries'), where('adminScope', '==', 'nisha-cms-admin'));
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const items: T[] = [];
+      snapshot.forEach((docSnap) => {
+        items.push(docSnap.data() as T);
+      });
+      onData(items);
+    },
+    (err) => {
+      console.warn('Firestore subscription warning on enquiries:', err.message);
+    }
+  );
+}
+
 export {
   signInWithPopup,
   signInWithEmailAndPassword,
@@ -560,4 +650,5 @@ export {
   onAuthStateChanged,
   type User,
 };
+
 

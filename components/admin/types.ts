@@ -137,7 +137,25 @@ export interface ParentSectionGroup {
   totalTexts: number;
 }
 
-export type AdminTab = 'pages' | 'texts' | 'r2-bucket' | 'sync-settings';
+export interface EnquiryRecord {
+  enquiryId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  whatsapp: string;
+  park: string;
+  adults: string;
+  kids: string;
+  safariDate: string;
+  message: string;
+  status: 'new' | 'read' | 'replied';
+  sourcePage: string;
+  adminScope: 'nisha-cms-admin';
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
+
+export type AdminTab = 'pages' | 'texts' | 'enquiries' | 'r2-bucket' | 'sync-settings';
 
 export function splitSectionLabel(ctx: string): {
   sectionName: string;

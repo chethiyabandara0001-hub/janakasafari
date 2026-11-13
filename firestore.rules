@@ -208,6 +208,59 @@ service cloud.firestore {
         data.updatedAt is timestamp;
     }
 
+    function isValidEnquiry(data, enquiryId) {
+      return data.keys().hasAll([
+          'enquiryId',
+          'firstName',
+          'lastName',
+          'email',
+          'whatsapp',
+          'park',
+          'adults',
+          'kids',
+          'safariDate',
+          'message',
+          'status',
+          'sourcePage',
+          'adminScope',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'enquiryId',
+          'firstName',
+          'lastName',
+          'email',
+          'whatsapp',
+          'park',
+          'adults',
+          'kids',
+          'safariDate',
+          'message',
+          'status',
+          'sourcePage',
+          'adminScope',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.enquiryId == enquiryId &&
+        isValidId(data.enquiryId) &&
+        isBoundedString(data.firstName, 1, 100) &&
+        isBoundedString(data.lastName, 1, 100) &&
+        isBoundedString(data.email, 3, 256) &&
+        isBoundedString(data.whatsapp, 0, 60) &&
+        isBoundedString(data.park, 0, 100) &&
+        isBoundedString(data.adults, 1, 20) &&
+        isBoundedString(data.kids, 1, 20) &&
+        isBoundedString(data.safariDate, 0, 60) &&
+        isBoundedString(data.message, 1, 4000) &&
+        data.status in ['new', 'read', 'replied'] &&
+        isBoundedString(data.sourcePage, 1, 80) &&
+        data.adminScope == 'nisha-cms-admin' &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
     function isAuthorizedCmsAuthor(authorId) {
       return (isAdmin() && authorId == request.auth.uid) || authorId == 'nisha-cms-admin';
     }
@@ -287,6 +340,25 @@ service cloud.firestore {
         incoming().updatedAt == request.time;
 
       allow delete: if isAdmin();
+    }
+
+    match /enquiries/{enquiryId} {
+      allow get: if resource == null || existing().adminScope == 'nisha-cms-admin' || isAdmin();
+      allow list: if existing().adminScope == 'nisha-cms-admin' || isAdmin();
+
+      allow create: if isValidEnquiry(incoming(), enquiryId) &&
+        incoming().status == 'new' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isValidEnquiry(incoming(), enquiryId) &&
+        (isAdmin() || incoming().adminScope == 'nisha-cms-admin') &&
+        incoming().enquiryId == existing().enquiryId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
+
+      allow delete: if isAdmin() || existing().adminScope == 'nisha-cms-admin';
     }
 
     // Default-Deny Catch-All Rule

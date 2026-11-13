@@ -289,6 +289,113 @@
         }
       },
       "required": ["uid", "email", "role", "createdAt", "updatedAt"]
+    },
+    "Enquiry": {
+      "title": "Enquiry",
+      "description": "Represents a customer tour or taxi service enquiry submitted from the website contact form.",
+      "type": "object",
+      "properties": {
+        "enquiryId": {
+          "type": "string",
+          "description": "Unique identifier for the enquiry, e.g. enq_1731480000000_abc123",
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "maxLength": 120
+        },
+        "firstName": {
+          "type": "string",
+          "description": "Guest first name",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Guest last name",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "description": "Guest email address",
+          "minLength": 3,
+          "maxLength": 256
+        },
+        "whatsapp": {
+          "type": "string",
+          "description": "Guest WhatsApp or phone number",
+          "maxLength": 60
+        },
+        "park": {
+          "type": "string",
+          "description": "Preferred national park or destination",
+          "maxLength": 100
+        },
+        "adults": {
+          "type": "string",
+          "description": "Number of adult guests",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "kids": {
+          "type": "string",
+          "description": "Number of child guests",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "safariDate": {
+          "type": "string",
+          "description": "Preferred travel or taxi service date",
+          "maxLength": 60
+        },
+        "message": {
+          "type": "string",
+          "description": "Detailed enquiry message from the guest",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "status": {
+          "type": "string",
+          "enum": ["new", "read", "replied"],
+          "description": "Workflow status of the enquiry in the admin panel"
+        },
+        "sourcePage": {
+          "type": "string",
+          "description": "Page from which the enquiry was submitted",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "adminScope": {
+          "type": "string",
+          "enum": ["nisha-cms-admin"],
+          "description": "Relational scope identifier for admin panel queries"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last update timestamp"
+        }
+      },
+      "required": [
+        "enquiryId",
+        "firstName",
+        "lastName",
+        "email",
+        "whatsapp",
+        "park",
+        "adults",
+        "kids",
+        "safariDate",
+        "message",
+        "status",
+        "sourcePage",
+        "adminScope",
+        "createdAt",
+        "updatedAt"
+      ]
     }
   },
   "firestore": {
@@ -315,6 +422,12 @@
         "$ref": "#/entities/AdminUser"
       },
       "description": "Stores authorized admin UIDs"
+    },
+    "/enquiries/{enquiryId}": {
+      "schema": {
+        "$ref": "#/entities/Enquiry"
+      },
+      "description": "Stores customer enquiries submitted via the Contact page for review in the Admin Panel"
     }
   }
 }

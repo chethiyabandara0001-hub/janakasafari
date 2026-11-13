@@ -243,29 +243,100 @@
     });
   });
 
-  // 4. Contact Safari Enquiry Form
+  // 4. Contact Safari / Taxi Service Enquiry Form -> Sends directly to Admin Panel Enquiries & Firestore
   const enquiryForm = document.getElementById("safari-enquiry");
   const enquiryDialog = document.getElementById("enquiry-preview");
   if (enquiryForm && enquiryDialog) {
-    enquiryForm.addEventListener("submit", (e) => {
+    enquiryForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       if (!enquiryForm.reportValidity()) return;
 
       const data = new FormData(enquiryForm);
-      const firstName = (data.get("firstName") || "").toString().trim();
-      const lastName = (data.get("lastName") || "").toString().trim();
-      const email = (data.get("email") || "").toString().trim();
-      const whatsapp = (data.get("whatsapp") || "").toString().trim();
-      const park = (data.get("park") || "").toString().trim();
-      const adults = (data.get("adults") || "").toString().trim();
-      const kids = (data.get("kids") || "").toString().trim();
-      const safariDate = (data.get("safariDate") || "").toString().trim();
-      const message = (data.get("message") || "").toString().trim();
+      const firstName = (data.get("firstName") || "").toString().trim().slice(0, 100);
+      const lastName = (data.get("lastName") || "").toString().trim().slice(0, 100);
+      const email = (data.get("email") || "").toString().trim().slice(0, 256);
+      const whatsapp = (data.get("whatsapp") || "").toString().trim().slice(0, 60);
+      const park = (data.get("park") || "").toString().trim().slice(0, 100);
+      const adults = (data.get("adults") || "1").toString().trim().slice(0, 20);
+      const kids = (data.get("kids") || "0").toString().trim().slice(0, 20);
+      const safariDate = (data.get("safariDate") || "").toString().trim().slice(0, 60);
+      const message = (data.get("message") || "").toString().trim().slice(0, 4000);
+
+      const enquiryId = `enq_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const submitBtn = enquiryForm.querySelector(".enquiry-submit .wsite-button-inner");
+      const originalBtnText = submitBtn ? submitBtn.textContent : "Send an Enquiry";
+      if (submitBtn) submitBtn.textContent = "Sending Enquiry...";
+
+      const payload = {
+        enquiryId,
+        firstName: firstName || "Guest",
+        lastName: lastName || "-",
+        email,
+        whatsapp,
+        park,
+        adults: adults || "1",
+        kids: kids || "0",
+        safariDate,
+        message,
+        status: "new",
+        sourcePage: "contact.html",
+        adminScope: "nisha-cms-admin",
+      };
+
+      const firestoreResourcePrefix =
+        "projects/gen-lang-client-0113753106/databases/ai-studio-janakasafarijeep-76940b71-abf8-4b59-aaeb-d5237818c8d7/documents";
+      const firestoreCommitUrl = `https://firestore.googleapis.com/v1/${firestoreResourcePrefix}:commit`;
+
+      try {
+        await Promise.allSettled([
+          fetch("/api/enquiries", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          }),
+          fetch(firestoreCommitUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              writes: [
+                {
+                  update: {
+                    name: `${firestoreResourcePrefix}/enquiries/${enquiryId}`,
+                    fields: {
+                      enquiryId: { stringValue: payload.enquiryId },
+                      firstName: { stringValue: payload.firstName },
+                      lastName: { stringValue: payload.lastName },
+                      email: { stringValue: payload.email },
+                      whatsapp: { stringValue: payload.whatsapp },
+                      park: { stringValue: payload.park },
+                      adults: { stringValue: payload.adults },
+                      kids: { stringValue: payload.kids },
+                      safariDate: { stringValue: payload.safariDate },
+                      message: { stringValue: payload.message },
+                      status: { stringValue: "new" },
+                      sourcePage: { stringValue: payload.sourcePage },
+                      adminScope: { stringValue: "nisha-cms-admin" },
+                    },
+                  },
+                  updateTransforms: [
+                    { fieldPath: "createdAt", setToServerValue: "REQUEST_TIME" },
+                    { fieldPath: "updatedAt", setToServerValue: "REQUEST_TIME" },
+                  ],
+                },
+              ],
+            }),
+          }),
+        ]);
+      } catch (err) {
+        console.warn("Enquiry submission warning:", err);
+      } finally {
+        if (submitBtn) submitBtn.textContent = originalBtnText;
+      }
 
       const lines = [
         "Hello Nisha,",
         "",
-        "I would like to enquire about a safari:",
+        "I would like to enquire about a taxi service / tour:",
         `Name: ${firstName} ${lastName}`.trim(),
         `Email: ${email}`,
         whatsapp ? `WhatsApp: ${whatsapp}` : null,
@@ -285,7 +356,7 @@
 
       if (msgPre) msgPre.textContent = fullMessage;
       const subject = encodeURIComponent(
-        `Safari Enquiry - ${park || "Sri Lanka"} (${firstName} ${lastName})`
+        `Taxi Service Enquiry - ${park || "Sri Lanka"} (${firstName} ${lastName})`
       );
       const encodedBody = encodeURIComponent(fullMessage);
       if (emailBtn) {
@@ -294,6 +365,7 @@
       if (waBtn) {
         waBtn.href = `https://wa.me/94717390327?text=${encodedBody}`;
       }
+      enquiryForm.reset();
       if (typeof enquiryDialog.showModal === "function") {
         enquiryDialog.showModal();
       }

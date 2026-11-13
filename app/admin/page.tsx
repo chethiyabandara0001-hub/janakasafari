@@ -29,6 +29,7 @@ import {
   createUserWithEmailAndPassword,
   db,
   deleteImageFromR2Bucket,
+  deleteEnquiryInFirestore,
   deleteSectionGalleryItemInFirestore,
   deleteSiteImageInFirestore,
   deleteSiteTextInFirestore,
@@ -39,11 +40,14 @@ import {
   saveSiteImageInFirestore,
   saveSiteTextInFirestore,
   signInWithEmailAndPassword,
+  subscribeAdminEnquiries,
   subscribePublicCollection,
+  updateEnquiryStatusInFirestore,
   uploadImageToR2Bucket,
 } from '@/lib/firebase';
 import { doc, getDocFromServer } from 'firebase/firestore';
 import { AdminLoginCard } from '@/components/admin/AdminLoginCard';
+import { EnquiriesPanel } from '@/components/admin/EnquiriesPanel';
 import { R2BucketPanel } from '@/components/admin/R2BucketPanel';
 import { SyncSettingsPanel } from '@/components/admin/SyncSettingsPanel';
 import {
@@ -52,6 +56,7 @@ import {
   resolveImageUrl,
   splitSectionLabel,
   type AdminTab,
+  type EnquiryRecord,
   type ImageSlot,
   type PageMeta,
   type ParentSectionGroup,
@@ -109,12 +114,15 @@ export default function AdminStudioPage() {
   const [loginError, setLoginError] = useState<string>('');
   const [loggingIn, setLoggingIn] = useState<boolean>(false);
 
-  // Live Firestore Collections
+  // Live Firestore Collections & Enquiries
   const [firestoreImageDocs, setFirestoreImageDocs] = useState<Record<string, Partial<ImageSlot>>>({});
   const [firestoreSectionDocs, setFirestoreSectionDocs] = useState<SeedSectionGalleryItem[]>([]);
   const [firestoreTextDocs, setFirestoreTextDocs] = useState<
     Record<string, Partial<SiteTextSlot> & { updatedAt?: unknown }>
   >({});
+  const [apiEnquiries, setApiEnquiries] = useState<EnquiryRecord[]>([]);
+  const [firestoreEnquiries, setFirestoreEnquiries] = useState<EnquiryRecord[]>([]);
+  const [loadingEnquiries, setLoadingEnquiries] = useState<boolean>(false);
 
   // Navigation & Filters
   const [selectedPage, setSelectedPage] = useState<string>('index.html');
@@ -191,6 +199,22 @@ export default function AdminStudioPage() {
     }
   }, []);
 
+  const fetchEnquiries = useCallback(async () => {
+    setLoadingEnquiries(true);
+    try {
+      const res = await fetch(`/api/enquiries?t=${Date.now()}`, { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = (await res.json()) as { enquiries?: EnquiryRecord[] };
+      if (Array.isArray(data.enquiries)) {
+        setApiEnquiries(data.enquiries);
+      }
+    } catch {
+      // Ignore background fetch error
+    } finally {
+      setLoadingEnquiries(false);
+    }
+  }, []);
+
   const fetchInventory = useCallback(async () => {
     try {
       const [imgRes, cmsRes] = await Promise.all([
@@ -227,10 +251,11 @@ export default function AdminStudioPage() {
         if (!active) return;
         if (data.authenticated || cached) {
           setAdminAuthenticated(true);
-          const [imgRes, cmsRes, r2Res] = await Promise.all([
+          const [imgRes, cmsRes, r2Res, enqRes] = await Promise.all([
             fetch(`/api/admin/images?t=${Date.now()}`, { cache: 'no-store' }),
             fetch(`/api/admin/cms?t=${Date.now()}`, { cache: 'no-store' }),
             fetch(`/api/r2?t=${Date.now()}`, { cache: 'no-store' }),
+            fetch(`/api/enquiries?t=${Date.now()}`, { cache: 'no-store' }),
           ]);
           if (active && imgRes.ok && cmsRes.ok) {
             const [imgData, cmsData] = await Promise.all([imgRes.json(), cmsRes.json()]);
@@ -243,6 +268,12 @@ export default function AdminStudioPage() {
             const r2Data = (await r2Res.json()) as R2StatusPayload;
             setR2Status(r2Data);
             setR2Objects(r2Data.objects || []);
+          }
+          if (active && enqRes.ok) {
+            const enqData = (await enqRes.json()) as { enquiries?: EnquiryRecord[] };
+            if (Array.isArray(enqData.enquiries)) {
+              setApiEnquiries(enqData.enquiries);
+            }
           }
         }
       } catch {
@@ -294,10 +325,15 @@ export default function AdminStudioPage() {
       setFirestoreTextDocs(next);
     });
 
+    const unsubEnquiries = subscribeAdminEnquiries<EnquiryRecord>((items) => {
+      setFirestoreEnquiries(items);
+    });
+
     return () => {
       unsubImages();
       unsubSections();
       unsubTexts();
+      unsubEnquiries();
     };
   }, [adminAuthenticated]);
 
@@ -342,7 +378,7 @@ export default function AdminStudioPage() {
 
       setLoginPassword('');
       setAdminAuthenticated(true);
-      await Promise.all([fetchInventory(), fetchR2Status()]);
+      await Promise.all([fetchInventory(), fetchR2Status(), fetchEnquiries()]);
     } catch {
       setLoginError('Unable to sign in. Please try again.');
     } finally {
@@ -1369,6 +1405,86 @@ export default function AdminStudioPage() {
     }
   };
 
+  const mergedEnquiries = useMemo(() => {
+    const toIso = (val: unknown): string => {
+      if (!val) return '';
+      if (typeof val === 'string') return val;
+      if (typeof val === 'object' && val !== null) {
+        const obj = val as { toDate?: () => Date; seconds?: number };
+        if (typeof obj.toDate === 'function') return obj.toDate().toISOString();
+        if (typeof obj.seconds === 'number') return new Date(obj.seconds * 1000).toISOString();
+      }
+      return '';
+    };
+
+    const byId = new Map<string, EnquiryRecord>();
+    for (const item of apiEnquiries) {
+      if (item?.enquiryId) byId.set(item.enquiryId, item);
+    }
+    for (const item of firestoreEnquiries) {
+      if (item?.enquiryId) {
+        const prev = byId.get(item.enquiryId);
+        if (!prev || toIso(item.updatedAt) >= toIso(prev.updatedAt)) {
+          byId.set(item.enquiryId, item);
+        }
+      }
+    }
+
+    return Array.from(byId.values()).sort((a, b) =>
+      toIso(b.createdAt).localeCompare(toIso(a.createdAt))
+    );
+  }, [apiEnquiries, firestoreEnquiries]);
+
+  const unreadEnquiriesCount = useMemo(
+    () => mergedEnquiries.filter((e) => e.status === 'new').length,
+    [mergedEnquiries]
+  );
+
+  const handleUpdateEnquiryStatus = async (
+    enquiryId: string,
+    status: 'new' | 'read' | 'replied'
+  ) => {
+    try {
+      await Promise.allSettled([
+        fetch('/api/enquiries', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enquiryId, status }),
+        }),
+        updateEnquiryStatusInFirestore(enquiryId, status),
+      ]);
+      setApiEnquiries((prev) =>
+        prev.map((e) =>
+          e.enquiryId === enquiryId ? { ...e, status, updatedAt: new Date().toISOString() } : e
+        )
+      );
+      setFirestoreEnquiries((prev) =>
+        prev.map((e) =>
+          e.enquiryId === enquiryId ? { ...e, status, updatedAt: new Date().toISOString() } : e
+        )
+      );
+      showNotice(`Enquiry status updated to "${status}".`);
+    } catch (err) {
+      showNotice(err instanceof Error ? err.message : 'Failed to update status', 'error');
+    }
+  };
+
+  const handleDeleteEnquiry = async (enquiryId: string) => {
+    try {
+      await Promise.allSettled([
+        fetch(`/api/enquiries?enquiryId=${encodeURIComponent(enquiryId)}`, {
+          method: 'DELETE',
+        }),
+        deleteEnquiryInFirestore(enquiryId),
+      ]);
+      setApiEnquiries((prev) => prev.filter((e) => e.enquiryId !== enquiryId));
+      setFirestoreEnquiries((prev) => prev.filter((e) => e.enquiryId !== enquiryId));
+      showNotice('Deleted enquiry from Admin Panel.');
+    } catch (err) {
+      showNotice(err instanceof Error ? err.message : 'Failed to delete enquiry', 'error');
+    }
+  };
+
   if (authChecking) {
     return (
       <div className="min-h-screen bg-[#090d0b] text-slate-100 flex items-center justify-center p-6">
@@ -1435,7 +1551,7 @@ export default function AdminStudioPage() {
           </span>
         </div>
 
-        {/* Center: 4 Workspace Tabs */}
+        {/* Center: 5 Workspace Tabs */}
         <nav
           aria-label="CMS Workspace"
           className="hidden md:flex items-center gap-1 bg-[#090d0b] p-1 rounded-md border border-emerald-950/80"
@@ -1444,6 +1560,13 @@ export default function AdminStudioPage() {
             [
               { id: 'pages', label: 'Pages & Sections' },
               { id: 'texts', label: 'Site Texts Editor' },
+              {
+                id: 'enquiries',
+                label:
+                  unreadEnquiriesCount > 0
+                    ? `Enquiries (${unreadEnquiriesCount})`
+                    : `Enquiries (${mergedEnquiries.length})`,
+              },
               { id: 'r2-bucket', label: 'R2 Media Bucket' },
               { id: 'sync-settings', label: 'Sync & R2 Settings' },
             ] as { id: AdminTab; label: string }[]
@@ -1509,6 +1632,13 @@ export default function AdminStudioPage() {
           [
             { id: 'pages', label: 'Pages & Sections' },
             { id: 'texts', label: 'Site Texts' },
+            {
+              id: 'enquiries',
+              label:
+                unreadEnquiriesCount > 0
+                  ? `Enquiries (${unreadEnquiriesCount})`
+                  : `Enquiries (${mergedEnquiries.length})`,
+            },
             { id: 'r2-bucket', label: 'R2 Bucket' },
             { id: 'sync-settings', label: 'Sync & Settings' },
           ] as { id: AdminTab; label: string }[]
@@ -1722,6 +1852,14 @@ export default function AdminStudioPage() {
               <RefreshCw className="w-5 h-5 animate-spin text-amber-500" />
               <span>Loading all pages, section trees, and Cloudflare R2 objects...</span>
             </div>
+          ) : activeTab === 'enquiries' ? (
+            <EnquiriesPanel
+              enquiries={mergedEnquiries}
+              loading={loadingEnquiries}
+              onRefresh={fetchEnquiries}
+              onUpdateStatus={handleUpdateEnquiryStatus}
+              onDeleteEnquiry={handleDeleteEnquiry}
+            />
           ) : activeTab === 'r2-bucket' ? (
             <R2BucketPanel
               r2Status={r2Status}
