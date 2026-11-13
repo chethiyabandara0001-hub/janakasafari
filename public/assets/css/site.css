@@ -314,7 +314,7 @@ body.janaka-contact .main-wrap {
 .dusk-header .logo img,
 .dusk-header .logo .janaka-brand-logo {
   display: block;
-  max-height: 44px;
+  max-height: 88px;
   height: auto;
   width: auto;
   object-fit: contain;
@@ -324,7 +324,7 @@ body.janaka-contact .main-wrap {
 @media screen and (min-width: 768px) {
   .dusk-header .logo img,
   .dusk-header .logo .janaka-brand-logo {
-    max-height: 54px;
+    max-height: 108px;
   }
 }
 
