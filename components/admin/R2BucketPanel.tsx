@@ -182,13 +182,13 @@ export function R2BucketPanel({
           <div className="bg-[#090d0b] border border-slate-800/80 rounded-md px-3.5 py-2.5">
             <div className="text-[11px] text-slate-400">Remote Sync Status</div>
             <div className="text-xs font-medium text-emerald-400 mt-1 truncate">
-              {r2Status?.testResult?.ok ? 'Connected (Remote R2)' : 'Local Mirror / Check R2'}
+              {r2Status?.testResult?.ok ? 'Connected (Remote R2)' : 'Check R2 Settings'}
             </div>
           </div>
           <div className="bg-[#090d0b] border border-slate-800/80 rounded-md px-3.5 py-2.5">
             <div className="text-[11px] text-slate-400">Public CDN Base</div>
             <div className="text-xs font-mono text-slate-300 mt-1 truncate" title={r2Status?.cdnBaseUrl}>
-              {r2Status?.cdnBaseUrl || '/api/r2/file'}
+              {r2Status?.cdnBaseUrl || 'https://cdn.srilankabestsafari.com'}
             </div>
           </div>
         </div>

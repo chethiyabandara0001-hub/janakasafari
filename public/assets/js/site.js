@@ -113,8 +113,8 @@
         const isVisibleLightboxAnchor = (a) => {
           const img = a.querySelector("img");
           const href = a.getAttribute("href") || "";
-          if (!href || href.includes("empty-slot.svg") || href === "/deleted") return false;
-          if (img && (img.style.display === "none" || !img.getAttribute("src") || (img.getAttribute("src") || "").includes("empty-slot.svg"))) {
+          if (isEmptySlotUrl(href)) return false;
+          if (img && (img.style.display === "none" || isEmptySlotUrl(img.getAttribute("src")))) {
             return false;
           }
           return true;
@@ -311,6 +311,22 @@
         : `${rawSlug}.html`;
   const safePagePrefix = currentPageFile.replace(/[^a-zA-Z0-9_-]/g, "_");
 
+  function isEmptySlotUrl(val) {
+    if (!val) return true;
+    const s = String(val).trim();
+    if (!s || s === "none" || s === "/deleted") return true;
+    if (s.includes("empty-slot.svg")) return true;
+    if (/^data:/i.test(s)) return true;
+    if (
+      s.includes("/assets/media/") ||
+      s.includes("/assets/aistudio/") ||
+      s.includes("/assets/r2-bucket/")
+    ) {
+      return true;
+    }
+    return false;
+  }
+
   // Bind all editable image slots in exact DOM document order (matching parsePageSlots in lib/image-manager.ts)
   const slotElementMap = new Map();
   function bindEditableSlots() {
@@ -338,22 +354,21 @@
       if (el.tagName.toLowerCase() === "div") {
         slotElementMap.set(slotId, { type: "hero-bg", element: el, slotIndex: idx });
         const initStyle = el.getAttribute("style") || "";
-        if (initStyle.includes("empty-slot.svg")) {
+        const urlMatch = initStyle.match(/url\(['"]?([^'")]+)['"]?\)/i);
+        if (!urlMatch || isEmptySlotUrl(urlMatch[1])) {
           el.style.backgroundImage = "none";
         }
       } else {
         slotElementMap.set(slotId, { type: "img", element: el, slotIndex: idx });
         const initSrc = el.getAttribute("src") || "";
-        if (initSrc.includes("empty-slot.svg")) {
-          if (!el.classList.contains("janaka-brand-logo") && !el.classList.contains("cross-top-img")) {
-            el.style.display = "none";
-            const holder =
-              el.closest(".galleryImageHolder") ||
-              el.closest("a[data-lightbox]") ||
-              el.closest(".wsite-image");
-            if (holder) {
-              holder.style.display = "none";
-            }
+        if (isEmptySlotUrl(initSrc)) {
+          el.style.display = "none";
+          const holder =
+            el.closest(".galleryImageHolder") ||
+            el.closest("a[data-lightbox]") ||
+            el.closest(".wsite-image");
+          if (holder) {
+            holder.style.display = "none";
           }
         }
       }
@@ -395,11 +410,9 @@
   const initialHeroStyle = (heroHeaderSectionEl && heroHeaderSectionEl.getAttribute("style")) || "";
   const initialHeroMatch = initialHeroStyle.match(/url\(['"]?([^'")]+)['"]?\)/i);
   const rawInitialHeroBannerSrc = initialHeroMatch ? initialHeroMatch[1] : "";
-  let primaryHeroBannerSrc = rawInitialHeroBannerSrc.includes("empty-slot.svg")
+  let primaryHeroBannerSrc = isEmptySlotUrl(rawInitialHeroBannerSrc)
     ? ""
     : rawInitialHeroBannerSrc;
-
-  const DEFAULT_HERO_SLIDES_BY_PAGE = {};
 
   function extractR2KeyClient(src, explicitKey) {
     if (explicitKey && String(explicitKey).trim()) {
@@ -410,33 +423,20 @@
     if (clean.includes("/api/r2/file/")) {
       return clean.slice(clean.indexOf("/api/r2/file/") + "/api/r2/file/".length).replace(/^\/+/, "");
     }
-    if (clean.includes("/assets/r2-bucket/")) {
-      return clean.slice(clean.indexOf("/assets/r2-bucket/") + "/assets/r2-bucket/".length).replace(/^\/+/, "");
-    }
-    const cdnMatch = clean.match(/^https?:\/\/[^/]+\/((?:slots|sections|media|uploads|index|yala-safari|udawalawe-safari|bundala-birding-safari|wilpattu-safari|minneriya-safari|kumana-birding-safari|safari-parks|about|gallery|reviews|contact)\/.+)$/i);
+    const cdnMatch = clean.match(/^https?:\/\/cdn\.[^/]+\/(.+)$/i);
     if (cdnMatch && cdnMatch[1]) {
       return cdnMatch[1].replace(/^\/+/, "");
     }
     return "";
   }
 
-  function normalizeSlideSrc(src, r2Key) {
-    if (!src) return "";
+  function normalizeSlideSrc(src) {
+    if (isEmptySlotUrl(src)) return "";
     const trimmed = String(src).trim();
-    if (trimmed === "/deleted" || trimmed.includes("empty-slot.svg")) return "";
-    const key = extractR2KeyClient(trimmed, r2Key);
-    if (
-      key &&
-      (key.startsWith("sections/") || key.startsWith("slots/")) &&
-      trimmed.startsWith("/api/r2/file/")
-    ) {
-      return `/assets/r2-bucket/${key}`;
-    }
     if (
       trimmed.startsWith("http://") ||
       trimmed.startsWith("https://") ||
-      trimmed.startsWith("/") ||
-      trimmed.startsWith("data:")
+      trimmed.startsWith("/")
     ) {
       return trimmed;
     }
@@ -450,10 +450,9 @@
     const candidates = [primaryUrl];
     const key = extractR2KeyClient(primaryUrl, r2Key);
     if (key) {
-      const staticBucketUrl = `/assets/r2-bucket/${key}`;
-      const workerApiUrl = `/api/r2/file/${key}`;
       const cdnUrl = `https://cdn.srilankabestsafari.com/${key}`;
-      [staticBucketUrl, cdnUrl, workerApiUrl].forEach((u) => {
+      const workerApiUrl = `/api/r2/file/${key}`;
+      [cdnUrl, workerApiUrl].forEach((u) => {
         if (!candidates.includes(u)) candidates.push(u);
       });
     }
@@ -651,262 +650,135 @@
     }
   }
 
-  async function fetchBaseCmsState() {
-    try {
-      const res = await fetch(`/api/admin/cms?t=${Date.now()}`, { cache: "no-store" });
-      if (res.ok) {
-        const ct = res.headers.get("content-type") || "";
-        if (ct.includes("application/json")) {
-          return await res.json();
-        }
-      }
-    } catch {
-      // fallback to static JSON asset on Cloudflare Pages
-    }
-    try {
-      const fallbackRes = await fetch(`/assets/firebase-cms-state.json?t=${Date.now()}`, {
-        cache: "no-store",
-      });
-      if (fallbackRes.ok) {
-        return await fallbackRes.json();
-      }
-    } catch {
-      // ignore
-    }
-    return {
-      sectionGalleryItems: [],
-      imageOverrides: {},
-      textSlots: [],
-      customTexts: [],
-    };
-  }
-
-  // Hydrate page with Firebase CMS state (slot image R2 CDN overrides, 4s hero slideshow, section wildlife galleries, text edits, and custom text blocks)
+  // Hydrate page directly from Firestore + Cloudflare R2 CDN links (images, 4s hero slideshow, text edits, custom texts)
   async function hydrateFromFirebaseCms() {
     try {
-      const [cms, fbSiteImages, fbSectionItems, fbSiteTexts] = await Promise.all([
-        fetchBaseCmsState(),
+      const [fbSiteImages, fbSectionItems, fbSiteTexts] = await Promise.all([
         fetchFirestorePublicCollection("site_images"),
         fetchFirestorePublicCollection("section_gallery_items"),
         fetchFirestorePublicCollection("site_texts"),
       ]);
 
-      if (!cms.imageOverrides) cms.imageOverrides = {};
-      if (!Array.isArray(cms.sectionGalleryItems)) cms.sectionGalleryItems = [];
-
-      // Merge live Firestore site_images on top of cms.imageOverrides
-      fbSiteImages.forEach((docItem) => {
-        if (!docItem || !docItem.slotId) return;
-        if (docItem.src === "/deleted" || docItem.isDeleted) {
-          cms.imageOverrides[docItem.slotId] = {
-            ...docItem,
-            src: "",
-            lightboxHref: "",
-            isDeleted: true,
-          };
-        } else if (
-          docItem.src &&
-          !/^data:/i.test(docItem.src) &&
-          !String(docItem.src).includes("empty-slot.svg")
-        ) {
-          const existingOv = cms.imageOverrides[docItem.slotId];
-          cms.imageOverrides[docItem.slotId] = {
-            ...existingOv,
-            ...docItem,
-            isDeleted: false,
-          };
-        }
-      });
-
-      // Merge live Firestore section_gallery_items (including hero_slideshow additions & deletions)
-      if (fbSectionItems.length > 0) {
-        const secMap = new Map();
-        cms.sectionGalleryItems.forEach((item) => {
-          if (item && item.itemId) secMap.set(item.itemId, item);
-        });
-        fbSectionItems.forEach((fbItem) => {
-          if (!fbItem || !fbItem.itemId) return;
-          if (fbItem.sectionKey === "deleted_section_item" || fbItem.src === "/deleted") {
-            secMap.delete(fbItem.itemId);
-          } else {
-            secMap.set(fbItem.itemId, fbItem);
-          }
-        });
-        cms.sectionGalleryItems = Array.from(secMap.values());
-      }
-
-      // Merge live Firestore site_texts (skip pre-redesign legacy bulk-seed docs before 2026-11-12T18:00Z unless present in local overrides)
-      if (fbSiteTexts.length > 0) {
-        if (!Array.isArray(cms.textSlots)) cms.textSlots = [];
-        if (!Array.isArray(cms.customTexts)) cms.customTexts = [];
-        const textSlotMap = new Map(cms.textSlots.map((t) => [t.textId, t]));
-        const customTextMap = new Map(cms.customTexts.map((t) => [t.textId, t]));
-
-        fbSiteTexts.forEach((ft) => {
-          if (!ft || !ft.textId) return;
-          const isLegacySeed =
-            !ft.isCustomAdded &&
-            ft.updatedAt &&
-            String(ft.updatedAt) < "2026-11-12T18:00:00Z";
-          if (isLegacySeed) return;
-
-          if (ft.isCustomAdded) {
-            customTextMap.set(ft.textId, { ...ft, isModified: true });
-          } else if (textSlotMap.has(ft.textId)) {
-            const existingSlot = textSlotMap.get(ft.textId);
-            if (ft.tagName && existingSlot.tagName && ft.tagName !== existingSlot.tagName) {
-              return;
-            }
-            textSlotMap.set(ft.textId, {
-              ...existingSlot,
-              ...ft,
-              isModified: true,
-            });
-          } else {
-            textSlotMap.set(ft.textId, { ...ft, isModified: true });
-          }
-        });
-        cms.textSlots = Array.from(textSlotMap.values());
-        cms.customTexts = Array.from(customTextMap.values());
-      }
-
       let heroSlotDeleted = false;
 
-      // 1. Apply image slot overrides (strictly R2 CDN links or explicit slot deletions, never raw data: URIs)
-      if (cms.imageOverrides) {
-        Object.values(cms.imageOverrides).forEach((ov) => {
-          if (!ov || ov.page !== currentPageFile) return;
-          const entry = slotElementMap.get(ov.slotId);
-          if (!entry) return;
+      // 1. Apply image slot overrides strictly from Firestore R2 CDN links
+      fbSiteImages.forEach((ov) => {
+        if (!ov || ov.page !== currentPageFile || !ov.slotId) return;
+        const entry = slotElementMap.get(ov.slotId);
+        if (!entry) return;
 
-          if (
-            ov.isDeleted ||
-            ov.src === "/deleted" ||
-            !ov.src ||
-            String(ov.src).includes("empty-slot.svg")
-          ) {
-            if (entry.type === "hero-bg") {
-              heroSlotDeleted = true;
-              primaryHeroBannerSrc = "";
-              entry.element.style.backgroundImage = "none";
-            } else if (entry.element.classList.contains("janaka-brand-logo")) {
-              entry.element.style.display = "";
-              if (!entry.element.getAttribute("src") || (entry.element.getAttribute("src") || "").includes("empty-slot.svg")) {
-                entry.element.src = "/assets/media/nisha-safari-logo.svg";
-              }
-            } else if (entry.element.classList.contains("cross-top-img")) {
-              // Keep built-in trust badge icons visible unless replaced by R2 icon
-              entry.element.style.display = "";
-            } else {
-              entry.element.removeAttribute("src");
-              entry.element.style.display = "none";
-              const holder =
-                entry.element.closest(".galleryImageHolder") ||
-                entry.element.closest("a[data-lightbox]") ||
-                entry.element.closest(".wsite-image");
-              if (holder) {
-                holder.style.display = "none";
-              }
-            }
-            return;
-          }
-
-          if (/^data:/i.test(ov.src)) return;
-          const resolvedOvSrc = normalizeSlideSrc(ov.src, ov.r2Key);
-          if (!resolvedOvSrc) return;
-
+        if (ov.isDeleted || isEmptySlotUrl(ov.src)) {
           if (entry.type === "hero-bg") {
-            if (/payment-|visa|mastercard/i.test(resolvedOvSrc)) return;
-            if (entry.element.classList.contains("wsite-body-section")) return;
-            if (document.body.classList.contains("janaka-contact")) return;
-            primaryHeroBannerSrc = resolvedOvSrc;
-            entry.element.style.backgroundImage = `url("${resolvedOvSrc}")`;
-            entry.element.style.backgroundSize = "cover";
-            entry.element.style.backgroundPosition = "center center";
+            heroSlotDeleted = true;
+            primaryHeroBannerSrc = "";
+            entry.element.style.backgroundImage = "none";
           } else {
-            if (entry.element.id === "CDSWIDCOELOGO") {
-              return;
-            }
-            entry.element.style.display = "";
+            entry.element.style.display = "none";
             const holder =
               entry.element.closest(".galleryImageHolder") ||
               entry.element.closest("a[data-lightbox]") ||
               entry.element.closest(".wsite-image");
             if (holder) {
-              holder.style.display = "";
+              holder.style.display = "none";
             }
-            const wrapContainer = entry.element.closest('[id*="-imageContainer"]');
-            if (wrapContainer) {
-              wrapContainer.style.display = "";
-            }
-            entry.element.src = resolvedOvSrc;
-            if (ov.alt) entry.element.alt = ov.alt;
-            const parentAnchor = entry.element.closest("a[data-lightbox]");
-            if (parentAnchor) parentAnchor.href = normalizeSlideSrc(ov.lightboxHref || ov.src, ov.r2Key);
           }
-        });
-      }
+          return;
+        }
+
+        const resolvedOvSrc = normalizeSlideSrc(ov.src);
+        if (!resolvedOvSrc) return;
+
+        if (entry.type === "hero-bg") {
+          if (/payment-|visa|mastercard/i.test(resolvedOvSrc)) return;
+          if (entry.element.classList.contains("wsite-body-section")) return;
+          if (document.body.classList.contains("janaka-contact")) return;
+          primaryHeroBannerSrc = resolvedOvSrc;
+          entry.element.style.backgroundImage = `url("${resolvedOvSrc}")`;
+          entry.element.style.backgroundSize = "cover";
+          entry.element.style.backgroundPosition = "center center";
+        } else {
+          if (entry.element.id === "CDSWIDCOELOGO") {
+            return;
+          }
+          entry.element.style.display = "";
+          const holder =
+            entry.element.closest(".galleryImageHolder") ||
+            entry.element.closest("a[data-lightbox]") ||
+            entry.element.closest(".wsite-image");
+          if (holder) {
+            holder.style.display = "";
+          }
+          const wrapContainer = entry.element.closest('[id*="-imageContainer"]');
+          if (wrapContainer) {
+            wrapContainer.style.display = "";
+          }
+          entry.element.src = resolvedOvSrc;
+          if (ov.alt) entry.element.alt = ov.alt;
+          const parentAnchor = entry.element.closest("a[data-lightbox]");
+          if (parentAnchor) parentAnchor.href = normalizeSlideSrc(ov.lightboxHref || ov.src);
+        }
+      });
 
       // 1b. Build & start 4-Second Hero Section Multi-Image Slideshow for this page
-      const pageHeroSlides = Array.isArray(cms.sectionGalleryItems)
-        ? cms.sectionGalleryItems
-            .filter(
-              (item) =>
-                item.page === currentPageFile &&
-                item.sectionKey === "hero_slideshow" &&
-                item.src &&
-                item.src !== "/deleted" &&
-                !String(item.src).includes("empty-slot.svg") &&
-                !/^data:/i.test(item.src)
-            )
-            .sort((a, b) => (a.order || 0) - (b.order || 0))
-        : [];
+      const pageHeroSlides = fbSectionItems
+        .filter(
+          (item) =>
+            item &&
+            item.page === currentPageFile &&
+            item.sectionKey === "hero_slideshow" &&
+            !isEmptySlotUrl(item.src)
+        )
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
 
       const combinedHeroSlides = [];
       if (pageHeroSlides.length > 0) {
-        // Use strictly the hero slideshow photos uploaded by the user (no extra blank or default slide)
         pageHeroSlides.forEach((s) => {
           combinedHeroSlides.push({
             src: s.src,
             r2Key: s.r2Key,
-            alt: s.alt || s.title || "Sri Lanka Safari Hero Slide",
+            alt: s.alt || s.title || "Nisha Travelling Hero Slide",
           });
         });
-      } else if (!heroSlotDeleted && primaryHeroBannerSrc && !primaryHeroBannerSrc.includes("empty-slot.svg")) {
-        // Only use single banner if no slideshow slides are configured
+      } else if (!heroSlotDeleted && primaryHeroBannerSrc && !isEmptySlotUrl(primaryHeroBannerSrc)) {
         combinedHeroSlides.push({
           src: primaryHeroBannerSrc,
-          alt: document.title || "Sri Lanka Safari Hero Banner",
+          alt: document.title || "Nisha Travelling Hero Banner",
         });
       }
       initOrUpdateHeroSlideshow(combinedHeroSlides);
 
-      // 2. Apply text overrides & deletions for this page
-      if (Array.isArray(cms.textSlots)) {
-        cms.textSlots
-          .filter((t) => t.page === currentPageFile && t.isModified)
-          .forEach((t) => {
-            const entry = textElementMap.get(t.textId);
-            if (!entry) return;
-            if (!t.isCustomAdded && t.tagName && entry.tagName && t.tagName !== entry.tagName) {
-              return;
-            }
-            if (t.isDeleted) {
-              entry.element.style.display = "none";
-            } else {
-              entry.element.style.display = "";
-              entry.element.textContent = t.content;
-            }
-          });
-      }
+      // 2. Apply text overrides & deletions for this page directly from Firestore
+      const activeCustomTexts = [];
+      fbSiteTexts.forEach((ft) => {
+        if (!ft || !ft.textId || ft.page !== currentPageFile) return;
+        const isLegacySeed =
+          !ft.isCustomAdded &&
+          ft.updatedAt &&
+          String(ft.updatedAt) < "2026-11-12T18:00:00Z";
+        if (isLegacySeed) return;
+
+        if (ft.isCustomAdded) {
+          if (!ft.isDeleted) activeCustomTexts.push(ft);
+          return;
+        }
+
+        const entry = textElementMap.get(ft.textId);
+        if (!entry) return;
+        if (ft.tagName && entry.tagName && ft.tagName !== entry.tagName) return;
+        if (ft.isDeleted) {
+          entry.element.style.display = "none";
+        } else {
+          entry.element.style.display = "";
+          if (ft.content !== undefined) {
+            entry.element.textContent = ft.content;
+          }
+        }
+      });
 
       // 3. Render Custom Added Text Blocks for this page
-      const pageCustomTexts = Array.isArray(cms.customTexts)
-        ? cms.customTexts.filter((t) => t.page === currentPageFile && !t.isDeleted)
-        : [];
       let customTextWrap = document.getElementById("firebase-custom-texts");
       const mainEl = document.querySelector("main");
-      if (pageCustomTexts.length > 0 && mainEl) {
+      if (activeCustomTexts.length > 0 && mainEl) {
         if (!customTextWrap) {
           customTextWrap = document.createElement("section");
           customTextWrap.id = "firebase-custom-texts";
@@ -914,13 +786,13 @@
           mainEl.appendChild(customTextWrap);
         }
         customTextWrap.innerHTML = "";
-        pageCustomTexts.forEach((block) => {
+        activeCustomTexts.forEach((block) => {
           const card = document.createElement("div");
           card.className = "firebase-custom-text-card";
           const h3 = document.createElement("h3");
-          h3.textContent = block.sectionContext || "Safari Update";
+          h3.textContent = block.sectionContext || "Nisha Travelling Update";
           const p = document.createElement("p");
-          p.textContent = block.content;
+          p.textContent = block.content || "";
           p.setAttribute("data-admin-text-slot", "custom");
           card.appendChild(h3);
           card.appendChild(p);
@@ -930,71 +802,18 @@
         customTextWrap.remove();
       }
 
-      // 4. Render Curated Firebase Section Wildlife Gallery for this page (excluding hero_slideshow items)
-      const pageSectionItems = Array.isArray(cms.sectionGalleryItems)
-        ? cms.sectionGalleryItems.filter(
-            (item) =>
-              item.page === currentPageFile &&
-              item.sectionKey !== "hero_slideshow" &&
-              item.sectionKey !== "deleted_section_item" &&
-              item.src &&
-              item.src !== "/deleted" &&
-              !String(item.src).includes("empty-slot.svg") &&
-              !/^data:/i.test(item.src)
-          )
-        : [];
-      if (pageSectionItems.length > 0 && mainEl) {
-        let showcase = document.getElementById("firebase-section-gallery");
-        if (!showcase) {
-          showcase = document.createElement("section");
-          showcase.id = "firebase-section-gallery";
-          showcase.className = "firebase-section-showcase";
-          mainEl.appendChild(showcase);
-        }
+      // 4. Remove any legacy extra section gallery if present
+      const existingShowcase = document.getElementById("firebase-section-gallery");
+      if (existingShowcase) existingShowcase.remove();
 
-        const sectionGroupsTitle = pageSectionItems[0].sectionTitle || "Featured Safari Moments";
-        showcase.innerHTML = `
-          <div class="firebase-section-header">
-            <div>
-              <div class="firebase-section-kicker">Sri Lanka Wildlife Gallery</div>
-              <h2 class="firebase-section-title">${sectionGroupsTitle}</h2>
-            </div>
-          </div>
-          <div class="firebase-section-grid" id="firebase-section-grid"></div>
-        `;
-
-        const grid = showcase.querySelector("#firebase-section-grid");
-        pageSectionItems.forEach((item) => {
-          const card = document.createElement("article");
-          card.className = "firebase-section-card";
-          const displaySecSrc = normalizeSlideSrc(item.src, item.r2Key);
-          card.innerHTML = `
-            <div>
-              <div class="firebase-section-card-media">
-                <img src="${displaySecSrc}" alt="${item.alt || item.title}" loading="lazy" />
-              </div>
-              <div class="firebase-section-card-body">
-                <div class="firebase-section-card-tag">${item.sectionTitle}</div>
-                <h3 class="firebase-section-card-heading">${item.title}</h3>
-                <p class="firebase-section-card-caption">${item.caption || ""}</p>
-              </div>
-            </div>
-          `;
-          if (grid) grid.appendChild(card);
-        });
-      } else {
-        const existingShowcase = document.getElementById("firebase-section-gallery");
-        if (existingShowcase) existingShowcase.remove();
-      }
-
-      // 5. Collapse empty image gallery slots & empty left/right media columns (e.g., reviews/gallery pages)
+      // 5. Collapse empty image gallery slots & empty left/right media columns
       document.querySelectorAll(".imageGallery").forEach((galleryEl) => {
         const containers = Array.from(galleryEl.querySelectorAll('[id*="-imageContainer"]'));
         let visibleCount = 0;
         containers.forEach((box) => {
           const img = box.querySelector("img.galleryImage");
           const srcVal = (img && img.getAttribute("src")) || "";
-          const hidden = !img || img.style.display === "none" || !srcVal || srcVal.includes("empty-slot.svg");
+          const hidden = !img || img.style.display === "none" || isEmptySlotUrl(srcVal);
           if (hidden) {
             box.style.display = "none";
           } else {
@@ -1013,7 +832,7 @@
           const imgs = Array.from(col.querySelectorAll("img"));
           const hasVisibleImg = imgs.some((img) => {
             const s = img.getAttribute("src") || "";
-            return img.style.display !== "none" && s && !s.includes("empty-slot.svg");
+            return img.style.display !== "none" && !isEmptySlotUrl(s);
           });
           const hasButtonOrHeading = Boolean(col.querySelector(".wsite-button, h2, h3, h4, form"));
           const substantialParas = Array.from(col.querySelectorAll(".paragraph")).filter((p) => {

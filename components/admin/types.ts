@@ -1,4 +1,15 @@
-import type { SeedSectionGalleryItem } from '@/lib/section-seed-data';
+export interface SeedSectionGalleryItem {
+  itemId: string;
+  page: string;
+  sectionKey: string;
+  sectionTitle: string;
+  title: string;
+  caption: string;
+  src: string;
+  r2Key?: string;
+  alt: string;
+  order: number;
+}
 
 export interface ImageSlot {
   id: string;
@@ -99,10 +110,9 @@ export interface R2StatusPayload {
 
 export interface SyncReport {
   r2Total: number;
-  r2Pushed: number;
-  r2Failed: number;
-  htmlSlotsUpdated: number;
-  pagesUpdated: string[];
+  firestoreImagesChecked: number;
+  firestoreUrlsNormalized: number;
+  orphanedRemoved: number;
   authMode: string;
   cdnBaseUrl: string;
   warning?: string;
@@ -126,9 +136,7 @@ export interface ParentSectionGroup {
   totalTexts: number;
 }
 
-export type AdminTab = 'pages' | 'hero-badges' | 'r2-bucket' | 'sync-settings';
-
-export type { SeedSectionGalleryItem };
+export type AdminTab = 'pages' | 'r2-bucket' | 'sync-settings';
 
 export function splitSectionLabel(ctx: string): {
   sectionName: string;

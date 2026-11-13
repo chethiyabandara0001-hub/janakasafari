@@ -29,13 +29,13 @@ export function AdminLoginCard({
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-amber-400 text-xs font-semibold tracking-wide uppercase">
             <Compass className="w-4 h-4" />
-            <span>Nisha Safari CMS</span>
+            <span>Nisha Travelling CMS</span>
           </div>
           <h1 className="text-xl font-semibold text-slate-100 tracking-tight">
             Admin Studio Sign In
           </h1>
           <p className="text-xs text-slate-400">
-            Manage all 12 website pages, hero cross-section icons, and Cloudflare R2 media sync.
+            Manage all 12 website pages, hero slideshows, copy, and Cloudflare R2 media sync.
           </p>
         </div>
 

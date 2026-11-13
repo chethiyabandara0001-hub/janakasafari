@@ -2,9 +2,9 @@ import type {Metadata} from 'next';
 import './globals.css';
 import {ALL_SEO_KEYWORDS_LIST, PAGE_SEO_CONFIG, SITE_BASE_URL} from '@/lib/seo-config';
 
-const APP_TITLE = 'Janaka Safari Jeep Tours';
+const APP_TITLE = 'Nisha Travelling';
 const APP_DESCRIPTION =
-  'Book private & shared Yala Safari Tours, Yala National Park Jeep Safari, Udawalawe, Bundala, Wilpattu, Minneriya & Hambantota Port Shore Excursions.';
+  'Nisha Travelling offers private Sri Lanka travel experiences, curated wildlife & nature tours, national park expeditions, scenic transfers, and shore excursions across Sri Lanka.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_BASE_URL),
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: '/assets/aistudio/images__8_-removebg-preview__1__c2145e28.png',
+        url: '/favicon-96x96.png',
         sizes: '96x96',
         type: 'image/png',
       },
@@ -27,10 +27,10 @@ export const metadata: Metadata = {
         type: 'image/png',
       },
     ],
-    shortcut: '/assets/aistudio/images__8_-removebg-preview__1__c2145e28.png',
+    shortcut: '/favicon-96x96.png',
     apple: [
       {
-        url: '/assets/aistudio/images__8_-removebg-preview__1__c2145e28.png',
+        url: '/favicon-96x96.png',
         sizes: '96x96',
         type: 'image/png',
       },
@@ -50,23 +50,14 @@ export const metadata: Metadata = {
     title: APP_TITLE,
     description: APP_DESCRIPTION,
     url: SITE_BASE_URL,
-    siteName: 'Nisha Safari Jeep Tours — Sri Lanka Best Safari',
+    siteName: 'Nisha Travelling',
     type: 'website',
     locale: 'en_US',
-    images: [
-      {
-        url: 'https://cdn.srilankabestsafari.com/slots/index_html__slot_1.jpg',
-        width: 1600,
-        height: 900,
-        alt: 'Yala National Park Safari & Sri Lanka Safari Tours',
-      },
-    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: APP_TITLE,
     description: APP_DESCRIPTION,
-    images: ['https://cdn.srilankabestsafari.com/slots/index_html__slot_1.jpg'],
   },
 };
 
@@ -84,4 +75,3 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
     </html>
   );
 }
-

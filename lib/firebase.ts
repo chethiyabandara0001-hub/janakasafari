@@ -157,17 +157,7 @@ export function extractR2KeyFromUrl(url?: string): string | undefined {
       return key ? key.slice(0, 512) : undefined;
     }
   }
-  if (clean.startsWith('/assets/r2-bucket/') || clean.startsWith('assets/r2-bucket/')) {
-    const key = clean.replace(/^\/+/, '').replace(/^assets\/r2-bucket\//, '');
-    return key ? key.slice(0, 512) : undefined;
-  }
-  if (clean.startsWith('/assets/media/') || clean.startsWith('assets/media/')) {
-    const filename = clean.replace(/^\/+/, '').split('/').pop();
-    return filename ? `media/${filename}` : undefined;
-  }
-  const r2FolderMatch = clean.match(
-    /^https?:\/\/[^/]+\/((?:slots|media|uploads|index|yala-safari|udawalawe-safari|bundala-birding-safari|wilpattu-safari|minneriya-safari|kumana-birding-safari|safari-parks|about|gallery|reviews|contact)\/.+)$/i
-  );
+  const r2FolderMatch = clean.match(/^https?:\/\/cdn\.[^/]+\/(.+)$/i);
   if (r2FolderMatch?.[1]) {
     return r2FolderMatch[1].slice(0, 512);
   }

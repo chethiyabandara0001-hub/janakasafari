@@ -21,7 +21,6 @@ export async function GET(req: NextRequest) {
 Allow: /
 Allow: /assets/
 Allow: /api/r2/file/
-Allow: /api/media/
 Disallow: /admin
 Disallow: /api/admin/
 
@@ -29,7 +28,6 @@ User-agent: Googlebot
 Allow: /
 Allow: /assets/
 Allow: /api/r2/file/
-Allow: /api/media/
 Disallow: /admin
 Disallow: /api/admin/
 
@@ -37,7 +35,6 @@ User-agent: Googlebot-Image
 Allow: /
 Allow: /assets/
 Allow: /api/r2/file/
-Allow: /api/media/
 
 Sitemap: ${baseUrl}/sitemap.xml
 `;

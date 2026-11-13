@@ -28,6 +28,8 @@ import {
   auth,
   createUserWithEmailAndPassword,
   db,
+  deleteImageFromR2Bucket,
+  deleteSectionGalleryItemInFirestore,
   deleteSiteImageInFirestore,
   deleteSiteTextInFirestore,
   extractR2KeyFromUrl,
@@ -41,12 +43,7 @@ import {
   uploadImageToR2Bucket,
 } from '@/lib/firebase';
 import { doc, getDocFromServer } from 'firebase/firestore';
-import {
-  INITIAL_FIREBASE_SECTION_IMAGES,
-  type SeedSectionGalleryItem,
-} from '@/lib/section-seed-data';
 import { AdminLoginCard } from '@/components/admin/AdminLoginCard';
-import { HeroCrossBadgesPanel } from '@/components/admin/HeroCrossBadgesPanel';
 import { R2BucketPanel } from '@/components/admin/R2BucketPanel';
 import { SyncSettingsPanel } from '@/components/admin/SyncSettingsPanel';
 import {
@@ -60,20 +57,19 @@ import {
   type ParentSectionGroup,
   type R2ObjectRecord,
   type R2StatusPayload,
+  type SeedSectionGalleryItem,
   type SiteTextSlot,
   type SubSectionGroup,
   type SyncReport,
 } from '@/components/admin/types';
 
 export default function AdminStudioPage() {
-  // Core Inventory State
+  // Core Inventory State (pure HTML schema from /api/admin/images + /api/admin/cms)
   const [pages, setPages] = useState<PageMeta[]>([]);
   const [slots, setSlots] = useState<ImageSlot[]>([]);
-  const [sectionImages, setSectionImages] = useState<SeedSectionGalleryItem[]>([]);
   const [textSlots, setTextSlots] = useState<SiteTextSlot[]>([]);
-  const [customTexts, setCustomTexts] = useState<SiteTextSlot[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [cacheBuster, setCacheBuster] = useState<number>(() => Date.now());
+  const [cacheBuster, setCacheBuster] = useState<number>(1);
 
   // R2 Bucket State
   const [r2Status, setR2Status] = useState<R2StatusPayload | null>(null);
@@ -92,7 +88,7 @@ export default function AdminStudioPage() {
   const [loginError, setLoginError] = useState<string>('');
   const [loggingIn, setLoggingIn] = useState<boolean>(false);
 
-  // Live Firestore Overrides
+  // Live Firestore Collections
   const [firestoreImageDocs, setFirestoreImageDocs] = useState<Record<string, Partial<ImageSlot>>>({});
   const [firestoreSectionDocs, setFirestoreSectionDocs] = useState<SeedSectionGalleryItem[]>([]);
   const [firestoreTextDocs, setFirestoreTextDocs] = useState<
@@ -121,7 +117,7 @@ export default function AdminStudioPage() {
   const [editingCaptionTitle, setEditingCaptionTitle] = useState<string>('');
   const [editingCaptionAlt, setEditingCaptionAlt] = useState<string>('');
   const [confirmClearSlotId, setConfirmClearSlotId] = useState<string | null>(null);
-  const [confirmDeleteGalleryId, setConfirmDeleteGalleryId] = useState<string | null>(null);
+  const [confirmDeleteHeroSlideId, setConfirmDeleteHeroSlideId] = useState<string | null>(null);
   const [copiedUrlId, setCopiedUrlId] = useState<string | null>(null);
 
   // Custom Text Creator
@@ -131,8 +127,10 @@ export default function AdminStudioPage() {
   const [customTextValue, setCustomTextValue] = useState<string>('');
   const [addingCustomText, setAddingCustomText] = useState<boolean>(false);
 
-  // Quick R2 Picker Modal for any slot
-  const [r2PickerTargetSlot, setR2PickerTargetSlot] = useState<ImageSlot | null>(null);
+  // Unified R2 Picker Modal for image slots and Hero Slideshow
+  const [r2PickerTarget, setR2PickerTarget] = useState<
+    { mode: 'slot'; slot: ImageSlot } | { mode: 'hero-slide' } | null
+  >(null);
   const [r2PickerSearch, setR2PickerSearch] = useState<string>('');
   const [r2PickerBusyKey, setR2PickerBusyKey] = useState<string | null>(null);
 
@@ -186,10 +184,8 @@ export default function AdminStudioPage() {
       if (Array.isArray(imgData.r2Objects)) {
         setR2Objects(imgData.r2Objects);
       }
-      setSectionImages(cmsData.sectionGalleryItems || []);
       setTextSlots(cmsData.textSlots || []);
-      setCustomTexts(cmsData.customTexts || []);
-      setCacheBuster(Date.now());
+      setCacheBuster((prev) => prev + 1);
     } catch (err) {
       showNotice(err instanceof Error ? err.message : 'Error loading CMS inventory', 'error');
     } finally {
@@ -218,10 +214,8 @@ export default function AdminStudioPage() {
             const [imgData, cmsData] = await Promise.all([imgRes.json(), cmsRes.json()]);
             setPages(imgData.pages || []);
             setSlots(imgData.slots || []);
-            setSectionImages(cmsData.sectionGalleryItems || []);
             setTextSlots(cmsData.textSlots || []);
-            setCustomTexts(cmsData.customTexts || []);
-            setCacheBuster(Date.now());
+            setCacheBuster((prev) => prev + 1);
           }
           if (active && r2Res.ok) {
             const r2Data = (await r2Res.json()) as R2StatusPayload;
@@ -358,7 +352,7 @@ export default function AdminStudioPage() {
     setLoginError('');
   };
 
-  // Merged Inventory Maps
+  // Live Firestore Image Slots
   const mergedSlots = useMemo(() => {
     return slots.map((slot) => {
       const fbDoc = firestoreImageDocs[slot.slotId];
@@ -389,22 +383,6 @@ export default function AdminStudioPage() {
     });
   }, [slots, firestoreImageDocs]);
 
-  const mergedSectionImages = useMemo(() => {
-    const map = new Map<string, SeedSectionGalleryItem>();
-    for (const item of sectionImages) {
-      if (item && item.itemId) map.set(item.itemId, item);
-    }
-    for (const fbItem of firestoreSectionDocs) {
-      if (!fbItem || !fbItem.itemId) continue;
-      if (fbItem.sectionKey === 'deleted_section_item' || fbItem.src === '/deleted') {
-        map.delete(fbItem.itemId);
-      } else if (fbItem.src && !fbItem.src.startsWith('data:')) {
-        map.set(fbItem.itemId, fbItem);
-      }
-    }
-    return Array.from(map.values()).sort((a, b) => (a.order || 0) - (b.order || 0));
-  }, [sectionImages, firestoreSectionDocs]);
-
   const mergedTexts = useMemo(() => {
     const isLegacyPreRedesignText = (fbDoc: Partial<SiteTextSlot> & { updatedAt?: unknown }) => {
       if (fbDoc.isCustomAdded) return false;
@@ -421,7 +399,7 @@ export default function AdminStudioPage() {
       return Boolean(iso && iso < '2026-11-12T18:00:00Z');
     };
 
-    const baseList = [...textSlots, ...customTexts].map((t) => {
+    const baseList = textSlots.map((t) => {
       const fbDoc = firestoreTextDocs[t.textId];
       if (!fbDoc || isLegacyPreRedesignText(fbDoc)) return t;
       if (!t.isCustomAdded && fbDoc.tagName && t.tagName && fbDoc.tagName !== t.tagName) {
@@ -461,53 +439,55 @@ export default function AdminStudioPage() {
       }
     }
     return baseList;
-  }, [textSlots, customTexts, firestoreTextDocs, pages]);
+  }, [textSlots, firestoreTextDocs, pages]);
 
   const currentPageMeta = useMemo(
     () => pages.find((p) => p.file === selectedPage) || { file: selectedPage, title: selectedPage },
     [pages, selectedPage]
   );
 
-  const primaryHeroSlot = useMemo(
-    () => mergedSlots.find((s) => s.page === selectedPage && s.type === 'hero-bg') || null,
-    [mergedSlots, selectedPage]
-  );
-
   const pageHeroSlides = useMemo(
     () =>
-      mergedSectionImages.filter(
-        (item) => item.page === selectedPage && item.sectionKey === 'hero_slideshow'
-      ),
-    [mergedSectionImages, selectedPage]
+      firestoreSectionDocs
+        .filter(
+          (item) =>
+            item &&
+            item.page === selectedPage &&
+            item.sectionKey === 'hero_slideshow' &&
+            item.src &&
+            item.src !== '/deleted' &&
+            !item.src.startsWith('data:')
+        )
+        .sort((a, b) => (a.order || 0) - (b.order || 0)),
+    [firestoreSectionDocs, selectedPage]
   );
 
-  const pageExtraGallery = useMemo(
-    () =>
-      mergedSectionImages.filter(
-        (item) => item.page === selectedPage && item.sectionKey !== 'hero_slideshow'
-      ),
-    [mergedSectionImages, selectedPage]
-  );
-
-  // Dedicated Home Hero Bottom Cross-Section Data
-  const heroCrossImageSlots = useMemo(
-    () =>
-      mergedSlots.filter(
-        (s) =>
-          s.page === 'index.html' &&
-          s.sectionContext.startsWith('Hero Bottom Cross-Section')
-      ),
-    [mergedSlots]
-  );
-
-  const heroCrossTextSlots = useMemo(
-    () =>
-      mergedTexts.filter(
-        (t) =>
-          t.page === 'index.html' &&
-          t.sectionContext.startsWith('Hero Bottom Cross-Section')
-      ),
-    [mergedTexts]
+  const isR2KeyStillUsedInFirestore = useCallback(
+    (r2Key: string, exclude?: { slotId?: string; itemId?: string }) => {
+      if (!r2Key) return false;
+      const usedInSlots = Object.values(firestoreImageDocs).some((d) => {
+        if (!d || d.slotId === exclude?.slotId || d.isDeleted || !d.src || d.src === '/deleted') {
+          return false;
+        }
+        const k = d.r2Key || extractR2KeyFromUrl(d.src);
+        return k === r2Key;
+      });
+      if (usedInSlots) return true;
+      return firestoreSectionDocs.some((item) => {
+        if (
+          !item ||
+          item.itemId === exclude?.itemId ||
+          item.sectionKey === 'deleted_section_item' ||
+          !item.src ||
+          item.src === '/deleted'
+        ) {
+          return false;
+        }
+        const k = item.r2Key || extractR2KeyFromUrl(item.src);
+        return k === r2Key;
+      });
+    },
+    [firestoreImageDocs, firestoreSectionDocs]
   );
 
   // Hierarchical Parent Section -> Sub-Section Tree for Selected Page
@@ -631,7 +611,7 @@ export default function AdminStudioPage() {
     return Array.from(names);
   }, [parentSections]);
 
-  // --- Image Slot Actions ---
+  // --- Image Slot Actions (R2 -> CDN URL -> Firestore) ---
   const handleDirectSlotFileSelected = async (
     targetSlot: ImageSlot,
     e: React.ChangeEvent<HTMLInputElement>
@@ -642,36 +622,16 @@ export default function AdminStudioPage() {
 
     setUploadingTargetId(targetSlot.slotId);
     try {
+      const prevKey = targetSlot.r2Key || extractR2KeyFromUrl(targetSlot.src);
+      const canDeletePrev =
+        prevKey && !isR2KeyStillUsedInFirestore(prevKey, { slotId: targetSlot.slotId });
+
       const r2Uploaded = await uploadImageToR2Bucket(file, {
-        replaceKey:
-          targetSlot.r2Key && !targetSlot.r2Key.startsWith('media/')
-            ? targetSlot.r2Key
-            : undefined,
+        replaceKey: canDeletePrev ? prevKey : undefined,
         alt: targetSlot.alt || targetSlot.label,
         title: targetSlot.label,
         page: targetSlot.page,
       });
-
-      const res = await fetch('/api/admin/images', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'update-slot-meta',
-          page: targetSlot.page,
-          slotIndex: targetSlot.slotIndex,
-          scope: targetSlot.type === 'logo' ? 'global' : 'slot',
-          altText: targetSlot.alt || targetSlot.label,
-          externalUrl: r2Uploaded.cdnUrl,
-          r2Key: r2Uploaded.r2Key,
-          type: targetSlot.type,
-          label: targetSlot.label,
-          sectionContext: targetSlot.sectionContext,
-        }),
-      });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || 'Failed to update image');
-      }
 
       await saveSiteImageInFirestore({
         slotId: targetSlot.slotId,
@@ -686,8 +646,9 @@ export default function AdminStudioPage() {
         alt: targetSlot.alt || targetSlot.label,
       });
 
-      showNotice(`Updated "${targetSlot.label}" via Cloudflare R2.`);
-      await Promise.all([fetchInventory(), fetchR2Status()]);
+      setCacheBuster((prev) => prev + 1);
+      showNotice(`Uploaded "${targetSlot.label}" to Cloudflare R2 and saved to Firestore.`);
+      await fetchR2Status();
     } catch (err) {
       showNotice(err instanceof Error ? err.message : 'Image upload failed', 'error');
     } finally {
@@ -698,27 +659,6 @@ export default function AdminStudioPage() {
   const handleAssignR2ToSlot = async (obj: R2ObjectRecord, targetSlot: ImageSlot) => {
     setUploadingTargetId(targetSlot.slotId);
     try {
-      const res = await fetch('/api/admin/images', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'update-slot-meta',
-          page: targetSlot.page,
-          slotIndex: targetSlot.slotIndex,
-          scope: targetSlot.type === 'logo' ? 'global' : 'slot',
-          altText: targetSlot.alt || obj.alt || targetSlot.label,
-          externalUrl: obj.cdnUrl,
-          r2Key: obj.r2Key,
-          type: targetSlot.type,
-          label: targetSlot.label,
-          sectionContext: targetSlot.sectionContext,
-        }),
-      });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || 'Failed to assign R2 image');
-      }
-
       await saveSiteImageInFirestore({
         slotId: targetSlot.slotId,
         page: targetSlot.page,
@@ -732,8 +672,8 @@ export default function AdminStudioPage() {
         alt: targetSlot.alt || obj.alt || targetSlot.label,
       });
 
+      setCacheBuster((prev) => prev + 1);
       showNotice(`Assigned R2 asset "${obj.title || obj.r2Key}" to "${targetSlot.label}".`);
-      await fetchInventory();
     } catch (err) {
       showNotice(err instanceof Error ? err.message : 'Failed to assign R2 asset', 'error');
     } finally {
@@ -742,27 +682,15 @@ export default function AdminStudioPage() {
   };
 
   const handleSaveSlotCaption = async (slot: ImageSlot) => {
+    if (!slot.src || slot.isDeleted) {
+      showNotice('Upload or pick an R2 image before editing its caption.', 'error');
+      setEditingCaptionId(null);
+      return;
+    }
     setUploadingTargetId(slot.slotId);
     try {
       const newLabel = editingCaptionTitle.trim() || slot.label;
       const newAlt = editingCaptionAlt.trim();
-
-      await fetch('/api/admin/images', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'update-slot-meta',
-          page: slot.page,
-          slotIndex: slot.slotIndex,
-          scope: slot.type === 'logo' ? 'global' : 'slot',
-          altText: newAlt,
-          externalUrl: slot.src,
-          r2Key: slot.r2Key,
-          type: slot.type,
-          label: newLabel,
-          sectionContext: slot.sectionContext,
-        }),
-      });
 
       await saveSiteImageInFirestore({
         slotId: slot.slotId,
@@ -773,13 +701,12 @@ export default function AdminStudioPage() {
         sectionContext: slot.sectionContext,
         src: slot.src,
         lightboxHref: slot.lightboxHref || slot.src,
-        r2Key: slot.r2Key,
+        r2Key: slot.r2Key || extractR2KeyFromUrl(slot.src),
         alt: newAlt,
       });
 
       setEditingCaptionId(null);
       showNotice(`Saved metadata for "${newLabel}".`);
-      await fetchInventory();
     } catch (err) {
       showNotice(err instanceof Error ? err.message : 'Failed to save metadata', 'error');
     } finally {
@@ -791,52 +718,32 @@ export default function AdminStudioPage() {
     setUploadingTargetId(slot.slotId);
     try {
       const r2KeyToDelete = slot.r2Key || extractR2KeyFromUrl(slot.src);
-      setSlots((prev) =>
-        prev.map((s) =>
-          s.slotId === slot.slotId
-            ? { ...s, src: '', lightboxHref: '', r2Key: undefined, isDeleted: true, isModified: true }
-            : s
-        )
-      );
 
-      await fetch('/api/admin/images', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'delete-slot',
-          page: slot.page,
-          slotIndex: slot.slotIndex,
-          slotId: slot.slotId,
-          r2Key: r2KeyToDelete,
-          type: slot.type,
-          label: slot.label,
-          sectionContext: slot.sectionContext,
-        }),
+      await deleteSiteImageInFirestore(slot.slotId);
+      setFirestoreImageDocs((prev) => {
+        const next = { ...prev };
+        delete next[slot.slotId];
+        return next;
       });
 
-      await saveSiteImageInFirestore({
-        slotId: slot.slotId,
-        page: slot.page,
-        slotIndex: slot.slotIndex,
-        type: slot.type,
-        label: slot.label,
-        sectionContext: slot.sectionContext,
-        src: '/deleted',
-        lightboxHref: '/deleted',
-        alt: slot.alt || '',
-      });
+      if (
+        r2KeyToDelete &&
+        !isR2KeyStillUsedInFirestore(r2KeyToDelete, { slotId: slot.slotId })
+      ) {
+        await deleteImageFromR2Bucket(r2KeyToDelete);
+        await fetchR2Status();
+      }
 
-      showNotice(`Cleared "${slot.label}" from ${currentPageMeta.title}.`);
-      await fetchInventory();
+      setCacheBuster((prev) => prev + 1);
+      showNotice(`Deleted "${slot.label}" from Firestore and Cloudflare R2.`);
     } catch (err) {
       showNotice(err instanceof Error ? err.message : 'Delete failed', 'error');
-      await fetchInventory();
     } finally {
       setUploadingTargetId(null);
     }
   };
 
-  // --- Hero Slideshow & Extra Gallery Actions ---
+  // --- Hero Slideshow Actions (R2 -> CDN URL -> Firestore) ---
   const handleAddHeroSlideFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files ? Array.from(e.target.files) : [];
     e.target.value = '';
@@ -844,7 +751,8 @@ export default function AdminStudioPage() {
 
     setUploadingTargetId('hero-add-new');
     try {
-      let currentOrder = pageHeroSlides.length + 1;
+      let currentOrder =
+        pageHeroSlides.reduce((max, s) => Math.max(max, s.order || 0), 0) + 1;
       for (const file of files) {
         const cleanTitle = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ');
         const uploaded = await uploadImageToR2Bucket(file, {
@@ -866,25 +774,40 @@ export default function AdminStudioPage() {
           order: currentOrder,
         };
 
-        await fetch('/api/admin/cms', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'save-section-image', ...newSlide }),
-        });
-
         await saveSectionGalleryItemInFirestore(newSlide);
         currentOrder++;
       }
 
+      setCacheBuster((prev) => prev + 1);
       showNotice(
-        `Added ${files.length} Hero Slideshow image${files.length > 1 ? 's' : ''} to ${currentPageMeta.title}.`
+        `Uploaded ${files.length} Hero Slide${files.length > 1 ? 's' : ''} to R2 and synced to Firestore.`
       );
-      await Promise.all([fetchInventory(), fetchR2Status()]);
+      await fetchR2Status();
     } catch (err) {
       showNotice(err instanceof Error ? err.message : 'Failed to add hero slide', 'error');
     } finally {
       setUploadingTargetId(null);
     }
+  };
+
+  const handleAssignR2ToHeroSlide = async (obj: R2ObjectRecord) => {
+    const nextOrder =
+      pageHeroSlides.reduce((max, s) => Math.max(max, s.order || 0), 0) + 1;
+    const newSlide: SeedSectionGalleryItem = {
+      itemId: `hero_slide_${selectedPage.replace('.html', '').replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}_${nextOrder}`,
+      page: selectedPage,
+      sectionKey: 'hero_slideshow',
+      sectionTitle: 'Hero Section Slideshow (4s)',
+      title: obj.title || `Hero Slide #${nextOrder}`,
+      caption: '4-second auto-advancing hero banner slide',
+      src: obj.cdnUrl,
+      r2Key: obj.r2Key,
+      alt: obj.alt || obj.title || `${currentPageMeta.title} Hero Banner Slide`,
+      order: nextOrder,
+    };
+    await saveSectionGalleryItemInFirestore(newSlide);
+    setCacheBuster((prev) => prev + 1);
+    showNotice(`Added "${obj.title || obj.r2Key}" to ${currentPageMeta.title} Hero Slideshow.`);
   };
 
   const handleReplaceSectionImageFile = async (
@@ -897,11 +820,12 @@ export default function AdminStudioPage() {
 
     setUploadingTargetId(targetItem.itemId);
     try {
+      const prevKey = targetItem.r2Key || extractR2KeyFromUrl(targetItem.src);
+      const canDeletePrev =
+        prevKey && !isR2KeyStillUsedInFirestore(prevKey, { itemId: targetItem.itemId });
+
       const uploaded = await uploadImageToR2Bucket(file, {
-        replaceKey:
-          targetItem.r2Key && !targetItem.r2Key.startsWith('media/')
-            ? targetItem.r2Key
-            : undefined,
+        replaceKey: canDeletePrev ? prevKey : undefined,
         alt: targetItem.alt || targetItem.title,
         title: targetItem.title,
         page: targetItem.page,
@@ -913,17 +837,12 @@ export default function AdminStudioPage() {
         r2Key: uploaded.r2Key,
       };
 
-      await fetch('/api/admin/cms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'save-section-image', ...updatedItem }),
-      });
-
       await saveSectionGalleryItemInFirestore(updatedItem);
-      showNotice(`Updated "${targetItem.title}" on ${currentPageMeta.title}.`);
-      await Promise.all([fetchInventory(), fetchR2Status()]);
+      setCacheBuster((prev) => prev + 1);
+      showNotice(`Replaced "${targetItem.title}" via Cloudflare R2.`);
+      await fetchR2Status();
     } catch (err) {
-      showNotice(err instanceof Error ? err.message : 'Failed to replace image', 'error');
+      showNotice(err instanceof Error ? err.message : 'Failed to replace hero slide', 'error');
     } finally {
       setUploadingTargetId(null);
     }
@@ -933,87 +852,28 @@ export default function AdminStudioPage() {
     setUploadingTargetId(item.itemId);
     try {
       const r2KeyToDelete = item.r2Key || extractR2KeyFromUrl(item.src);
-      setSectionImages((prev) => prev.filter((i) => i.itemId !== item.itemId));
-      setFirestoreSectionDocs((prev) => [
-        ...prev.filter((i) => i.itemId !== item.itemId),
-        { ...item, sectionKey: 'deleted_section_item', src: '/deleted' },
-      ]);
 
-      await fetch('/api/admin/cms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'delete-section-image',
-          itemId: item.itemId,
-          r2Key: r2KeyToDelete,
-        }),
-      });
+      await deleteSectionGalleryItemInFirestore(item.itemId);
+      setFirestoreSectionDocs((prev) => prev.filter((i) => i.itemId !== item.itemId));
 
-      await saveSectionGalleryItemInFirestore({
-        ...item,
-        sectionKey: 'deleted_section_item',
-        src: '/deleted',
-      });
-
-      showNotice(`Removed "${item.title}" from ${currentPageMeta.title}.`);
-      await fetchInventory();
-    } catch (err) {
-      showNotice(err instanceof Error ? err.message : 'Failed to remove item', 'error');
-      await fetchInventory();
-    } finally {
-      setUploadingTargetId(null);
-    }
-  };
-
-  const handleAddGalleryPhotoFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files ? Array.from(e.target.files) : [];
-    e.target.value = '';
-    if (files.length === 0) return;
-
-    setUploadingTargetId('gallery-add-new');
-    try {
-      let currentOrder = mergedSectionImages.length + 1;
-      for (const file of files) {
-        const cleanTitle = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ');
-        const uploaded = await uploadImageToR2Bucket(file, {
-          alt: cleanTitle,
-          title: cleanTitle,
-          page: selectedPage,
-        });
-
-        const newGalleryItem: SeedSectionGalleryItem = {
-          itemId: `sec_${selectedPage.replace('.html', '').replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}_${currentOrder}`,
-          page: selectedPage,
-          sectionKey: 'custom_section_gallery',
-          sectionTitle: 'Featured Safari Moments',
-          title: cleanTitle || 'Safari Wildlife Photo',
-          caption: `${currentPageMeta.title} wildlife highlight`,
-          src: uploaded.cdnUrl,
-          r2Key: uploaded.r2Key,
-          alt: cleanTitle || 'Safari photo',
-          order: currentOrder,
-        };
-
-        await fetch('/api/admin/cms', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'save-section-image', ...newGalleryItem }),
-        });
-
-        await saveSectionGalleryItemInFirestore(newGalleryItem);
-        currentOrder++;
+      if (
+        r2KeyToDelete &&
+        !isR2KeyStillUsedInFirestore(r2KeyToDelete, { itemId: item.itemId })
+      ) {
+        await deleteImageFromR2Bucket(r2KeyToDelete);
+        await fetchR2Status();
       }
 
-      showNotice(`Added ${files.length} photo(s) to ${currentPageMeta.title} bottom gallery.`);
-      await Promise.all([fetchInventory(), fetchR2Status()]);
+      setCacheBuster((prev) => prev + 1);
+      showNotice(`Deleted "${item.title}" from Firestore and Cloudflare R2.`);
     } catch (err) {
-      showNotice(err instanceof Error ? err.message : 'Failed to upload gallery photo', 'error');
+      showNotice(err instanceof Error ? err.message : 'Failed to delete hero slide', 'error');
     } finally {
       setUploadingTargetId(null);
     }
   };
 
-  // --- Text Editing & Custom Text Actions ---
+  // --- Text Editing & Custom Text Actions (Firestore) ---
   const handleSaveTextContent = async (slot: SiteTextSlot, newContent: string) => {
     setSavingTextId(slot.textId);
     try {
@@ -1028,13 +888,6 @@ export default function AdminStudioPage() {
         isCustomAdded: slot.isCustomAdded,
       };
 
-      const res = await fetch('/api/admin/cms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'save-text', ...payload }),
-      });
-      if (!res.ok) throw new Error('Failed to save text');
-
       await saveSiteTextInFirestore(payload);
       setFirestoreTextDocs((prev) => ({
         ...prev,
@@ -1045,7 +898,6 @@ export default function AdminStudioPage() {
       }));
       setEditingTextId(null);
       showNotice(`Saved and synced "${slot.sectionContext}" to Firestore.`);
-      await fetchInventory();
     } catch (err) {
       showNotice(err instanceof Error ? err.message : 'Failed to save text', 'error');
     } finally {
@@ -1056,21 +908,6 @@ export default function AdminStudioPage() {
   const handleRestoreOrDeleteText = async (slot: SiteTextSlot, restoreDefault: boolean) => {
     setSavingTextId(slot.textId);
     try {
-      await fetch('/api/admin/cms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'delete-text',
-          textId: slot.textId,
-          page: slot.page,
-          textIndex: slot.textIndex,
-          tagName: slot.tagName,
-          sectionContext: slot.sectionContext,
-          content: slot.content,
-          restoreDefault,
-        }),
-      });
-
       if (restoreDefault || slot.isCustomAdded) {
         await deleteSiteTextInFirestore(slot.textId);
         setFirestoreTextDocs((prev) => {
@@ -1110,7 +947,6 @@ export default function AdminStudioPage() {
           ? `Restored default text in "${slot.sectionContext}".`
           : `Hidden text block on ${currentPageMeta.title}.`
       );
-      await fetchInventory();
     } catch (err) {
       showNotice(err instanceof Error ? err.message : 'Text update failed', 'error');
     } finally {
@@ -1133,12 +969,6 @@ export default function AdminStudioPage() {
         isDeleted: false,
         isCustomAdded: true,
       };
-      const res = await fetch('/api/admin/cms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'save-text', ...payload }),
-      });
-      if (!res.ok) throw new Error('Failed to create custom text block');
 
       await saveSiteTextInFirestore(payload);
       setFirestoreTextDocs((prev) => ({
@@ -1151,7 +981,6 @@ export default function AdminStudioPage() {
       setCustomTextValue('');
       setShowCustomTextForm(false);
       showNotice(`Added custom text note to "${payload.sectionContext}".`);
-      await fetchInventory();
     } catch (err) {
       showNotice(err instanceof Error ? err.message : 'Failed to add custom text', 'error');
     } finally {
@@ -1159,36 +988,103 @@ export default function AdminStudioPage() {
     }
   };
 
-  // --- Cloudflare R2 & Sync Actions ---
+  // --- Cloudflare R2 <-> Firestore Sync Actions ---
   const handleSyncSavedImagesToSiteR2 = async () => {
     setSyncingToSite(true);
     try {
-      const res = await fetch('/api/admin/images', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'sync-to-site-r2' }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) {
-        throw new Error(data.error || 'Failed to sync saved images to site via R2');
+      const res = await fetch(`/api/r2?t=${Date.now()}`, { cache: 'no-store' });
+      const data = (await res.json()) as R2StatusPayload & { ok?: boolean; error?: string };
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to read Cloudflare R2 bucket');
       }
 
-      if (data.slots) setSlots(data.slots);
-      if (data.pages) setPages(data.pages);
-      if (data.r2Objects) setR2Objects(data.r2Objects);
-      setCacheBuster(Date.now());
+      const liveObjects = Array.isArray(data.objects) ? data.objects : [];
+      setR2Status(data);
+      setR2Objects(liveObjects);
 
-      if (data.syncReport) {
-        setLastSyncReport({ ...data.syncReport, syncedAt: new Date().toISOString() });
-        const rep = data.syncReport as SyncReport;
-        showNotice(
-          `Synced ${rep.htmlSlotsUpdated} HTML slots across ${rep.pagesUpdated.length} pages (${rep.r2Pushed}/${rep.r2Total} R2 objects pushed).`
-        );
-      } else {
-        showNotice('Synced saved images to site through Cloudflare R2.');
+      const liveByKey = new Map<string, R2ObjectRecord>();
+      for (const obj of liveObjects) {
+        liveByKey.set(obj.r2Key, obj);
       }
 
-      await fetchR2Status();
+      const canVerifyOrphans = Boolean(data.testResult?.ok);
+      let checked = 0;
+      let urlsNormalized = 0;
+      let orphanedRemoved = 0;
+
+      for (const docItem of Object.values(firestoreImageDocs)) {
+        if (!docItem || !docItem.slotId) continue;
+        checked++;
+        if (docItem.isDeleted || docItem.src === '/deleted' || !docItem.src) {
+          await deleteSiteImageInFirestore(docItem.slotId);
+          orphanedRemoved++;
+          continue;
+        }
+        const key = docItem.r2Key || extractR2KeyFromUrl(docItem.src);
+        const liveObj = key ? liveByKey.get(key) : undefined;
+        if (!liveObj && canVerifyOrphans) {
+          await deleteSiteImageInFirestore(docItem.slotId);
+          orphanedRemoved++;
+        } else if (liveObj && docItem.src !== liveObj.cdnUrl) {
+          await saveSiteImageInFirestore({
+            slotId: docItem.slotId,
+            page: docItem.page || 'index.html',
+            slotIndex: docItem.slotIndex ?? 0,
+            type: docItem.type || 'img',
+            label: docItem.label || 'Image Slot',
+            sectionContext: docItem.sectionContext || 'Page Content',
+            src: liveObj.cdnUrl,
+            lightboxHref: liveObj.cdnUrl,
+            r2Key: liveObj.r2Key,
+            alt: docItem.alt || liveObj.alt || '',
+          });
+          urlsNormalized++;
+        }
+      }
+
+      for (const secItem of firestoreSectionDocs) {
+        if (!secItem || !secItem.itemId) continue;
+        checked++;
+        if (
+          secItem.sectionKey === 'deleted_section_item' ||
+          secItem.src === '/deleted' ||
+          !secItem.src
+        ) {
+          await deleteSectionGalleryItemInFirestore(secItem.itemId);
+          orphanedRemoved++;
+          continue;
+        }
+        const key = secItem.r2Key || extractR2KeyFromUrl(secItem.src);
+        const liveObj = key ? liveByKey.get(key) : undefined;
+        if (!liveObj && canVerifyOrphans) {
+          await deleteSectionGalleryItemInFirestore(secItem.itemId);
+          orphanedRemoved++;
+        } else if (liveObj && secItem.src !== liveObj.cdnUrl) {
+          await saveSectionGalleryItemInFirestore({
+            ...secItem,
+            src: liveObj.cdnUrl,
+            r2Key: liveObj.r2Key,
+          });
+          urlsNormalized++;
+        }
+      }
+
+      setCacheBuster((prev) => prev + 1);
+      const report: SyncReport = {
+        r2Total: liveObjects.length,
+        firestoreImagesChecked: checked,
+        firestoreUrlsNormalized: urlsNormalized,
+        orphanedRemoved,
+        authMode: data.authMode,
+        cdnBaseUrl: data.cdnBaseUrl,
+        warning: data.testResult?.ok ? undefined : data.testResult?.message || data.warning,
+        syncedAt: new Date().toISOString(),
+      };
+      setLastSyncReport(report);
+
+      showNotice(
+        `Synced R2 (${liveObjects.length} objects) with Firestore: ${urlsNormalized} URL(s) updated, ${orphanedRemoved} orphaned cleared.`
+      );
     } catch (err) {
       showNotice(err instanceof Error ? err.message : 'R2 sync failed', 'error');
     } finally {
@@ -1284,8 +1180,46 @@ export default function AdminStudioPage() {
       return;
     }
     if (data.objects) setR2Objects(data.objects);
-    showNotice(`Updated R2 metadata for "${options.r2Key}".`);
-    await fetchInventory();
+
+    const updatedKey = String(data.r2Key || options.newKey || options.r2Key);
+    const updatedCdnUrl = String(data.cdnUrl || '');
+    if (updatedCdnUrl) {
+      for (const docItem of Object.values(firestoreImageDocs)) {
+        if (!docItem?.slotId || docItem.isDeleted || !docItem.src) continue;
+        const k = docItem.r2Key || extractR2KeyFromUrl(docItem.src);
+        if (k === options.r2Key) {
+          await saveSiteImageInFirestore({
+            slotId: docItem.slotId,
+            page: docItem.page || 'index.html',
+            slotIndex: docItem.slotIndex ?? 0,
+            type: docItem.type || 'img',
+            label: docItem.label || 'Image Slot',
+            sectionContext: docItem.sectionContext || 'Page Content',
+            src: updatedCdnUrl,
+            lightboxHref: updatedCdnUrl,
+            r2Key: updatedKey,
+            alt: options.alt ?? docItem.alt ?? '',
+          });
+        }
+      }
+      for (const secItem of firestoreSectionDocs) {
+        if (!secItem?.itemId || !secItem.src || secItem.sectionKey === 'deleted_section_item') {
+          continue;
+        }
+        const k = secItem.r2Key || extractR2KeyFromUrl(secItem.src);
+        if (k === options.r2Key) {
+          await saveSectionGalleryItemInFirestore({
+            ...secItem,
+            src: updatedCdnUrl,
+            r2Key: updatedKey,
+            alt: options.alt ?? secItem.alt,
+          });
+        }
+      }
+    }
+
+    setCacheBuster((prev) => prev + 1);
+    showNotice(`Updated R2 metadata for "${updatedKey}".`);
   };
 
   const handleDeleteR2Object = async (r2Key: string) => {
@@ -1298,39 +1232,54 @@ export default function AdminStudioPage() {
       return;
     }
     if (data.objects) setR2Objects(data.objects);
-    showNotice(`Deleted "${r2Key}" from R2 bucket.`);
-    await fetchInventory();
+
+    // Cascade delete any Firestore site_images & hero slides referencing this deleted R2 key
+    for (const docItem of Object.values(firestoreImageDocs)) {
+      if (!docItem?.slotId) continue;
+      const k = docItem.r2Key || extractR2KeyFromUrl(docItem.src);
+      if (k === r2Key) {
+        await deleteSiteImageInFirestore(docItem.slotId);
+      }
+    }
+    for (const secItem of firestoreSectionDocs) {
+      if (!secItem?.itemId) continue;
+      const k = secItem.r2Key || extractR2KeyFromUrl(secItem.src);
+      if (k === r2Key) {
+        await deleteSectionGalleryItemInFirestore(secItem.itemId);
+      }
+    }
+
+    setCacheBuster((prev) => prev + 1);
+    showNotice(`Deleted "${r2Key}" from R2 bucket and cleared linked Firestore slots.`);
   };
 
   const handleResetCurrentPage = async () => {
     setResettingPage(true);
     try {
-      await fetch('/api/admin/images', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'reset',
-          target: 'page',
-          page: selectedPage,
-        }),
-      });
-
-      const pageSlotIds = slots.filter((s) => s.page === selectedPage).map((s) => s.slotId);
-      for (const slotId of pageSlotIds) {
-        await deleteSiteImageInFirestore(slotId);
-      }
-
-      const defaultPageHeroSlides = INITIAL_FIREBASE_SECTION_IMAGES.filter(
-        (item) => item.page === selectedPage
+      const pageSlotIds = new Set(
+        slots.filter((s) => s.page === selectedPage).map((s) => s.slotId)
       );
-      for (const item of defaultPageHeroSlides) {
-        await saveSectionGalleryItemInFirestore(item);
+      for (const docItem of Object.values(firestoreImageDocs)) {
+        if (docItem?.slotId && (docItem.page === selectedPage || pageSlotIds.has(docItem.slotId))) {
+          pageSlotIds.add(docItem.slotId);
+        }
+      }
+      for (const slotId of pageSlotIds) {
+        if (firestoreImageDocs[slotId]) {
+          await deleteSiteImageInFirestore(slotId);
+        }
       }
 
-      showNotice(`Cleared overrides on ${currentPageMeta.title}.`);
-      await fetchInventory();
+      for (const secItem of firestoreSectionDocs) {
+        if (secItem.page === selectedPage && secItem.itemId) {
+          await deleteSectionGalleryItemInFirestore(secItem.itemId);
+        }
+      }
+
+      setCacheBuster((prev) => prev + 1);
+      showNotice(`Cleared all saved images for ${currentPageMeta.title} from Firestore.`);
     } catch (err) {
-      showNotice(err instanceof Error ? err.message : 'Failed to reset page', 'error');
+      showNotice(err instanceof Error ? err.message : 'Failed to clear page images', 'error');
     } finally {
       setResettingPage(false);
     }
@@ -1339,23 +1288,19 @@ export default function AdminStudioPage() {
   const handleResetEntireSite = async () => {
     setResettingAll(true);
     try {
-      await fetch('/api/admin/images', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'reset', target: 'all' }),
-      });
-
-      for (const slot of slots) {
-        await deleteSiteImageInFirestore(slot.slotId);
+      for (const slotId of Object.keys(firestoreImageDocs)) {
+        await deleteSiteImageInFirestore(slotId);
       }
-      for (const item of INITIAL_FIREBASE_SECTION_IMAGES) {
-        await saveSectionGalleryItemInFirestore(item);
+      for (const secItem of firestoreSectionDocs) {
+        if (secItem.itemId) {
+          await deleteSectionGalleryItemInFirestore(secItem.itemId);
+        }
       }
 
-      showNotice('Restored all 12 website pages to baseline defaults.');
-      await fetchInventory();
+      setCacheBuster((prev) => prev + 1);
+      showNotice('Wiped all image assignments across all 12 pages from Firestore.');
     } catch (err) {
-      showNotice(err instanceof Error ? err.message : 'Full reset failed', 'error');
+      showNotice(err instanceof Error ? err.message : 'Full wipe failed', 'error');
     } finally {
       setResettingAll(false);
     }
@@ -1387,7 +1332,7 @@ export default function AdminStudioPage() {
       <div className="min-h-screen bg-[#090d0b] text-slate-100 flex items-center justify-center p-6">
         <div className="flex items-center gap-2.5 text-xs text-slate-400">
           <RefreshCw className="w-4 h-4 animate-spin text-amber-500" />
-          <span>Loading Nisha Safari CMS...</span>
+          <span>Loading Nisha Travelling CMS...</span>
         </div>
       </div>
     );
@@ -1431,7 +1376,7 @@ export default function AdminStudioPage() {
             <span className="w-7 h-7 rounded-md bg-amber-500 text-slate-950 flex items-center justify-center shrink-0">
               <Compass className="w-4 h-4" />
             </span>
-            <span>Nisha Safari CMS</span>
+            <span>Nisha Travelling CMS</span>
           </Link>
 
           <span className="hidden xl:flex items-center gap-1.5 text-xs text-slate-400 pl-3 border-l border-emerald-950/80 whitespace-nowrap">
@@ -1444,11 +1389,11 @@ export default function AdminStudioPage() {
               {r2Status?.bucketName || 'nishatravels'}
             </span>
             <span className="text-slate-500">·</span>
-            <span>{r2Connected ? 'R2 Connected' : 'Mirror Ready'}</span>
+            <span>{r2Connected ? 'R2 Connected' : 'Check R2 Settings'}</span>
           </span>
         </div>
 
-        {/* Center: 4 Workspace Tabs */}
+        {/* Center: 3 Workspace Tabs */}
         <nav
           aria-label="CMS Workspace"
           className="hidden md:flex items-center gap-1 bg-[#090d0b] p-1 rounded-md border border-emerald-950/80"
@@ -1456,7 +1401,6 @@ export default function AdminStudioPage() {
           {(
             [
               { id: 'pages', label: 'Pages & Sections' },
-              { id: 'hero-badges', label: 'Hero & Cross Badges' },
               { id: 'r2-bucket', label: 'R2 Media Bucket' },
               { id: 'sync-settings', label: 'Sync & R2 Settings' },
             ] as { id: AdminTab; label: string }[]
@@ -1489,7 +1433,7 @@ export default function AdminStudioPage() {
           >
             <RefreshCw className={`w-3.5 h-3.5 ${syncingToSite ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">
-              {syncingToSite ? 'Syncing R2...' : 'Sync Saved Images to Site (R2)'}
+              {syncingToSite ? 'Syncing R2...' : 'Sync R2 <-> Firestore'}
             </span>
             <span className="sm:hidden">{syncingToSite ? 'Syncing...' : 'Sync R2'}</span>
           </button>
@@ -1521,7 +1465,6 @@ export default function AdminStudioPage() {
         {(
           [
             { id: 'pages', label: 'Pages & Sections' },
-            { id: 'hero-badges', label: 'Hero & Badges' },
             { id: 'r2-bucket', label: 'R2 Bucket' },
             { id: 'sync-settings', label: 'Sync & Settings' },
           ] as { id: AdminTab; label: string }[]
@@ -1710,29 +1653,6 @@ export default function AdminStudioPage() {
               <RefreshCw className="w-5 h-5 animate-spin text-amber-500" />
               <span>Loading all pages, section trees, and Cloudflare R2 objects...</span>
             </div>
-          ) : activeTab === 'hero-badges' ? (
-            <HeroCrossBadgesPanel
-              currentPageMeta={currentPageMeta}
-              pages={pages}
-              primaryHeroSlot={primaryHeroSlot}
-              pageHeroSlides={pageHeroSlides}
-              heroCrossImageSlots={heroCrossImageSlots}
-              heroCrossTextSlots={heroCrossTextSlots}
-              cacheBuster={cacheBuster}
-              uploadingTargetId={uploadingTargetId}
-              savingTextId={savingTextId}
-              onSelectPage={setSelectedPage}
-              onDirectSlotFileSelected={handleDirectSlotFileSelected}
-              onDeleteSlot={handleDeleteSlot}
-              onAddHeroSlideFiles={handleAddHeroSlideFiles}
-              onReplaceSectionImageFile={handleReplaceSectionImageFile}
-              onDeleteSectionImage={handleDeleteSectionImage}
-              onSaveTextContent={handleSaveTextContent}
-              onOpenR2Picker={(slot) => {
-                setR2PickerTargetSlot(slot);
-                setR2PickerSearch('');
-              }}
-            />
           ) : activeTab === 'r2-bucket' ? (
             <R2BucketPanel
               r2Status={r2Status}
@@ -1783,15 +1703,6 @@ export default function AdminStudioPage() {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('hero-badges')}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-[#090d0b] hover:bg-slate-900 text-amber-400 border border-emerald-950/90 transition-colors"
-                    >
-                      <ImageIcon className="w-3.5 h-3.5" />
-                      <span>Hero Slides & Cross Badges</span>
-                    </button>
-
                     <button
                       type="button"
                       onClick={() => {
@@ -1980,6 +1891,156 @@ export default function AdminStudioPage() {
 
                         {!isCollapsed && (
                           <div className="p-5 space-y-6">
+                            {/* Single Canonical Hero Slideshow (4s) Manager inside Hero Banner Section */}
+                            {sec.sectionName === 'Hero Banner' && contentFilter !== 'text' && (
+                              <div className="bg-[#090d0b] border border-amber-500/30 rounded-lg p-4 space-y-4">
+                                <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
+                                  <div className="space-y-0.5">
+                                    <h3 className="text-xs font-semibold uppercase tracking-wider text-amber-400">
+                                      Hero Section Slideshow (4-Second Auto-Rotate)
+                                    </h3>
+                                    <p className="text-[11px] text-slate-400">
+                                      Add multiple slides via R2 to cycle every 4 seconds on{' '}
+                                      {currentPageMeta.title}. When slides exist, they override the single
+                                      banner image below.
+                                    </p>
+                                  </div>
+
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setR2PickerTarget({ mode: 'hero-slide' });
+                                        setR2PickerSearch('');
+                                      }}
+                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-[#101714] hover:bg-slate-800 text-slate-200 border border-slate-800 transition-colors"
+                                    >
+                                      <FolderOpen className="w-3.5 h-3.5 text-amber-400" />
+                                      <span>Pick from R2</span>
+                                    </button>
+
+                                    <label
+                                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-amber-500 hover:bg-amber-400 text-slate-950 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                                        uploadingTargetId === 'hero-add-new'
+                                          ? 'opacity-50 pointer-events-none'
+                                          : ''
+                                      }`}
+                                    >
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        onChange={handleAddHeroSlideFiles}
+                                        className="hidden"
+                                      />
+                                      {uploadingTargetId === 'hero-add-new' ? (
+                                        <>
+                                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                          <span>Uploading...</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Plus className="w-3.5 h-3.5" />
+                                          <span>Upload Slide(s)</span>
+                                        </>
+                                      )}
+                                    </label>
+                                  </div>
+                                </div>
+
+                                {pageHeroSlides.length === 0 ? (
+                                  <div className="text-xs text-slate-500 py-2">
+                                    No slideshow slides added yet — single Hero Banner Background slot
+                                    is active.
+                                  </div>
+                                ) : (
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                                    {pageHeroSlides.map((slide, sIdx) => (
+                                      <article
+                                        key={slide.itemId}
+                                        className="bg-[#101714] border border-slate-800 rounded-lg overflow-hidden flex flex-col justify-between"
+                                      >
+                                        <div>
+                                          <div className="h-36 bg-slate-900 border-b border-slate-800 overflow-hidden">
+                                            <img
+                                              src={resolveImageUrl(slide.src, cacheBuster)}
+                                              alt={slide.alt || slide.title}
+                                              referrerPolicy="no-referrer"
+                                              className="w-full h-full object-cover"
+                                              loading="lazy"
+                                            />
+                                          </div>
+                                          <div className="p-3 space-y-1">
+                                            <div className="text-[11px] font-mono text-amber-400">
+                                              Slide #{sIdx + 1}
+                                            </div>
+                                            <div className="text-xs font-semibold text-slate-100 truncate">
+                                              {slide.title}
+                                            </div>
+                                            <div
+                                              className="text-[10px] font-mono text-slate-500 truncate"
+                                              title={slide.src}
+                                            >
+                                              {slide.r2Key || slide.src}
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        <div className="px-3 pb-3 flex items-center gap-1.5">
+                                          <label
+                                            className={`flex-1 inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium bg-[#090d0b] hover:bg-amber-500 text-slate-200 hover:text-slate-950 border border-slate-800 hover:border-amber-500 transition-colors cursor-pointer ${
+                                              uploadingTargetId === slide.itemId
+                                                ? 'opacity-50 pointer-events-none'
+                                                : ''
+                                            }`}
+                                          >
+                                            <input
+                                              type="file"
+                                              accept="image/*"
+                                              onChange={(e) =>
+                                                handleReplaceSectionImageFile(slide, e)
+                                              }
+                                              className="hidden"
+                                            />
+                                            <Upload className="w-3.5 h-3.5" />
+                                            <span>
+                                              {uploadingTargetId === slide.itemId
+                                                ? 'Uploading...'
+                                                : 'Replace'}
+                                            </span>
+                                          </label>
+
+                                          {confirmDeleteHeroSlideId === slide.itemId ? (
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setConfirmDeleteHeroSlideId(null);
+                                                void handleDeleteSectionImage(slide);
+                                              }}
+                                              className="px-2.5 py-1.5 rounded-md text-[11px] font-semibold bg-red-600 hover:bg-red-500 text-white"
+                                            >
+                                              Confirm
+                                            </button>
+                                          ) : (
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                setConfirmDeleteHeroSlideId(slide.itemId)
+                                              }
+                                              className="p-1.5 rounded-md bg-[#090d0b] hover:bg-red-950/70 text-slate-400 hover:text-red-300 border border-slate-800 transition-colors"
+                                              title="Delete slide from Firestore & R2"
+                                            >
+                                              <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+                                          )}
+                                        </div>
+                                      </article>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
                             {sec.subSections.map((sub) => (
                               <div
                                 key={sub.id}
@@ -2155,7 +2216,7 @@ export default function AdminStudioPage() {
                                             <button
                                               type="button"
                                               onClick={() => {
-                                                setR2PickerTargetSlot(slot);
+                                                setR2PickerTarget({ mode: 'slot', slot });
                                                 setR2PickerSearch('');
                                               }}
                                               className="p-1.5 rounded-md bg-[#090d0b] hover:bg-slate-800 text-slate-300 border border-slate-800 transition-colors"
@@ -2361,132 +2422,13 @@ export default function AdminStudioPage() {
                 </div>
               )}
 
-              {/* Bottom Extra Curated Wildlife Gallery for Active Page */}
-              <section className="bg-[#101714] border border-emerald-950/90 rounded-lg overflow-hidden">
-                <div className="px-5 py-4 border-b border-emerald-950/80 flex flex-wrap items-center justify-between gap-4">
-                  <div className="space-y-0.5">
-                    <div className="text-xs font-mono text-amber-400">
-                      CURATED SECTION GALLERY · {pageExtraGallery.length} PHOTO
-                      {pageExtraGallery.length === 1 ? '' : 'S'}
-                    </div>
-                    <h2 className="text-base font-semibold text-slate-100">
-                      {currentPageMeta.title} Extra Wildlife Highlights
-                    </h2>
-                    <p className="text-xs text-slate-400">
-                      Additional safari gallery cards appended dynamically to {currentPageMeta.file}.
-                    </p>
-                  </div>
-
-                  <label
-                    className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-xs font-semibold bg-amber-500 hover:bg-amber-400 text-slate-950 transition-colors cursor-pointer ${
-                      uploadingTargetId === 'gallery-add-new' ? 'opacity-50 pointer-events-none' : ''
-                    }`}
-                  >
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleAddGalleryPhotoFiles}
-                      className="hidden"
-                    />
-                    {uploadingTargetId === 'gallery-add-new' ? (
-                      <>
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        <span>Uploading...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Add Gallery Photo(s)</span>
-                      </>
-                    )}
-                  </label>
-                </div>
-
-                <div className="p-5">
-                  {pageExtraGallery.length === 0 ? (
-                    <div className="bg-[#090d0b] border border-slate-800 rounded-lg p-8 text-center space-y-2">
-                      <ImageIcon className="w-6 h-6 text-slate-600 mx-auto" />
-                      <div className="text-xs text-slate-400">
-                        No extra wildlife gallery items added for {currentPageMeta.title} yet.
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                      {pageExtraGallery.map((item, idx) => (
-                        <article
-                          key={item.itemId}
-                          className="bg-[#090d0b] border border-slate-800 rounded-lg overflow-hidden flex flex-col justify-between"
-                        >
-                          <div>
-                            <div className="h-40 bg-slate-900 border-b border-slate-800 overflow-hidden">
-                              <img
-                                src={resolveImageUrl(item.src, cacheBuster)}
-                                alt={item.alt || item.title}
-                                referrerPolicy="no-referrer"
-                                className="w-full h-full object-cover"
-                                loading="lazy"
-                              />
-                            </div>
-                            <div className="p-3.5 space-y-1">
-                              <div className="text-[11px] font-mono text-amber-400">
-                                Gallery #{idx + 1} · {item.sectionTitle}
-                              </div>
-                              <h3 className="text-xs font-semibold text-slate-100 truncate">
-                                {item.title}
-                              </h3>
-                            </div>
-                          </div>
-
-                          <div className="px-3.5 pb-3.5 flex items-center gap-2">
-                            <label className="flex-1 inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium bg-[#101714] hover:bg-amber-500 text-slate-200 hover:text-slate-950 border border-slate-800 hover:border-amber-500 transition-colors cursor-pointer">
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => handleReplaceSectionImageFile(item, e)}
-                                className="hidden"
-                              />
-                              <Upload className="w-3.5 h-3.5" />
-                              <span>
-                                {uploadingTargetId === item.itemId ? 'Uploading...' : 'Replace'}
-                              </span>
-                            </label>
-
-                            {confirmDeleteGalleryId === item.itemId ? (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setConfirmDeleteGalleryId(null);
-                                  void handleDeleteSectionImage(item);
-                                }}
-                                className="px-2.5 py-1.5 rounded text-xs font-semibold bg-red-600 hover:bg-red-500 text-white"
-                              >
-                                Confirm
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => setConfirmDeleteGalleryId(item.itemId)}
-                                className="p-1.5 rounded bg-[#101714] hover:bg-red-950/70 text-slate-400 hover:text-red-300 border border-slate-800"
-                                title="Delete gallery photo"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        </article>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </section>
             </div>
           )}
         </main>
       </div>
 
-      {/* Quick R2 Picker Modal for Any Page Image Slot */}
-      {r2PickerTargetSlot && (
+      {/* Unified Quick R2 Picker Modal (Page Slots & Hero Slideshow) */}
+      {r2PickerTarget && (
         <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
           <div className="w-full max-w-3xl bg-[#101714] border border-emerald-950 rounded-lg overflow-hidden shadow-2xl">
             <div className="px-5 py-4 border-b border-emerald-950/80 flex items-center justify-between gap-4">
@@ -2495,13 +2437,14 @@ export default function AdminStudioPage() {
                   Pick Image from Cloudflare R2 Bucket
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Target: {r2PickerTargetSlot.page} · Slot #{r2PickerTargetSlot.slotIndex + 1} (
-                  {r2PickerTargetSlot.label})
+                  {r2PickerTarget.mode === 'slot'
+                    ? `Target: ${r2PickerTarget.slot.page} · Slot #${r2PickerTarget.slot.slotIndex + 1} (${r2PickerTarget.slot.label})`
+                    : `Target: ${currentPageMeta.title} · Hero Slideshow (4s)`}
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => setR2PickerTargetSlot(null)}
+                onClick={() => setR2PickerTarget(null)}
                 className="p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800"
               >
                 <X className="w-4 h-4" />
@@ -2520,42 +2463,53 @@ export default function AdminStudioPage() {
                 />
               </div>
 
-              <div className="max-h-96 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-3 pr-1">
-                {filteredR2PickerObjects.map((obj) => (
-                  <button
-                    key={obj.r2Key}
-                    type="button"
-                    disabled={r2PickerBusyKey === obj.r2Key}
-                    onClick={async () => {
-                      setR2PickerBusyKey(obj.r2Key);
-                      try {
-                        await handleAssignR2ToSlot(obj, r2PickerTargetSlot);
-                        setR2PickerTargetSlot(null);
-                      } finally {
-                        setR2PickerBusyKey(null);
-                      }
-                    }}
-                    className="text-left bg-[#090d0b] hover:border-amber-500 border border-slate-800 rounded-md overflow-hidden transition-colors flex flex-col"
-                  >
-                    <div className="h-28 w-full bg-slate-900 overflow-hidden">
-                      <img
-                        src={resolveImageUrl(obj.cdnUrl, cacheBuster)}
-                        alt={obj.alt || obj.title}
-                        referrerPolicy="no-referrer"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="p-2.5 space-y-0.5">
-                      <div className="text-xs font-medium text-slate-100 truncate">
-                        {r2PickerBusyKey === obj.r2Key ? 'Assigning...' : obj.title || obj.r2Key}
+              {filteredR2PickerObjects.length === 0 ? (
+                <div className="py-10 text-center text-xs text-slate-400">
+                  No matching objects found in Cloudflare R2 bucket. Upload an image directly to a
+                  slot or in the R2 Media Bucket tab.
+                </div>
+              ) : (
+                <div className="max-h-96 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-3 pr-1">
+                  {filteredR2PickerObjects.map((obj) => (
+                    <button
+                      key={obj.r2Key}
+                      type="button"
+                      disabled={r2PickerBusyKey === obj.r2Key}
+                      onClick={async () => {
+                        setR2PickerBusyKey(obj.r2Key);
+                        try {
+                          if (r2PickerTarget.mode === 'slot') {
+                            await handleAssignR2ToSlot(obj, r2PickerTarget.slot);
+                          } else {
+                            await handleAssignR2ToHeroSlide(obj);
+                          }
+                          setR2PickerTarget(null);
+                        } finally {
+                          setR2PickerBusyKey(null);
+                        }
+                      }}
+                      className="text-left bg-[#090d0b] hover:border-amber-500 border border-slate-800 rounded-md overflow-hidden transition-colors flex flex-col"
+                    >
+                      <div className="h-28 w-full bg-slate-900 overflow-hidden">
+                        <img
+                          src={resolveImageUrl(obj.cdnUrl, cacheBuster)}
+                          alt={obj.alt || obj.title}
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover"
+                        />
                       </div>
-                      <div className="text-[10px] font-mono text-slate-400 truncate">
-                        {formatBytes(obj.sizeBytes)} · {obj.r2Key}
+                      <div className="p-2.5 space-y-0.5">
+                        <div className="text-xs font-medium text-slate-100 truncate">
+                          {r2PickerBusyKey === obj.r2Key ? 'Assigning...' : obj.title || obj.r2Key}
+                        </div>
+                        <div className="text-[10px] font-mono text-slate-400 truncate">
+                          {formatBytes(obj.sizeBytes)} · {obj.r2Key}
+                        </div>
                       </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

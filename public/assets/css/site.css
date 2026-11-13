@@ -453,13 +453,27 @@ body.janaka-contact .main-wrap {
 }
 
 .mobile-nav .icon-caret {
-  position: absolute;
+  position: static;
+  margin-left: auto;
+  width: 44px;
+  height: 44px;
+  padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
   background: transparent;
   border: 0;
   cursor: pointer;
+}
+
+.mobile-nav .icon-caret svg {
+  display: block;
+  width: 14px;
+  height: 9px;
+  margin: 0;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
 }
 
 .mobile-nav .icon-caret[aria-expanded="true"] svg {

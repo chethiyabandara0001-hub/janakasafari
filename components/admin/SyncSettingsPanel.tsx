@@ -68,21 +68,21 @@ export function SyncSettingsPanel({
 
   return (
     <div className="space-y-6">
-      {/* 1. Primary Sync Saved Images to Site (R2) Card */}
+      {/* 1. Primary R2 <-> Firestore Sync Card */}
       <section className="bg-[#101714] border border-emerald-950/90 rounded-lg p-6 space-y-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-1 max-w-2xl">
             <div className="flex items-center gap-2 text-xs text-amber-400 font-medium">
               <Cloud className="w-3.5 h-3.5" />
-              <span>Cloudflare R2 · Production Site Sync</span>
+              <span>Cloudflare R2 · Firestore CDN Sync</span>
             </div>
             <h2 className="text-base font-semibold text-slate-100">
-              Sync Saved Images to Site through Cloudflare R2
+              Verify &amp; Sync Cloudflare R2 with Firestore
             </h2>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Pushes all local R2 mirror objects to the remote Cloudflare R2 bucket, converts any
-              legacy inline data URIs to R2 objects, writes active CDN URLs directly into all 12
-              static HTML pages, updates CMS JSON state, and refreshes Firestore records.
+              Audits all remote Cloudflare R2 bucket objects, normalizes active R2 CDN URLs in
+              Firestore so the live site loads straight from Cloudflare R2, and prunes any broken
+              references whose objects were deleted from R2.
             </p>
           </div>
 
@@ -105,7 +105,7 @@ export function SyncSettingsPanel({
             >
               <RefreshCw className={`w-3.5 h-3.5 ${syncingToSite ? 'animate-spin' : ''}`} />
               <span>
-                {syncingToSite ? 'Syncing Images to Site...' : 'Sync Saved Images to Site (R2)'}
+                {syncingToSite ? 'Syncing R2 <-> Firestore...' : 'Sync R2 with Firestore'}
               </span>
             </button>
           </div>
@@ -152,40 +152,34 @@ export function SyncSettingsPanel({
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
               <div>
-                <div className="text-[11px] text-slate-500">Remote R2 Pushed</div>
+                <div className="text-[11px] text-slate-500">Remote R2 Objects</div>
                 <div className="font-mono font-semibold text-slate-100 tabular-nums mt-0.5">
-                  {lastSyncReport.r2Pushed} / {lastSyncReport.r2Total}
+                  {lastSyncReport.r2Total}
                 </div>
               </div>
               <div>
-                <div className="text-[11px] text-slate-500">HTML Slots Synced</div>
+                <div className="text-[11px] text-slate-500">Firestore Links Checked</div>
                 <div className="font-mono font-semibold text-slate-100 tabular-nums mt-0.5">
-                  {lastSyncReport.htmlSlotsUpdated}
+                  {lastSyncReport.firestoreImagesChecked}
                 </div>
               </div>
               <div>
-                <div className="text-[11px] text-slate-500">HTML Pages Updated</div>
+                <div className="text-[11px] text-slate-500">CDN URLs Updated</div>
                 <div className="font-mono font-semibold text-slate-100 tabular-nums mt-0.5">
-                  {lastSyncReport.pagesUpdated.length}
+                  {lastSyncReport.firestoreUrlsNormalized}
                 </div>
               </div>
               <div>
-                <div className="text-[11px] text-slate-500">Failed Transfers</div>
+                <div className="text-[11px] text-slate-500">Orphaned Cleared</div>
                 <div
                   className={`font-mono font-semibold tabular-nums mt-0.5 ${
-                    lastSyncReport.r2Failed > 0 ? 'text-amber-400' : 'text-emerald-400'
+                    lastSyncReport.orphanedRemoved > 0 ? 'text-amber-400' : 'text-emerald-400'
                   }`}
                 >
-                  {lastSyncReport.r2Failed}
+                  {lastSyncReport.orphanedRemoved}
                 </div>
               </div>
             </div>
-
-            {lastSyncReport.pagesUpdated.length > 0 && (
-              <div className="text-[11px] text-slate-400 font-mono">
-                Pages: {lastSyncReport.pagesUpdated.join(', ')}
-              </div>
-            )}
 
             {lastSyncReport.warning && (
               <div className="text-xs text-amber-300 bg-amber-950/30 border border-amber-900/50 rounded px-3 py-2">
@@ -336,13 +330,14 @@ export function SyncSettingsPanel({
         </form>
       </section>
 
-      {/* 3. Reset & Restore Zone */}
+      {/* 3. Wipe Firestore Image Assignments Zone */}
       <section className="bg-[#101714] border border-red-950/60 rounded-lg p-6 space-y-4">
         <div className="space-y-1">
-          <h2 className="text-base font-semibold text-red-300">Page & Site Reset Controls</h2>
+          <h2 className="text-base font-semibold text-red-300">Page &amp; Site Image Clear Controls</h2>
           <p className="text-xs text-slate-400">
-            Clear overrides on the currently selected page ({currentPageMeta.title}) or restore the
-            entire site to clean baseline defaults.
+            Clear all active R2 CDN image assignments in Firestore for the selected page (
+            {currentPageMeta.title}) or wipe all saved site image slots across every page.
+            Files inside your R2 Media Bucket remain untouched unless deleted directly.
           </p>
         </div>
 
@@ -350,7 +345,7 @@ export function SyncSettingsPanel({
           {confirmResetPage ? (
             <div className="flex items-center gap-2 bg-red-950/50 border border-red-800 rounded-md px-3 py-1.5">
               <span className="text-xs text-red-200">
-                Reset {currentPageMeta.title} images?
+                Clear all {currentPageMeta.title} images from Firestore?
               </span>
               <button
                 type="button"
@@ -361,7 +356,7 @@ export function SyncSettingsPanel({
                 }}
                 className="px-2.5 py-1 rounded text-xs font-semibold bg-red-600 hover:bg-red-500 text-white"
               >
-                {resettingPage ? 'Resetting...' : 'Confirm'}
+                {resettingPage ? 'Clearing...' : 'Confirm'}
               </button>
               <button
                 type="button"
@@ -378,13 +373,13 @@ export function SyncSettingsPanel({
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md text-xs font-medium bg-[#090d0b] hover:bg-red-950/60 text-red-300 border border-red-900/60 transition-colors"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>Reset {currentPageMeta.title} Images</span>
+              <span>Clear {currentPageMeta.title} Images</span>
             </button>
           )}
 
           {confirmResetAll ? (
             <div className="flex items-center gap-2 bg-red-950/50 border border-red-800 rounded-md px-3 py-1.5">
-              <span className="text-xs text-red-200">Restore all 12 pages to defaults?</span>
+              <span className="text-xs text-red-200">Wipe all 12 pages from Firestore?</span>
               <button
                 type="button"
                 disabled={resettingAll}
@@ -394,7 +389,7 @@ export function SyncSettingsPanel({
                 }}
                 className="px-2.5 py-1 rounded text-xs font-semibold bg-red-600 hover:bg-red-500 text-white"
               >
-                {resettingAll ? 'Restoring...' : 'Confirm Full Reset'}
+                {resettingAll ? 'Wiping...' : 'Confirm Full Wipe'}
               </button>
               <button
                 type="button"
@@ -411,7 +406,7 @@ export function SyncSettingsPanel({
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md text-xs font-medium bg-[#090d0b] hover:bg-red-950/60 text-red-400 border border-red-900/60 transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              <span>Reset Entire Site to Defaults</span>
+              <span>Wipe All Site Images</span>
             </button>
           )}
         </div>

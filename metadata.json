@@ -1,6 +1,6 @@
 {
-  "name": "Janaka Safari Jeep Tours",
-  "description": "Book private & shared Yala Safari Tours, Yala National Park Jeep Safari, Udawalawe, Bundala, Wilpattu, Minneriya & Hambantota Port Shore Excursions.",
+  "name": "Nisha Travelling",
+  "description": "Nisha Travelling offers private Sri Lanka travel experiences, curated wildlife & nature tours, national park expeditions, scenic transfers, and shore excursions across Sri Lanka.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

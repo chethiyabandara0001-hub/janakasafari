@@ -1,11 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { SITE_PAGES } from './image-manager';
-import {
-  INITIAL_FIREBASE_SECTION_IMAGES,
-  INITIAL_FIREBASE_SLOT_UPGRADES,
-  type SeedSectionGalleryItem,
-} from './section-seed-data';
 
 export interface SiteTextSlot {
   textId: string; // e.g. "index_html__text_0"
@@ -36,45 +31,7 @@ export interface SiteTextSlot {
   isModified: boolean;
 }
 
-export interface CmsPersistedState {
-  seededToFirestore: boolean;
-  sectionGalleryItems: SeedSectionGalleryItem[];
-  textOverrides: Record<
-    string,
-    {
-      textId: string;
-      page: string;
-      textIndex: number;
-      tagName: SiteTextSlot['tagName'];
-      sectionContext: string;
-      content: string;
-      isDeleted: boolean;
-      isCustomAdded: boolean;
-      updatedAt: string;
-    }
-  >;
-  imageOverrides: Record<
-    string,
-    {
-      slotId: string;
-      page: string;
-      slotIndex: number;
-      type: 'hero-bg' | 'img' | 'lightbox-img' | 'logo';
-      label: string;
-      sectionContext: string;
-      src: string;
-      lightboxHref?: string;
-      r2Key?: string;
-      alt: string;
-      isDeleted?: boolean;
-      updatedAt: string;
-    }
-  >;
-}
-
 const PUBLIC_DIR = path.join(process.cwd(), 'public');
-const DEFAULTS_HTML_DIR = path.join(PUBLIC_DIR, 'assets', 'html-defaults');
-const CMS_STATE_PATH = path.join(PUBLIC_DIR, 'assets', 'firebase-cms-state.json');
 
 function decodeHtmlEntities(str: string): string {
   return str
@@ -135,9 +92,15 @@ function detectTextLocation(
   if (before.includes('hero-cross-bridge-wrap') && !before.includes('<div class="main-wrap"')) {
     state.inCrossBridge = true;
     state.sectionName = 'Hero Bottom Cross-Section';
-    if (before.includes('cross-sub-right') && !before.slice(before.lastIndexOf('cross-sub-right')).includes('</section>')) {
+    if (
+      before.includes('cross-sub-right') &&
+      !before.slice(before.lastIndexOf('cross-sub-right')).includes('</section>')
+    ) {
       state.subSectionName = 'Happy Safari Explorers';
-    } else if (before.includes('cross-sub-center') && !before.slice(before.lastIndexOf('cross-sub-center')).includes('cross-sub-right')) {
+    } else if (
+      before.includes('cross-sub-center') &&
+      !before.slice(before.lastIndexOf('cross-sub-center')).includes('cross-sub-right')
+    ) {
       state.subSectionName = 'TripAdvisor Winner';
     } else {
       state.subSectionName = 'Google Reviews';
@@ -149,7 +112,10 @@ function detectTextLocation(
     };
   }
 
-  if (state.inCrossBridge && (before.includes('class="main-wrap"') || before.includes('wsite-body-section'))) {
+  if (
+    state.inCrossBridge &&
+    (before.includes('class="main-wrap"') || before.includes('wsite-body-section'))
+  ) {
     state.inCrossBridge = false;
     state.subSectionName = undefined;
   }
@@ -158,7 +124,6 @@ function detectTextLocation(
     before.includes('class="wsite-body-section') &&
     before.lastIndexOf('class="wsite-body-section') > before.lastIndexOf('hero-cross-bridge-wrap')
   ) {
-    // Check if we entered a new card / column inside a body section
     const recentArticleIdx = before.lastIndexOf('<article');
     const recentArticleCloseIdx = before.lastIndexOf('</article>');
     if (recentArticleIdx > recentArticleCloseIdx) {
@@ -166,7 +131,9 @@ function detectTextLocation(
         Math.max(0, matchIndex - 2200) + recentArticleIdx,
         Math.min(targetRegion.length, matchIndex + 700)
       );
-      const cardStrong = cardSlice.match(/<(?:h3|h4|strong)\b[^>]*>([\s\S]*?)<\/(?:h3|h4|strong)>/i);
+      const cardStrong = cardSlice.match(
+        /<(?:h3|h4|strong)\b[^>]*>([\s\S]*?)<\/(?:h3|h4|strong)>/i
+      );
       const cardTitle = cardStrong ? decodeHtmlEntities(cardStrong[1]) : '';
       if (cardTitle && cardTitle.length < 70 && cardTitle !== state.sectionName) {
         state.subSectionName = cardTitle;
@@ -185,7 +152,6 @@ function detectTextLocation(
   } else if (rawTag === 'H3' || rawTag === 'H4') {
     state.subSectionName = cleanText.slice(0, 90);
   } else {
-    // Detect sub-section from bold title in same card/column if needed
     const lastSecOpen = Math.max(
       before.lastIndexOf('class="wsite-section '),
       before.lastIndexOf('class="wsite-body-section')
@@ -248,10 +214,6 @@ const EDITABLE_TEXT_CLASS_TOKENS = new Set([
   'cross-caption',
 ]);
 
-/**
- * Extracts editable text elements from a page's <main> in exact DOM document order
- * matching browser `mainEl.querySelectorAll(...)` in site.js 1:1.
- */
 export function parsePageTextSlots(html: string): ParsedTextMatch[] {
   const results: ParsedTextMatch[] = [];
   const mainMatch = html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i);
@@ -361,54 +323,11 @@ export function parsePageTextSlots(html: string): ParsedTextMatch[] {
   return results;
 }
 
-export async function getCmsState(): Promise<CmsPersistedState> {
-  try {
-    const raw = await fs.readFile(CMS_STATE_PATH, 'utf8');
-    const parsed = JSON.parse(raw) as CmsPersistedState;
-    if (!Array.isArray(parsed.sectionGalleryItems)) {
-      parsed.sectionGalleryItems = [];
-    }
-    if (!parsed.textOverrides) parsed.textOverrides = {};
-    if (!parsed.imageOverrides) parsed.imageOverrides = {};
-    return parsed;
-  } catch {
-    const initialImageOverrides: CmsPersistedState['imageOverrides'] = {};
-    for (const item of INITIAL_FIREBASE_SLOT_UPGRADES) {
-      initialImageOverrides[item.slotId] = {
-        ...item,
-        src: '',
-        lightboxHref: '',
-        isDeleted: true,
-        updatedAt: new Date().toISOString(),
-      };
-    }
-
-    const initial: CmsPersistedState = {
-      seededToFirestore: true,
-      sectionGalleryItems: [],
-      textOverrides: {},
-      imageOverrides: initialImageOverrides,
-    };
-    await saveCmsState(initial);
-    return initial;
-  }
-}
-
-export async function saveCmsState(state: CmsPersistedState): Promise<void> {
-  await fs.mkdir(path.dirname(CMS_STATE_PATH), { recursive: true });
-  await fs.writeFile(CMS_STATE_PATH, JSON.stringify(state, null, 2), 'utf8');
-}
-
 export async function getAllSiteTexts(): Promise<{
   textSlots: SiteTextSlot[];
-  customTexts: SiteTextSlot[];
-  sectionGalleryItems: SeedSectionGalleryItem[];
-  imageOverrides: CmsPersistedState['imageOverrides'];
   pages: { file: string; title: string; textCount: number }[];
 }> {
-  const cmsState = await getCmsState();
   const textSlots: SiteTextSlot[] = [];
-  const customTexts: SiteTextSlot[] = [];
   const pagesSummary: { file: string; title: string; textCount: number }[] = [];
 
   for (const page of SITE_PAGES) {
@@ -416,11 +335,7 @@ export async function getAllSiteTexts(): Promise<{
     try {
       defaultHtml = await fs.readFile(path.join(PUBLIC_DIR, page.file), 'utf8');
     } catch {
-      try {
-        defaultHtml = await fs.readFile(path.join(DEFAULTS_HTML_DIR, page.file), 'utf8');
-      } catch {
-        continue;
-      }
+      continue;
     }
 
     const parsedDefaults = parsePageTextSlots(defaultHtml);
@@ -432,57 +347,26 @@ export async function getAllSiteTexts(): Promise<{
 
     for (const item of parsedDefaults) {
       const textId = makeTextSlotId(page.file, item.textIndex);
-      const override = cmsState.textOverrides[textId];
-      const effectiveContext = override?.sectionContext || item.sectionContext;
-      const splitCtx = splitTextSectionContext(effectiveContext);
       textSlots.push({
         textId,
         page: page.file,
         pageTitle: page.title,
         textIndex: item.textIndex,
         tagName: item.tagName,
-        sectionContext: effectiveContext,
-        sectionName: override?.sectionContext ? splitCtx.sectionName : item.sectionName,
-        subSectionName: override?.sectionContext ? splitCtx.subSectionName : item.subSectionName,
-        content: override !== undefined ? override.content : item.content,
+        sectionContext: item.sectionContext,
+        sectionName: item.sectionName,
+        subSectionName: item.subSectionName,
+        content: item.content,
         defaultContent: item.content,
-        isDeleted: Boolean(override?.isDeleted),
+        isDeleted: false,
         isCustomAdded: false,
-        isModified:
-          override !== undefined &&
-          (override.content !== item.content || Boolean(override.isDeleted)),
-      });
-    }
-  }
-
-  for (const [key, val] of Object.entries(cmsState.textOverrides)) {
-    if (val.isCustomAdded) {
-      const pageMeta = SITE_PAGES.find((p) => p.file === val.page);
-      const ctx = val.sectionContext || 'Custom Section Text';
-      const splitCtx = splitTextSectionContext(ctx);
-      customTexts.push({
-        textId: key,
-        page: val.page,
-        pageTitle: pageMeta ? pageMeta.title : val.page,
-        textIndex: -1,
-        tagName: val.tagName || 'CUSTOM',
-        sectionContext: ctx,
-        sectionName: splitCtx.sectionName,
-        subSectionName: splitCtx.subSectionName,
-        content: val.content,
-        defaultContent: '',
-        isDeleted: Boolean(val.isDeleted),
-        isCustomAdded: true,
-        isModified: true,
+        isModified: false,
       });
     }
   }
 
   return {
     textSlots,
-    customTexts,
-    sectionGalleryItems: cmsState.sectionGalleryItems,
-    imageOverrides: cmsState.imageOverrides,
     pages: pagesSummary,
   };
 }

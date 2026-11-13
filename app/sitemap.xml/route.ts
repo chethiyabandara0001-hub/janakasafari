@@ -29,27 +29,18 @@ export async function GET(req: NextRequest) {
 
   const entries: string[] = [];
 
-  for (const [pageFile, cfg] of Object.entries(PAGE_SEO_CONFIG)) {
+  for (const cfg of Object.values(PAGE_SEO_CONFIG)) {
     const loc = cfg.path === '/' ? `${baseUrl}/` : `${baseUrl}${cfg.path}`;
-    const imgLoc = `${baseUrl}/api/r2/file/slots/${pageFile.replace('.', '_')}__slot_1.jpg`;
-    const cleanTitle = cfg.title.split('|')[0].trim();
-
     entries.push(`  <url>
     <loc>${escapeXml(loc)}</loc>
     <lastmod>${lastMod}</lastmod>
     <changefreq>${cfg.changeFrequency}</changefreq>
     <priority>${cfg.priority.toFixed(1)}</priority>
-    <image:image>
-      <image:loc>${escapeXml(imgLoc)}</image:loc>
-      <image:title>${escapeXml(cleanTitle)}</image:title>
-      <image:caption>${escapeXml(cfg.description)}</image:caption>
-    </image:image>
   </url>`);
   }
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${entries.join('\n')}
 </urlset>
 `;

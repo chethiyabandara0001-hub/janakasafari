@@ -12,13 +12,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'picsum.photos',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
+        hostname: 'cdn.srilankabestsafari.com',
         port: '',
         pathname: '/**',
       },
@@ -49,10 +43,6 @@ const nextConfig: NextConfig = {
         source:
           '/:slug(index|about|safari-parks|yala-safari|udawalawe-safari|bundala-birding-safari|wilpattu-safari|minneriya-safari|kumana-birding-safari|gallery|reviews|contact)',
         destination: '/api/pages/:slug.html',
-      },
-      {
-        source: '/assets/media/:path*',
-        destination: '/api/media/:path*',
       },
       {
         source: '/admin.html',

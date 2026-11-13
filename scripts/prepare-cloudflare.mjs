@@ -4,9 +4,6 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT_DIR = fileURLToPath(new URL('../', import.meta.url));
 const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
-const DEFAULTS_HTML_DIR = path.join(PUBLIC_DIR, 'assets', 'html-defaults');
-const CMS_STATE_PATH = path.join(PUBLIC_DIR, 'assets', 'firebase-cms-state.json');
-const R2_INDEX_PATH = path.join(PUBLIC_DIR, 'assets', 'r2-bucket', '_index.json');
 const CF_DIR = path.join(ROOT_DIR, '.cloudflare');
 const CF_ASSETS_DIR = path.join(CF_DIR, 'assets');
 const DEFAULT_R2_BUCKET_NAME =
@@ -40,6 +37,25 @@ function stripTags(html) {
     .trim();
 }
 
+function isEmptySlotSrc(raw) {
+  if (!raw) return true;
+  const s = raw.trim();
+  if (!s || s === '/deleted' || s === 'none') return true;
+  if (s.startsWith('data:')) return true;
+  if (s.includes('empty-slot.svg')) return true;
+  if (
+    s.startsWith('/assets/media/') ||
+    s.startsWith('assets/media/') ||
+    s.startsWith('/assets/aistudio/') ||
+    s.startsWith('assets/aistudio/') ||
+    s.startsWith('/assets/r2-bucket/') ||
+    s.startsWith('assets/r2-bucket/')
+  ) {
+    return true;
+  }
+  return false;
+}
+
 function splitSectionContext(sectionContext) {
   const clean = (sectionContext || 'Page Content').trim();
   if (clean === 'Header Navigation Logo') {
@@ -69,9 +85,9 @@ function findSectionContext(html, startIndex, isHeaderLogo, isFooterLogo, imgTag
   const htmlBefore = html.slice(0, startIndex);
 
   if (imgTag) {
-    if (imgTag.includes('cross-top-google')) return 'Hero Bottom Cross-Section · Google Reviews Badge';
-    if (imgTag.includes('cross-top-tripadvisor')) return 'Hero Bottom Cross-Section · TripAdvisor Winner Badge';
-    if (imgTag.includes('cross-top-traveler')) return 'Hero Bottom Cross-Section · Happy Safari Explorers Badge';
+    if (imgTag.includes('cross-top-google')) return 'Hero Bottom Cross-Section · Google Reviews';
+    if (imgTag.includes('cross-top-tripadvisor')) return 'Hero Bottom Cross-Section · TripAdvisor Winner';
+    if (imgTag.includes('cross-top-traveler')) return 'Hero Bottom Cross-Section · Happy Safari Explorers';
     if (imgTag.includes('cross-top-img')) return 'Hero Bottom Cross-Section · Trust Badge';
   }
   if (
@@ -163,7 +179,7 @@ function parsePageSlots(html) {
       results.push({
         slotIndex: slotIndex++,
         kind: 'hero-bg',
-        sectionContext: `Hero Banner (${bannerTitle})`,
+        sectionContext: 'Hero Banner · Hero Banner Background',
         src: bgUrl,
         alt: bannerTitle,
       });
@@ -394,15 +410,6 @@ function makeImageSlotId(page, slotIndex) {
   return `${safePage}__slot_${slotIndex}`;
 }
 
-function detectFormatFromExt(filename) {
-  const ext = path.extname(filename).toLowerCase();
-  if (ext === '.jpg' || ext === '.jpeg') return { format: 'JPEG', mimeType: 'image/jpeg' };
-  if (ext === '.png') return { format: 'PNG', mimeType: 'image/png' };
-  if (ext === '.webp') return { format: 'WEBP', mimeType: 'image/webp' };
-  if (ext === '.gif') return { format: 'GIF', mimeType: 'image/gif' };
-  return { format: 'SVG', mimeType: 'image/svg+xml' };
-}
-
 async function pathExists(p) {
   try {
     await fs.access(p);
@@ -413,42 +420,6 @@ async function pathExists(p) {
 }
 
 async function buildInventories() {
-  let cmsState = {
-    seededToFirestore: false,
-    sectionGalleryItems: [],
-    textOverrides: {},
-    imageOverrides: {},
-  };
-
-  try {
-    const raw = await fs.readFile(CMS_STATE_PATH, 'utf8');
-    const parsed = JSON.parse(raw);
-    cmsState = {
-      seededToFirestore: Boolean(parsed.seededToFirestore),
-      sectionGalleryItems: Array.isArray(parsed.sectionGalleryItems)
-        ? parsed.sectionGalleryItems
-        : [],
-      textOverrides: parsed.textOverrides || {},
-      imageOverrides: parsed.imageOverrides || {},
-    };
-  } catch {
-    // use default empty state if file missing
-  }
-
-  let r2Index = { objects: {}, deletedMediaKeys: [] };
-  try {
-    const rawIdx = await fs.readFile(R2_INDEX_PATH, 'utf8');
-    const parsedIdx = JSON.parse(rawIdx);
-    r2Index = {
-      objects: parsedIdx.objects || {},
-      deletedMediaKeys: Array.isArray(parsedIdx.deletedMediaKeys) ? parsedIdx.deletedMediaKeys : [],
-    };
-  } catch {
-    // ignore if _index.json does not exist yet
-  }
-
-  const slotCountBySrc = new Map();
-  const usageMap = new Map();
   const allRawByPage = new Map();
 
   for (const page of SITE_PAGES) {
@@ -456,19 +427,6 @@ async function buildInventories() {
       const html = await fs.readFile(path.join(PUBLIC_DIR, page.file), 'utf8');
       const matches = parsePageSlots(html);
       allRawByPage.set(page.file, { title: page.title, matches });
-
-      for (const m of matches) {
-        const cleanSrc = m.src.split('?')[0];
-        slotCountBySrc.set(cleanSrc, (slotCountBySrc.get(cleanSrc) || 0) + 1);
-        if (!usageMap.has(cleanSrc)) usageMap.set(cleanSrc, new Set());
-        usageMap.get(cleanSrc).add(page.title);
-
-        if (m.lightboxHref) {
-          const cleanLb = m.lightboxHref.split('?')[0];
-          if (!usageMap.has(cleanLb)) usageMap.set(cleanLb, new Set());
-          usageMap.get(cleanLb).add(page.title);
-        }
-      }
     } catch {
       // ignore missing page
     }
@@ -488,110 +446,32 @@ async function buildInventories() {
 
     for (const m of entry.matches) {
       const firestoreSlotId = makeImageSlotId(page.file, m.slotIndex);
-      const override = cmsState.imageOverrides[firestoreSlotId];
       const mappedType = m.kind === 'gallery-img' ? 'lightbox-img' : m.kind;
-      const rawSrc = override?.src !== undefined ? override.src : m.src;
-      const isEmptyOrDeleted =
-        Boolean(override?.isDeleted) ||
-        !rawSrc ||
-        rawSrc === '/deleted' ||
-        rawSrc.includes('empty-slot.svg');
-      const effectiveSrc = isEmptyOrDeleted ? '' : rawSrc;
-      const effectiveAlt = override?.alt !== undefined ? override.alt : m.alt;
-      const cleanFile = effectiveSrc ? effectiveSrc.split('?')[0].replace(/^\/+/, '') : '';
-      const assetFilename = cleanFile.startsWith('assets/media/')
-        ? path.basename(cleanFile)
-        : cleanFile;
-      const sharedCount = effectiveSrc ? slotCountBySrc.get(effectiveSrc.split('?')[0]) || 1 : 1;
-
+      const isEmptyOrDeleted = isEmptySlotSrc(m.src);
+      const effectiveSrc = isEmptyOrDeleted ? '' : m.src;
       const splitCtx = splitSectionContext(m.sectionContext);
+
       enrichedSlots.push({
         id: firestoreSlotId,
         slotId: firestoreSlotId,
         page: page.file,
         pageTitle: entry.title,
         slotIndex: m.slotIndex,
-        kind: m.kind,
         type: mappedType,
-        label: override?.label || m.alt || m.sectionContext || `Slot #${m.slotIndex + 1}`,
+        label: m.alt || m.sectionContext || `Slot #${m.slotIndex + 1}`,
         sectionContext: m.sectionContext,
         sectionName: splitCtx.sectionName,
         subSectionName: splitCtx.subSectionName,
         src: effectiveSrc,
-        lightboxHref: isEmptyOrDeleted ? '' : override?.lightboxHref || effectiveSrc,
-        r2Key: isEmptyOrDeleted ? undefined : override?.r2Key,
-        alt: effectiveAlt,
-        assetFilename,
-        sharedCount,
-        isSharedAsset: sharedCount > 1,
-        isModified: Boolean(override && !isEmptyOrDeleted),
+        lightboxHref: isEmptyOrDeleted ? '' : m.lightboxHref || effectiveSrc,
+        alt: m.alt,
+        isModified: false,
         isDeleted: isEmptyOrDeleted,
       });
     }
   }
 
-  const mediaAssets = [];
-  const r2ObjectsMap = new Map();
-
-  for (const [k, obj] of Object.entries(r2Index.objects)) {
-    r2ObjectsMap.set(k, {
-      ...obj,
-      cdnUrl: `/api/r2/file/${k}`,
-      bucketName: DEFAULT_R2_BUCKET_NAME,
-    });
-  }
-
-  const mediaDir = path.join(PUBLIC_DIR, 'assets', 'media');
-  try {
-    const files = await fs.readdir(mediaDir);
-    for (const filename of files.sort()) {
-      if (filename === 'empty-slot.svg') continue;
-      const fullPath = path.join(mediaDir, filename);
-      const stat = await fs.stat(fullPath);
-      if (!stat.isFile()) continue;
-      const { format, mimeType } = detectFormatFromExt(filename);
-      const mediaPath = `assets/media/${filename}`;
-      const r2Key = `media/${filename}`;
-      const pagesSet = usageMap.get(mediaPath);
-
-      mediaAssets.push({
-        mediaPath,
-        r2Key,
-        cdnUrl: `/api/r2/file/${r2Key}`,
-        filename,
-        format,
-        url: `/${mediaPath}`,
-        mimeType,
-        sizeBytes: stat.size,
-        isModified: false,
-        usedInPages: pagesSet ? Array.from(pagesSet) : [],
-        usageCount: slotCountBySrc.get(mediaPath) || (pagesSet ? pagesSet.size : 0),
-        hasDefaultBackup: !filename.startsWith('custom-'),
-      });
-
-      if (!r2ObjectsMap.has(r2Key) && !r2Index.deletedMediaKeys.includes(r2Key)) {
-        const cleanTitle = filename.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim();
-        r2ObjectsMap.set(r2Key, {
-          r2Key,
-          filename,
-          cdnUrl: `/api/r2/file/${r2Key}`,
-          mimeType,
-          sizeBytes: stat.size,
-          alt: cleanTitle,
-          title: cleanTitle,
-          updatedAt: stat.mtime.toISOString(),
-          bucketName: DEFAULT_R2_BUCKET_NAME,
-        });
-      }
-    }
-  } catch {
-    // ignore
-  }
-
-  const r2Objects = Array.from(r2ObjectsMap.values());
-
   const textSlots = [];
-  const customTexts = [];
   const textPagesSummary = [];
 
   for (const page of SITE_PAGES) {
@@ -599,11 +479,7 @@ async function buildInventories() {
     try {
       html = await fs.readFile(path.join(PUBLIC_DIR, page.file), 'utf8');
     } catch {
-      try {
-        html = await fs.readFile(path.join(DEFAULTS_HTML_DIR, page.file), 'utf8');
-      } catch {
-        continue;
-      }
+      continue;
     }
 
     const parsedDefaults = parsePageTextSlots(html);
@@ -615,44 +491,20 @@ async function buildInventories() {
 
     for (const item of parsedDefaults) {
       const textId = makeTextSlotId(page.file, item.textIndex);
-      const override = cmsState.textOverrides[textId];
-      const effectiveCtx = override?.sectionContext || item.sectionContext;
-      const splitCtx = splitSectionContext(effectiveCtx);
       textSlots.push({
         textId,
         page: page.file,
         pageTitle: page.title,
         textIndex: item.textIndex,
         tagName: item.tagName,
-        sectionContext: effectiveCtx,
-        sectionName: override?.sectionContext ? splitCtx.sectionName : item.sectionName,
-        subSectionName: override?.sectionContext ? splitCtx.subSectionName : item.subSectionName,
-        content: override !== undefined ? override.content : item.content,
+        sectionContext: item.sectionContext,
+        sectionName: item.sectionName,
+        subSectionName: item.subSectionName,
+        content: item.content,
         defaultContent: item.content,
-        isDeleted: Boolean(override?.isDeleted),
+        isDeleted: false,
         isCustomAdded: false,
-        isModified:
-          override !== undefined &&
-          (override.content !== item.content || Boolean(override.isDeleted)),
-      });
-    }
-  }
-
-  for (const [key, val] of Object.entries(cmsState.textOverrides)) {
-    if (val && val.isCustomAdded) {
-      const pageMeta = SITE_PAGES.find((p) => p.file === val.page);
-      customTexts.push({
-        textId: key,
-        page: val.page,
-        pageTitle: pageMeta ? pageMeta.title : val.page,
-        textIndex: -1,
-        tagName: val.tagName || 'CUSTOM',
-        sectionContext: val.sectionContext || 'Custom Section Text',
-        content: val.content,
-        defaultContent: '',
-        isDeleted: Boolean(val.isDeleted),
-        isCustomAdded: true,
-        isModified: true,
+        isModified: false,
       });
     }
   }
@@ -661,15 +513,10 @@ async function buildInventories() {
     imagesPayload: {
       bucketName: DEFAULT_R2_BUCKET_NAME,
       slots: enrichedSlots,
-      mediaAssets,
-      r2Objects,
       pages: imagePagesSummary,
     },
     cmsPayload: {
       textSlots,
-      customTexts,
-      sectionGalleryItems: cmsState.sectionGalleryItems,
-      imageOverrides: cmsState.imageOverrides,
       pages: textPagesSummary,
     },
   };
@@ -692,13 +539,16 @@ async function main() {
   await fs.rm(CF_DIR, { recursive: true, force: true });
   await fs.mkdir(CF_ASSETS_DIR, { recursive: true });
 
-  // 1. Copy public/ into .cloudflare/assets/ (excluding internal backup/paste folders)
+  // 1. Copy public/ into .cloudflare/assets/
   await fs.cp(PUBLIC_DIR, CF_ASSETS_DIR, {
     recursive: true,
     filter: (src) => {
       const rel = path.relative(PUBLIC_DIR, src).replace(/\\/g, '/');
       if (rel === 'assets/aistudio' || rel.startsWith('assets/aistudio/')) return false;
       if (rel === 'assets/html-defaults' || rel.startsWith('assets/html-defaults/')) return false;
+      if (rel === 'assets/media' || rel.startsWith('assets/media/')) return false;
+      if (rel === 'assets/r2-bucket' || rel.startsWith('assets/r2-bucket/')) return false;
+      if (rel === 'assets/firebase-cms-state.json') return false;
       return true;
     },
   });
@@ -724,12 +574,12 @@ async function main() {
     await fs.copyFile(notFoundHtmlPath, path.join(CF_ASSETS_DIR, '404.html'));
   }
 
-  // 4. Build inventories and generate .cloudflare/worker.mjs with native Cloudflare R2_BUCKET support
+  // 4. Build clean HTML template schemas & generate .cloudflare/worker.mjs with pure Cloudflare R2_BUCKET binding
   const { imagesPayload, cmsPayload } = await buildInventories();
 
-  const workerCode = `// Auto-generated Cloudflare Worker for Nisha Safari (Next.js + Cloudflare R2 Bucket + Static Assets)
-const IMAGES_INVENTORY = ${JSON.stringify(imagesPayload)};
-const CMS_INVENTORY = ${JSON.stringify(cmsPayload)};
+  const workerCode = `// Auto-generated Cloudflare Worker for Nisha Travelling (Next.js + Cloudflare R2 Bucket + Static Assets)
+const IMAGES_SCHEMA = ${JSON.stringify(imagesPayload)};
+const CMS_SCHEMA = ${JSON.stringify(cmsPayload)};
 const BUCKET_NAME = ${JSON.stringify(DEFAULT_R2_BUCKET_NAME)};
 
 const JSON_HEADERS = {
@@ -761,7 +611,6 @@ function getR2BucketBinding(env) {
   if (env.R2_BUCKET && typeof env.R2_BUCKET.put === 'function') return env.R2_BUCKET;
   if (env.nishatravels && typeof env.nishatravels.put === 'function') return env.nishatravels;
   if (env.BUCKET && typeof env.BUCKET.put === 'function') return env.BUCKET;
-  if (env.ai_studio_applet_opennext_cache && typeof env.ai_studio_applet_opennext_cache.put === 'function') return env.ai_studio_applet_opennext_cache;
   for (const k of Object.keys(env)) {
     if (env[k] && typeof env[k].put === 'function' && typeof env[k].get === 'function') {
       return env[k];
@@ -770,21 +619,14 @@ function getR2BucketBinding(env) {
   return null;
 }
 
-const UPLOADED_BLOBS = new Map();
-
 function getWorkerCdnBase(env) {
   const explicitUrl = env && (env.R2_PUBLIC_URL || env.NEXT_PUBLIC_R2_PUBLIC_URL);
   if (explicitUrl && String(explicitUrl).trim()) {
     const trimmed = String(explicitUrl).trim().replace(/\\/+$/, '');
     return trimmed.startsWith('http://') || trimmed.startsWith('https://') ? trimmed : 'https://' + trimmed;
   }
-  if (getR2BucketBinding(env)) {
-    return 'https://cdn.srilankabestsafari.com';
-  }
-  return '/api/r2/file';
+  return 'https://cdn.srilankabestsafari.com';
 }
-
-const DELETED_R2_KEYS = new Set();
 
 function extractWorkerR2Key(raw) {
   if (!raw) return '';
@@ -792,73 +634,72 @@ function extractWorkerR2Key(raw) {
   const marker = '/api/r2/file/';
   const idx = clean.indexOf(marker);
   if (idx !== -1) return sanitizeKey(clean.slice(idx + marker.length));
-  const assetMarker = '/assets/r2-bucket/';
-  const assetIdx = clean.indexOf(assetMarker);
-  if (assetIdx !== -1) return sanitizeKey(clean.slice(assetIdx + assetMarker.length));
-  const folderMatch = clean.match(/^https?:\\/\\/[^/]+\\/((?:slots|sections|media|uploads|index|yala-safari|udawalawe-safari|bundala-birding-safari|wilpattu-safari|minneriya-safari|kumana-birding-safari|safari-parks|about|gallery|reviews|contact)\\/.+)$/i);
+  const cdnMatch = clean.match(/^https?:\\/\\/cdn\\.[^/]+\\/(.+)$/i);
+  if (cdnMatch && cdnMatch[1]) return sanitizeKey(cdnMatch[1]);
+  const folderMatch = clean.match(/^https?:\\/\\/[^/]+\\/(.+)$/i);
   if (folderMatch && folderMatch[1]) return sanitizeKey(folderMatch[1]);
   return sanitizeKey(clean);
 }
 
 async function listLiveR2Objects(env) {
-  const map = new Map();
   const cdnBase = getWorkerCdnBase(env);
   const r2Bucket = getR2BucketBinding(env);
-  const activeBucketName = (env && (env.R2_BUCKET_NAME || env.BUCKET_NAME)) || BUCKET_NAME;
+  if (!r2Bucket || typeof r2Bucket.list !== 'function') {
+    return [];
+  }
 
-  for (const item of IMAGES_INVENTORY.r2Objects || []) {
-    if (DELETED_R2_KEYS.has(item.r2Key)) continue;
-    map.set(item.r2Key, {
-      ...item,
-      cdnUrl: cdnBase + '/' + item.r2Key,
-      bucketName: activeBucketName,
+  const objects = [];
+  let cursor;
+  let truncated = true;
+  while (truncated) {
+    const listed = await r2Bucket.list({
+      cursor,
+      limit: 1000,
+      include: ['httpMetadata', 'customMetadata'],
     });
+    for (const obj of listed.objects || []) {
+      const r2Key = obj.key;
+      const filename = r2Key.split('/').pop() || r2Key;
+      const meta = obj.customMetadata || {};
+      objects.push({
+        r2Key,
+        filename,
+        cdnUrl: cdnBase + '/' + r2Key,
+        mimeType: (obj.httpMetadata && obj.httpMetadata.contentType) || guessMimeType(r2Key),
+        sizeBytes: obj.size || 0,
+        alt: meta.alt || filename,
+        title: meta.title || filename,
+        page: meta.page || undefined,
+        remotePushed: true,
+        updatedAt: obj.uploaded ? new Date(obj.uploaded).toISOString() : new Date().toISOString(),
+      });
+    }
+    truncated = Boolean(listed.truncated);
+    cursor = listed.cursor;
   }
 
-  if (r2Bucket && typeof r2Bucket.list === 'function') {
-    try {
-      const listed = await r2Bucket.list({ include: ['httpMetadata', 'customMetadata'] });
-      for (const obj of listed.objects || []) {
-        const r2Key = obj.key;
-        if (DELETED_R2_KEYS.has(r2Key)) continue;
-        const filename = r2Key.split('/').pop() || r2Key;
-        const meta = obj.customMetadata || {};
-        map.set(r2Key, {
-          r2Key,
-          filename,
-          cdnUrl: cdnBase + '/' + r2Key,
-          mimeType: (obj.httpMetadata && obj.httpMetadata.contentType) || guessMimeType(r2Key),
-          sizeBytes: obj.size || 0,
-          alt: meta.alt || filename,
-          title: meta.title || filename,
-          page: meta.page || undefined,
-          updatedAt: obj.uploaded ? new Date(obj.uploaded).toISOString() : new Date().toISOString(),
-          bucketName: activeBucketName,
-        });
-      }
-    } catch (e) {
-      // fallback to static inventory if list fails
-    }
-  }
-  return Array.from(map.values()).sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+  return objects.sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
 }
 
 async function uploadFileToWorkerR2(env, { bytes, originalFilename, mimeType, customKey, replaceKey, alt, title, page }) {
+  const r2Bucket = getR2BucketBinding(env);
+  if (!r2Bucket) {
+    throw new Error('Cloudflare R2 bucket binding (R2_BUCKET) is not configured.');
+  }
+
   const extMatch = String(originalFilename || customKey || 'image.jpg').match(/\\.([a-zA-Z0-9]+)$/);
   const ext = extMatch ? extMatch[1].toLowerCase() : 'jpg';
-  const baseSlug = String(originalFilename || 'safari-photo')
+  const baseSlug = String(originalFilename || 'photo')
     .replace(/\\.[^.]+$/, '')
     .toLowerCase()
     .replace(/[^a-z0-9_-]+/g, '-')
     .replace(/^-+|-+$/g, '')
-    .slice(0, 60) || 'safari-photo';
+    .slice(0, 60) || 'photo';
 
   let r2Key;
   if (customKey && String(customKey).trim()) {
     r2Key = sanitizeKey(customKey);
     if (!/\\.[a-z0-9]+$/i.test(r2Key)) r2Key += '.' + ext;
-  } else if (replaceKey && String(replaceKey).startsWith('media/')) {
-    r2Key = sanitizeKey(replaceKey);
   } else {
     const folder = page ? String(page).replace('.html', '').replace(/[^a-z0-9_-]/gi, '-') : 'uploads';
     r2Key = folder + '/' + Date.now() + '-' + baseSlug + '.' + ext;
@@ -866,31 +707,25 @@ async function uploadFileToWorkerR2(env, { bytes, originalFilename, mimeType, cu
 
   const finalMime = mimeType || guessMimeType(r2Key);
   const now = new Date().toISOString();
-  const r2Bucket = getR2BucketBinding(env);
   const cdnBase = getWorkerCdnBase(env);
-  const activeBucketName = (env && (env.R2_BUCKET_NAME || env.BUCKET_NAME)) || BUCKET_NAME;
 
-  UPLOADED_BLOBS.set(r2Key, { bytes, mimeType: finalMime });
-
-  if (r2Bucket) {
-    if (replaceKey && replaceKey !== r2Key) {
-      try {
-        await r2Bucket.delete(sanitizeKey(replaceKey));
-      } catch (e) {}
-    }
-    await r2Bucket.put(r2Key, bytes, {
-      httpMetadata: { contentType: finalMime },
-      customMetadata: {
-        alt: String(alt || baseSlug),
-        title: String(title || originalFilename || r2Key),
-        page: String(page || ''),
-        updatedAt: now,
-      },
-    });
+  if (replaceKey && sanitizeKey(replaceKey) !== r2Key) {
+    try {
+      await r2Bucket.delete(sanitizeKey(replaceKey));
+    } catch (e) {}
   }
 
-  DELETED_R2_KEYS.delete(r2Key);
-  const newRecord = {
+  await r2Bucket.put(r2Key, bytes, {
+    httpMetadata: { contentType: finalMime },
+    customMetadata: {
+      alt: String(alt || baseSlug),
+      title: String(title || originalFilename || r2Key),
+      page: String(page || ''),
+      updatedAt: now,
+    },
+  });
+
+  return {
     r2Key,
     filename: r2Key.split('/').pop() || r2Key,
     cdnUrl: cdnBase + '/' + r2Key,
@@ -899,14 +734,9 @@ async function uploadFileToWorkerR2(env, { bytes, originalFilename, mimeType, cu
     alt: String(alt || baseSlug),
     title: String(title || originalFilename || r2Key),
     page: page || undefined,
+    remotePushed: true,
     updatedAt: now,
-    bucketName: activeBucketName,
   };
-  if (Array.isArray(IMAGES_INVENTORY.r2Objects)) {
-    IMAGES_INVENTORY.r2Objects = IMAGES_INVENTORY.r2Objects.filter((o) => o.r2Key !== r2Key);
-    IMAGES_INVENTORY.r2Objects.unshift(newRecord);
-  }
-  return newRecord;
 }
 
 const worker = {
@@ -917,56 +747,31 @@ const worker = {
     const cdnBase = getWorkerCdnBase(env);
     const activeBucketName = (env && (env.R2_BUCKET_NAME || env.BUCKET_NAME)) || BUCKET_NAME;
 
-    // 1. Serve R2 Bucket Object via CDN URL: /api/r2/file/:key*
+    // 1. Serve R2 Bucket Object via /api/r2/file/:key*
     if (pathname.startsWith('/api/r2/file/')) {
       const rawKey = decodeURIComponent(pathname.slice('/api/r2/file/'.length));
       const r2Key = sanitizeKey(rawKey);
-      if (!r2Key || DELETED_R2_KEYS.has(r2Key)) {
+      if (!r2Key || !r2Bucket) {
         return new Response('R2 object not found', { status: 404 });
       }
 
-      if (UPLOADED_BLOBS.has(r2Key)) {
-        const cached = UPLOADED_BLOBS.get(r2Key);
-        return new Response(cached.bytes, {
-          status: 200,
-          headers: {
-            'Content-Type': cached.mimeType || guessMimeType(r2Key),
-            'Cache-Control': 'public, max-age=31536000',
-            'X-R2-Key': r2Key,
-          },
-        });
-      }
-
-      if (r2Bucket) {
-        try {
-          const obj = await r2Bucket.get(r2Key);
-          if (obj) {
-            const headers = new Headers();
-            if (typeof obj.writeHttpMetadata === 'function') {
-              obj.writeHttpMetadata(headers);
-            }
-            if (!headers.has('Content-Type')) {
-              headers.set('Content-Type', guessMimeType(r2Key));
-            }
-            headers.set('Cache-Control', 'public, max-age=31536000, stale-while-revalidate=86400');
-            if (obj.httpEtag) headers.set('ETag', obj.httpEtag);
-            headers.set('X-R2-Key', r2Key);
-            return new Response(obj.body, { status: 200, headers });
+      try {
+        const obj = await r2Bucket.get(r2Key);
+        if (obj) {
+          const headers = new Headers();
+          if (typeof obj.writeHttpMetadata === 'function') {
+            obj.writeHttpMetadata(headers);
           }
-        } catch (e) {
-          // fallback to static assets
+          if (!headers.has('Content-Type')) {
+            headers.set('Content-Type', guessMimeType(r2Key));
+          }
+          headers.set('Cache-Control', 'public, max-age=31536000, stale-while-revalidate=86400');
+          if (obj.httpEtag) headers.set('ETag', obj.httpEtag);
+          headers.set('X-R2-Key', r2Key);
+          return new Response(obj.body, { status: 200, headers });
         }
-      }
+      } catch (e) {}
 
-      // Fallback 1: check /assets/r2-bucket/<r2Key>
-      const r2AssetRes = await env.ASSETS.fetch(new Request(new URL('/assets/r2-bucket/' + r2Key, url.origin), request));
-      if (r2AssetRes.ok) return r2AssetRes;
-
-      // Fallback 2: if media/<filename>, check /assets/media/<filename>
-      const fileNameOnly = r2Key.split('/').pop();
-      if (fileNameOnly) {
-        return env.ASSETS.fetch(new Request(new URL('/assets/media/' + fileNameOnly, url.origin), request));
-      }
       return new Response('R2 object not found', { status: 404 });
     }
 
@@ -978,206 +783,147 @@ const worker = {
           JSON.stringify({
             ok: true,
             bucketName: activeBucketName,
-            cdnBase,
-            remoteSyncEnabled: Boolean(r2Bucket),
-            remoteMode: r2Bucket ? 'worker-binding' : 'static-fallback',
+            accountId: (env && env.R2_ACCOUNT_ID) || '',
+            authMode: r2Bucket ? 'worker-binding' : 'none',
+            remoteConfigured: Boolean(r2Bucket),
+            cdnBaseUrl: cdnBase,
+            testResult: {
+              ok: Boolean(r2Bucket),
+              message: r2Bucket
+                ? 'Connected to Cloudflare R2 Bucket binding (' + activeBucketName + ').'
+                : 'R2_BUCKET binding missing in Cloudflare Worker.',
+            },
             objects,
           }),
-          {
-            status: 200,
-            headers: JSON_HEADERS,
-          }
+          { status: 200, headers: JSON_HEADERS }
         );
       }
 
       if (request.method === 'POST' || request.method === 'PUT') {
-        const ct = request.headers.get('content-type') || '';
-        if (ct.includes('multipart/form-data')) {
-          const formData = await request.formData();
-          const file = formData.get('file');
-          if (!file || typeof file.arrayBuffer !== 'function') {
-            return new Response(JSON.stringify({ error: 'Image file is required' }), { status: 400, headers: JSON_HEADERS });
-          }
-          const bytes = await file.arrayBuffer();
-          const record = await uploadFileToWorkerR2(env, {
-            bytes,
-            originalFilename: file.name || 'upload.jpg',
-            mimeType: file.type || undefined,
-            customKey: formData.get('customKey') ? String(formData.get('customKey')) : undefined,
-            replaceKey: formData.get('replaceKey') ? String(formData.get('replaceKey')) : undefined,
-            alt: formData.get('alt') !== null ? String(formData.get('alt')) : undefined,
-            title: formData.get('title') !== null ? String(formData.get('title')) : undefined,
-            page: formData.get('page') ? String(formData.get('page')) : undefined,
-          });
-          const objects = await listLiveR2Objects(env);
-          return new Response(
-            JSON.stringify({
-              ok: true,
-              object: record,
-              r2Key: record.r2Key,
-              cdnUrl: record.cdnUrl,
-              sizeBytes: record.sizeBytes,
-              mimeType: record.mimeType,
-              objects,
-            }),
-            { status: 200, headers: JSON_HEADERS }
-          );
-        }
-
-        const body = await request.json();
-        if (body.action === 'test-connection' || body.action === 'save-credentials') {
-          const objects = await listLiveR2Objects(env);
-          return new Response(
-            JSON.stringify({
-              ok: true,
-              mode: r2Bucket ? 'worker-binding' : 'static-fallback',
-              bucketName: activeBucketName,
-              cdnBase,
-              remoteSyncEnabled: Boolean(r2Bucket),
-              remoteMode: r2Bucket ? 'worker-binding' : 'static-fallback',
-              objects,
-            }),
-            { status: 200, headers: JSON_HEADERS }
-          );
-        }
-
-        if (body.action === 'sync-remote-r2') {
-          let synced = 0;
-          let failed = 0;
-          const errors = [];
-          if (r2Bucket) {
-            for (const item of IMAGES_INVENTORY.r2Objects || []) {
-              if (DELETED_R2_KEYS.has(item.r2Key)) continue;
-              try {
-                const existing = await r2Bucket.head(item.r2Key);
-                if (!existing) {
-                  const assetRes = await env.ASSETS.fetch(new Request(new URL('/assets/r2-bucket/' + item.r2Key, url.origin)));
-                  if (assetRes.ok) {
-                    const buf = await assetRes.arrayBuffer();
-                    await r2Bucket.put(item.r2Key, buf, {
-                      httpMetadata: { contentType: item.mimeType || guessMimeType(item.r2Key) },
-                      customMetadata: {
-                        alt: String(item.alt || ''),
-                        title: String(item.title || item.filename || item.r2Key),
-                        page: String(item.page || ''),
-                      },
-                    });
-                  }
-                }
-                synced++;
-              } catch (e) {
-                failed++;
-                errors.push(item.r2Key + ': ' + (e && e.message ? e.message : String(e)));
-              }
-            }
-          }
-          const objects = await listLiveR2Objects(env);
-          return new Response(
-            JSON.stringify({
-              ok: failed === 0,
-              synced,
-              failed,
-              total: (IMAGES_INVENTORY.r2Objects || []).length,
-              mode: r2Bucket ? 'worker-binding' : 'static-fallback',
-              errors: errors.slice(0, 10),
-              bucketName: activeBucketName,
-              cdnBase,
-              objects,
-            }),
-            { status: 200, headers: JSON_HEADERS }
-          );
-        }
-
-        if (body.action === 'upload-data-url' && typeof body.dataUrl === 'string') {
-          const match = body.dataUrl.match(/^data:([^;,]+)?(?:;base64)?,([\\s\\S]*)$/i);
-          if (!match) {
-            return new Response(JSON.stringify({ error: 'Invalid data URL' }), { status: 400, headers: JSON_HEADERS });
-          }
-          const mimeType = (match[1] || 'image/jpeg').trim();
-          const binStr = atob(match[2].trim());
-          const bytes = new Uint8Array(binStr.length);
-          for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
-          const ext = mimeType.includes('png') ? 'png' : mimeType.includes('webp') ? 'webp' : mimeType.includes('svg') ? 'svg' : 'jpg';
-          const record = await uploadFileToWorkerR2(env, {
-            bytes: bytes.buffer,
-            originalFilename: (body.filenameHint || 'migrated') + '.' + ext,
-            mimeType,
-            alt: body.alt,
-            title: body.title,
-            page: body.page,
-          });
-          const objects = await listLiveR2Objects(env);
-          return new Response(JSON.stringify({ ok: true, object: record, r2Key: record.r2Key, cdnUrl: record.cdnUrl, objects }), {
-            status: 200,
-            headers: JSON_HEADERS,
-          });
-        }
-
-        if (body.action === 'update-meta' && body.r2Key) {
-          const oldKey = extractWorkerR2Key(body.r2Key);
-          const newKey = body.newKey ? extractWorkerR2Key(body.newKey) : oldKey;
-          if (r2Bucket) {
-            const existingObj = await r2Bucket.get(oldKey);
-            if (existingObj) {
-              const buf = await existingObj.arrayBuffer();
-              const mime = (existingObj.httpMetadata && existingObj.httpMetadata.contentType) || guessMimeType(newKey);
-              await r2Bucket.put(newKey, buf, {
-                httpMetadata: { contentType: mime },
-                customMetadata: {
-                  alt: String(body.alt ?? ''),
-                  title: String(body.title ?? newKey),
-                  page: String(body.page ?? ''),
-                  updatedAt: new Date().toISOString(),
-                },
+        try {
+          const ct = request.headers.get('content-type') || '';
+          if (ct.includes('multipart/form-data')) {
+            const formData = await request.formData();
+            const file = formData.get('file');
+            if (!file || typeof file.arrayBuffer !== 'function') {
+              return new Response(JSON.stringify({ error: 'Image file is required' }), {
+                status: 400,
+                headers: JSON_HEADERS,
               });
-              if (newKey !== oldKey) {
-                await r2Bucket.delete(oldKey);
-                DELETED_R2_KEYS.add(oldKey);
-              }
             }
+            const bytes = await file.arrayBuffer();
+            const record = await uploadFileToWorkerR2(env, {
+              bytes,
+              originalFilename: file.name || 'upload.jpg',
+              mimeType: file.type || undefined,
+              customKey: formData.get('customKey') ? String(formData.get('customKey')) : undefined,
+              replaceKey: formData.get('replaceKey') ? String(formData.get('replaceKey')) : undefined,
+              alt: formData.get('alt') !== null ? String(formData.get('alt')) : undefined,
+              title: formData.get('title') !== null ? String(formData.get('title')) : undefined,
+              page: formData.get('page') ? String(formData.get('page')) : undefined,
+            });
+            const objects = await listLiveR2Objects(env);
+            return new Response(
+              JSON.stringify({
+                ok: true,
+                object: record,
+                r2Key: record.r2Key,
+                cdnUrl: record.cdnUrl,
+                sizeBytes: record.sizeBytes,
+                mimeType: record.mimeType,
+                remotePushed: true,
+                objects,
+              }),
+              { status: 200, headers: JSON_HEADERS }
+            );
           }
-          const objects = await listLiveR2Objects(env);
-          return new Response(
-            JSON.stringify({
-              ok: true,
-              r2Key: newKey,
-              cdnUrl: cdnBase + '/' + newKey,
-              objects,
-            }),
-            { status: 200, headers: JSON_HEADERS }
-          );
-        }
 
-        if (body.action === 'delete' && (body.r2Key || body.cdnUrl)) {
-          const cleanTarget = extractWorkerR2Key(body.r2Key || body.cdnUrl);
-          if (cleanTarget) {
-            DELETED_R2_KEYS.add(cleanTarget);
-            if (Array.isArray(IMAGES_INVENTORY.r2Objects)) {
-              IMAGES_INVENTORY.r2Objects = IMAGES_INVENTORY.r2Objects.filter((o) => o.r2Key !== cleanTarget);
-            }
-            if (r2Bucket) {
-              try {
-                await r2Bucket.delete(cleanTarget);
-              } catch (e) {}
-            }
+          const body = await request.json();
+          if (body.action === 'test-connection' || body.action === 'save-credentials') {
+            const objects = await listLiveR2Objects(env);
+            return new Response(
+              JSON.stringify({
+                ok: true,
+                testResult: {
+                  ok: Boolean(r2Bucket),
+                  message: r2Bucket
+                    ? 'Connected to Cloudflare R2 Bucket binding (' + activeBucketName + ').'
+                    : 'R2_BUCKET binding missing.',
+                },
+                status: {
+                  bucketName: activeBucketName,
+                  accountId: (env && env.R2_ACCOUNT_ID) || '',
+                  authMode: r2Bucket ? 'worker-binding' : 'none',
+                  remoteConfigured: Boolean(r2Bucket),
+                  cdnBaseUrl: cdnBase,
+                },
+                objects,
+              }),
+              { status: 200, headers: JSON_HEADERS }
+            );
           }
-          const objects = await listLiveR2Objects(env);
-          return new Response(JSON.stringify({ ok: true, deletedKey: cleanTarget, objects }), {
-            status: 200,
-            headers: JSON_HEADERS,
-          });
-        }
-      }
 
-      if (request.method === 'PATCH') {
-        const body = await request.json();
-        const oldKey = extractWorkerR2Key(body.r2Key || '');
-        const newKey = body.newKey ? extractWorkerR2Key(body.newKey) : oldKey;
-        if (r2Bucket && oldKey) {
-          const existingObj = await r2Bucket.get(oldKey);
-          if (existingObj) {
+          if (body.action === 'upload-data-url' && typeof body.dataUrl === 'string') {
+            const match = body.dataUrl.match(/^data:([^;,]+)?(?:;base64)?,([\\s\\S]*)$/i);
+            if (!match) {
+              return new Response(JSON.stringify({ error: 'Invalid data URL' }), {
+                status: 400,
+                headers: JSON_HEADERS,
+              });
+            }
+            const mimeType = (match[1] || 'image/jpeg').trim();
+            const binStr = atob(match[2].trim());
+            const bytes = new Uint8Array(binStr.length);
+            for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+            const ext = mimeType.includes('png')
+              ? 'png'
+              : mimeType.includes('webp')
+                ? 'webp'
+                : mimeType.includes('svg')
+                  ? 'svg'
+                  : 'jpg';
+            const record = await uploadFileToWorkerR2(env, {
+              bytes: bytes.buffer,
+              originalFilename: (body.filenameHint || 'migrated') + '.' + ext,
+              mimeType,
+              alt: body.alt,
+              title: body.title,
+              page: body.page,
+            });
+            const objects = await listLiveR2Objects(env);
+            return new Response(
+              JSON.stringify({
+                ok: true,
+                object: record,
+                r2Key: record.r2Key,
+                cdnUrl: record.cdnUrl,
+                remotePushed: true,
+                objects,
+              }),
+              { status: 200, headers: JSON_HEADERS }
+            );
+          }
+
+          if (body.action === 'update-meta' && body.r2Key) {
+            if (!r2Bucket) {
+              return new Response(JSON.stringify({ error: 'R2_BUCKET binding missing' }), {
+                status: 500,
+                headers: JSON_HEADERS,
+              });
+            }
+            const oldKey = extractWorkerR2Key(body.r2Key);
+            const newKey = body.newKey ? extractWorkerR2Key(body.newKey) : oldKey;
+            const existingObj = await r2Bucket.get(oldKey);
+            if (!existingObj) {
+              return new Response(JSON.stringify({ error: 'R2 object not found' }), {
+                status: 404,
+                headers: JSON_HEADERS,
+              });
+            }
             const buf = await existingObj.arrayBuffer();
-            const mime = (existingObj.httpMetadata && existingObj.httpMetadata.contentType) || guessMimeType(newKey);
+            const mime =
+              (existingObj.httpMetadata && existingObj.httpMetadata.contentType) ||
+              guessMimeType(newKey);
             await r2Bucket.put(newKey, buf, {
               httpMetadata: { contentType: mime },
               customMetadata: {
@@ -1189,20 +935,93 @@ const worker = {
             });
             if (newKey !== oldKey) {
               await r2Bucket.delete(oldKey);
-              DELETED_R2_KEYS.add(oldKey);
             }
+            const objects = await listLiveR2Objects(env);
+            return new Response(
+              JSON.stringify({
+                ok: true,
+                r2Key: newKey,
+                cdnUrl: cdnBase + '/' + newKey,
+                objects,
+              }),
+              { status: 200, headers: JSON_HEADERS }
+            );
           }
+
+          if (body.action === 'delete' && (body.r2Key || body.cdnUrl)) {
+            const cleanTarget = extractWorkerR2Key(body.r2Key || body.cdnUrl);
+            if (r2Bucket && cleanTarget) {
+              await r2Bucket.delete(cleanTarget);
+            }
+            const objects = await listLiveR2Objects(env);
+            return new Response(JSON.stringify({ ok: true, deletedKey: cleanTarget, objects }), {
+              status: 200,
+              headers: JSON_HEADERS,
+            });
+          }
+
+          return new Response(JSON.stringify({ error: 'Unsupported action' }), {
+            status: 400,
+            headers: JSON_HEADERS,
+          });
+        } catch (err) {
+          return new Response(
+            JSON.stringify({ error: err && err.message ? err.message : 'R2 operation failed' }),
+            { status: 500, headers: JSON_HEADERS }
+          );
         }
-        const objects = await listLiveR2Objects(env);
-        return new Response(
-          JSON.stringify({
-            ok: true,
-            r2Key: newKey,
-            cdnUrl: cdnBase + '/' + newKey,
-            objects,
-          }),
-          { status: 200, headers: JSON_HEADERS }
-        );
+      }
+
+      if (request.method === 'PATCH') {
+        try {
+          if (!r2Bucket) {
+            return new Response(JSON.stringify({ error: 'R2_BUCKET binding missing' }), {
+              status: 500,
+              headers: JSON_HEADERS,
+            });
+          }
+          const body = await request.json();
+          const oldKey = extractWorkerR2Key(body.r2Key || '');
+          const newKey = body.newKey ? extractWorkerR2Key(body.newKey) : oldKey;
+          const existingObj = oldKey ? await r2Bucket.get(oldKey) : null;
+          if (!existingObj) {
+            return new Response(JSON.stringify({ error: 'R2 object not found' }), {
+              status: 404,
+              headers: JSON_HEADERS,
+            });
+          }
+          const buf = await existingObj.arrayBuffer();
+          const mime =
+            (existingObj.httpMetadata && existingObj.httpMetadata.contentType) ||
+            guessMimeType(newKey);
+          await r2Bucket.put(newKey, buf, {
+            httpMetadata: { contentType: mime },
+            customMetadata: {
+              alt: String(body.alt ?? ''),
+              title: String(body.title ?? newKey),
+              page: String(body.page ?? ''),
+              updatedAt: new Date().toISOString(),
+            },
+          });
+          if (newKey !== oldKey) {
+            await r2Bucket.delete(oldKey);
+          }
+          const objects = await listLiveR2Objects(env);
+          return new Response(
+            JSON.stringify({
+              ok: true,
+              r2Key: newKey,
+              cdnUrl: cdnBase + '/' + newKey,
+              objects,
+            }),
+            { status: 200, headers: JSON_HEADERS }
+          );
+        } catch (err) {
+          return new Response(
+            JSON.stringify({ error: err && err.message ? err.message : 'Failed to update R2 metadata' }),
+            { status: 500, headers: JSON_HEADERS }
+          );
+        }
       }
 
       if (request.method === 'DELETE') {
@@ -1214,16 +1033,8 @@ const worker = {
           } catch (e) {}
         }
         const cleanTarget = extractWorkerR2Key(keyParam);
-        if (cleanTarget) {
-          DELETED_R2_KEYS.add(cleanTarget);
-          if (Array.isArray(IMAGES_INVENTORY.r2Objects)) {
-            IMAGES_INVENTORY.r2Objects = IMAGES_INVENTORY.r2Objects.filter((o) => o.r2Key !== cleanTarget);
-          }
-          if (r2Bucket) {
-            try {
-              await r2Bucket.delete(cleanTarget);
-            } catch (e) {}
-          }
+        if (r2Bucket && cleanTarget) {
+          await r2Bucket.delete(cleanTarget);
         }
         const objects = await listLiveR2Objects(env);
         return new Response(JSON.stringify({ ok: true, deletedKey: cleanTarget, objects }), {
@@ -1233,179 +1044,94 @@ const worker = {
       }
     }
 
-    // API: /api/admin/images
+    // API: /api/admin/images (HTML schema + direct R2 uploads)
     if (pathname === '/api/admin/images') {
       if (request.method === 'GET') {
         const r2Objects = await listLiveR2Objects(env);
-        return new Response(JSON.stringify({ ...IMAGES_INVENTORY, r2Objects }), {
-          status: 200,
-          headers: JSON_HEADERS,
-        });
+        return new Response(
+          JSON.stringify({
+            bucketName: activeBucketName,
+            r2Status: {
+              bucketName: activeBucketName,
+              authMode: r2Bucket ? 'worker-binding' : 'none',
+              remoteConfigured: Boolean(r2Bucket),
+              cdnBaseUrl: cdnBase,
+            },
+            slots: IMAGES_SCHEMA.slots,
+            r2Objects,
+            pages: IMAGES_SCHEMA.pages,
+          }),
+          { status: 200, headers: JSON_HEADERS }
+        );
       }
+
       if (request.method === 'POST') {
-        const ct = request.headers.get('content-type') || '';
-        if (ct.includes('multipart/form-data')) {
-          const formData = await request.formData();
-          const file = formData.get('file');
-          if (file && typeof file.arrayBuffer === 'function') {
+        try {
+          const ct = request.headers.get('content-type') || '';
+          if (ct.includes('multipart/form-data')) {
+            const formData = await request.formData();
+            const file = formData.get('file');
+            if (!file || typeof file.arrayBuffer !== 'function') {
+              return new Response(JSON.stringify({ error: 'Image file is required' }), {
+                status: 400,
+                headers: JSON_HEADERS,
+              });
+            }
             const bytes = await file.arrayBuffer();
-            const mode = String(formData.get('mode') || 'update-slot');
-            const assetFilename = String(formData.get('assetFilename') || '');
+            const page = String(formData.get('page') || 'index.html');
+            const slotIndex = Number(formData.get('slotIndex') || 0);
+            const slotId = page.replace(/[^a-zA-Z0-9_-]/g, '_') + '__slot_' + slotIndex;
+            const replaceKey = formData.get('replaceKey') ? String(formData.get('replaceKey')) : undefined;
+            const altText = formData.get('altText') !== null ? String(formData.get('altText')) : undefined;
             const record = await uploadFileToWorkerR2(env, {
               bytes,
-              originalFilename: assetFilename || file.name || 'upload.jpg',
+              originalFilename: file.name || 'upload.jpg',
               mimeType: file.type || undefined,
-              customKey: mode === 'replace-media' && assetFilename ? 'media/' + assetFilename.split('/').pop() : undefined,
-              replaceKey: mode === 'replace-media' && assetFilename ? 'media/' + assetFilename.split('/').pop() : undefined,
-              alt: formData.get('altText') ? String(formData.get('altText')) : undefined,
-              page: formData.get('page') ? String(formData.get('page')) : undefined,
+              replaceKey: replaceKey || 'slots/' + slotId,
+              alt: altText,
+              title: altText || file.name,
+              page,
             });
             const r2Objects = await listLiveR2Objects(env);
             return new Response(
               JSON.stringify({
                 ok: true,
-                updatedSrc: record.cdnUrl,
+                slotId,
                 cdnUrl: record.cdnUrl,
                 r2Key: record.r2Key,
-                ...IMAGES_INVENTORY,
+                sizeBytes: record.sizeBytes,
+                mimeType: record.mimeType,
+                slots: IMAGES_SCHEMA.slots,
                 r2Objects,
+                pages: IMAGES_SCHEMA.pages,
               }),
               { status: 200, headers: JSON_HEADERS }
             );
           }
-        } else {
-          try {
-            const body = await request.json();
-            const action = String(body.action || '');
-            const page = String(body.page || 'index.html');
-            const slotIndex = Number(body.slotIndex || 0);
-            const slotId = body.slotId ? String(body.slotId) : page.replace(/[^a-zA-Z0-9_-]/g, '_') + '__slot_' + slotIndex;
 
-            if (action === 'delete-slot') {
-              const targetSlot = (IMAGES_INVENTORY.slots || []).find((s) => s.slotId === slotId || (s.page === page && s.slotIndex === slotIndex));
-              const keyToDelete = extractWorkerR2Key(body.r2Key || (targetSlot && (targetSlot.r2Key || targetSlot.src)) || '');
-              if (targetSlot) {
-                targetSlot.src = '';
-                targetSlot.lightboxHref = '';
-                targetSlot.r2Key = undefined;
-                targetSlot.isDeleted = true;
-                targetSlot.isModified = true;
-              }
-              if (!CMS_INVENTORY.imageOverrides) CMS_INVENTORY.imageOverrides = {};
-              CMS_INVENTORY.imageOverrides[slotId] = {
-                slotId,
-                page,
-                slotIndex,
-                type: (targetSlot && targetSlot.type) || body.type || 'img',
-                label: (targetSlot && targetSlot.label) || body.label || ('Slot #' + (slotIndex + 1)),
-                sectionContext: (targetSlot && targetSlot.sectionContext) || body.sectionContext || 'Page Section',
-                src: '',
-                lightboxHref: '',
-                r2Key: undefined,
-                alt: (targetSlot && targetSlot.alt) || '',
-                isDeleted: true,
-                updatedAt: new Date().toISOString(),
-              };
-              if (keyToDelete && !keyToDelete.startsWith('media/')) {
-                const usedElsewhere =
-                  (IMAGES_INVENTORY.slots || []).some((s) => s.slotId !== slotId && !s.isDeleted && (s.r2Key === keyToDelete || (s.src && s.src.includes(keyToDelete)))) ||
-                  (CMS_INVENTORY.sectionGalleryItems || []).some((sec) => sec.r2Key === keyToDelete || (sec.src && sec.src.includes(keyToDelete)));
-                if (!usedElsewhere) {
-                  DELETED_R2_KEYS.add(keyToDelete);
-                  if (Array.isArray(IMAGES_INVENTORY.r2Objects)) {
-                    IMAGES_INVENTORY.r2Objects = IMAGES_INVENTORY.r2Objects.filter((o) => o.r2Key !== keyToDelete);
-                  }
-                  if (r2Bucket) {
-                    try {
-                      await r2Bucket.delete(keyToDelete);
-                    } catch (e) {}
-                  }
-                }
-              }
-            } else if (action === 'update-slot-meta') {
-              const updatedSrc = String(body.externalUrl || '');
-              const r2Key = body.r2Key ? String(body.r2Key) : extractWorkerR2Key(updatedSrc);
-              const targetSlot = (IMAGES_INVENTORY.slots || []).find((s) => s.slotId === slotId || (s.page === page && s.slotIndex === slotIndex));
-              if (targetSlot && updatedSrc) {
-                targetSlot.src = updatedSrc;
-                targetSlot.lightboxHref = updatedSrc;
-                targetSlot.r2Key = r2Key || targetSlot.r2Key;
-                if (body.altText !== undefined) targetSlot.alt = String(body.altText);
-                targetSlot.isDeleted = false;
-                targetSlot.isModified = true;
-              }
-              if (!CMS_INVENTORY.imageOverrides) CMS_INVENTORY.imageOverrides = {};
-              CMS_INVENTORY.imageOverrides[slotId] = {
-                slotId,
-                page,
-                slotIndex,
-                type: (targetSlot && targetSlot.type) || body.type || 'img',
-                label: body.label || (targetSlot && targetSlot.label) || ('Slot #' + (slotIndex + 1)),
-                sectionContext: body.sectionContext || (targetSlot && targetSlot.sectionContext) || 'Page Section',
-                src: updatedSrc,
-                lightboxHref: updatedSrc,
-                r2Key,
-                alt: body.altText !== undefined ? String(body.altText) : (targetSlot && targetSlot.alt) || '',
-                isDeleted: false,
-                updatedAt: new Date().toISOString(),
-              };
-            } else if (action === 'sync-to-site-r2') {
-              let synced = 0;
-              let failed = 0;
-              const errors = [];
-              if (r2Bucket) {
-                for (const item of IMAGES_INVENTORY.r2Objects || []) {
-                  if (DELETED_R2_KEYS.has(item.r2Key)) continue;
-                  try {
-                    const existing = await r2Bucket.head(item.r2Key);
-                    if (!existing) {
-                      const assetRes = await env.ASSETS.fetch(new Request(new URL('/assets/r2-bucket/' + item.r2Key, url.origin)));
-                      if (assetRes.ok) {
-                        const buf = await assetRes.arrayBuffer();
-                        await r2Bucket.put(item.r2Key, buf, {
-                          httpMetadata: { contentType: item.mimeType || guessMimeType(item.r2Key) },
-                          customMetadata: {
-                            alt: String(item.alt || ''),
-                            title: String(item.title || item.filename || item.r2Key),
-                            page: String(item.page || ''),
-                          },
-                        });
-                      }
-                    }
-                    synced++;
-                  } catch (e) {
-                    failed++;
-                    errors.push(item.r2Key + ': ' + (e && e.message ? e.message : String(e)));
-                  }
-                }
-              }
-              const r2Objects = await listLiveR2Objects(env);
-              return new Response(
-                JSON.stringify({
-                  ok: true,
-                  syncReport: {
-                    r2Total: (IMAGES_INVENTORY.r2Objects || []).length,
-                    r2Pushed: synced,
-                    r2Failed: failed,
-                    htmlSlotsUpdated: 0,
-                    pagesUpdated: [],
-                    authMode: r2Bucket ? 'worker-binding' : 'static-fallback',
-                    cdnBaseUrl: cdnBase,
-                    errors,
-                  },
-                  ...IMAGES_INVENTORY,
-                  r2Objects,
-                }),
-                { status: 200, headers: JSON_HEADERS }
-              );
+          const body = await request.json();
+          if (body.action === 'delete-r2-key' && body.r2Key) {
+            const cleanTarget = extractWorkerR2Key(body.r2Key);
+            if (r2Bucket && cleanTarget) {
+              await r2Bucket.delete(cleanTarget);
             }
-          } catch (e) {}
+            const r2Objects = await listLiveR2Objects(env);
+            return new Response(JSON.stringify({ ok: true, deletedKey: cleanTarget, r2Objects }), {
+              status: 200,
+              headers: JSON_HEADERS,
+            });
+          }
+
+          return new Response(JSON.stringify({ error: 'Unsupported action' }), {
+            status: 400,
+            headers: JSON_HEADERS,
+          });
+        } catch (err) {
+          return new Response(
+            JSON.stringify({ error: err && err.message ? err.message : 'Image action failed' }),
+            { status: 500, headers: JSON_HEADERS }
+          );
         }
-        const r2Objects = await listLiveR2Objects(env);
-        return new Response(JSON.stringify({ ok: true, ...IMAGES_INVENTORY, r2Objects }), {
-          status: 200,
-          headers: JSON_HEADERS,
-        });
       }
     }
 
@@ -1426,7 +1152,7 @@ const worker = {
 
       if (request.method === 'GET') {
         const cookieHeader = request.headers.get('cookie') || '';
-        const match = cookieHeader.match(/(?:^|;\s*)nisha_admin_session=([^;]+)/);
+        const match = cookieHeader.match(/(?:^|;\\s*)nisha_admin_session=([^;]+)/);
         const token = match ? match[1].trim() : '';
         return new Response(
           JSON.stringify({ authenticated: Boolean(token && token === sessionToken) }),
@@ -1474,143 +1200,15 @@ const worker = {
       }
     }
 
-    // API: /api/admin/cms
+    // API: /api/admin/cms (HTML text template schema reader; persistence is in Firestore)
     if (pathname === '/api/admin/cms') {
       if (request.method === 'GET') {
-        return new Response(JSON.stringify(CMS_INVENTORY), { status: 200, headers: JSON_HEADERS });
+        return new Response(JSON.stringify(CMS_SCHEMA), { status: 200, headers: JSON_HEADERS });
       }
-      if (request.method === 'POST') {
-        try {
-          const body = await request.json();
-          const action = String(body.action || '');
-          if (action === 'save-text') {
-            const page = String(body.page || 'index.html');
-            const isCustomAdded = Boolean(body.isCustomAdded);
-            const textIndex = typeof body.textIndex === 'number' ? body.textIndex : -1;
-            const textId = String(
-              body.textId ||
-                (isCustomAdded
-                  ? page.replace(/[^a-zA-Z0-9_-]/g, '_') + '__custom_' + Date.now()
-                  : page.replace(/[^a-zA-Z0-9_-]/g, '_') + '__text_' + textIndex)
-            );
-            const tagName = String(body.tagName || (isCustomAdded ? 'CUSTOM' : 'P'));
-            const sectionContext = String(body.sectionContext || 'Page Content');
-            const content = String(body.content ?? '');
-            const isDeleted = Boolean(body.isDeleted);
-            if (isCustomAdded) {
-              if (!Array.isArray(CMS_INVENTORY.customTexts)) CMS_INVENTORY.customTexts = [];
-              const existingIdx = CMS_INVENTORY.customTexts.findIndex((t) => t.textId === textId);
-              const nextCustom = {
-                textId,
-                page,
-                pageTitle: page,
-                textIndex: -1,
-                tagName,
-                sectionContext,
-                content,
-                defaultContent: '',
-                isDeleted,
-                isCustomAdded: true,
-                isModified: true,
-              };
-              if (existingIdx >= 0) CMS_INVENTORY.customTexts[existingIdx] = nextCustom;
-              else CMS_INVENTORY.customTexts.push(nextCustom);
-            } else {
-              const targetSlot = (CMS_INVENTORY.textSlots || []).find((t) => t.textId === textId);
-              if (targetSlot) {
-                targetSlot.content = content;
-                targetSlot.isDeleted = isDeleted;
-                targetSlot.isModified = content !== targetSlot.defaultContent || isDeleted;
-              }
-            }
-          } else if (action === 'delete-text') {
-            const textId = String(body.textId || '');
-            const restoreDefault = Boolean(body.restoreDefault);
-            if (Array.isArray(CMS_INVENTORY.customTexts)) {
-              CMS_INVENTORY.customTexts = CMS_INVENTORY.customTexts.filter((t) => t.textId !== textId);
-            }
-            const targetSlot = (CMS_INVENTORY.textSlots || []).find((t) => t.textId === textId);
-            if (targetSlot) {
-              if (restoreDefault) {
-                targetSlot.content = targetSlot.defaultContent;
-                targetSlot.isDeleted = false;
-                targetSlot.isModified = false;
-              } else {
-                targetSlot.isDeleted = true;
-                targetSlot.isModified = true;
-              }
-            }
-          } else if (action === 'delete-section-image') {
-            const itemId = String(body.itemId || '');
-            const targetItem = (CMS_INVENTORY.sectionGalleryItems || []).find((i) => i.itemId === itemId);
-            const keyToDelete = extractWorkerR2Key(body.r2Key || (targetItem && (targetItem.r2Key || targetItem.src)) || '');
-            CMS_INVENTORY.sectionGalleryItems = (CMS_INVENTORY.sectionGalleryItems || []).filter((i) => i.itemId !== itemId);
-            if (keyToDelete && !keyToDelete.startsWith('media/')) {
-              const usedElsewhere =
-                (CMS_INVENTORY.sectionGalleryItems || []).some((sec) => sec.r2Key === keyToDelete || (sec.src && sec.src.includes(keyToDelete))) ||
-                (IMAGES_INVENTORY.slots || []).some((s) => !s.isDeleted && (s.r2Key === keyToDelete || (s.src && s.src.includes(keyToDelete))));
-              if (!usedElsewhere) {
-                DELETED_R2_KEYS.add(keyToDelete);
-                if (Array.isArray(IMAGES_INVENTORY.r2Objects)) {
-                  IMAGES_INVENTORY.r2Objects = IMAGES_INVENTORY.r2Objects.filter((o) => o.r2Key !== keyToDelete);
-                }
-                if (r2Bucket) {
-                  try {
-                    await r2Bucket.delete(keyToDelete);
-                  } catch (e) {}
-                }
-              }
-            }
-          } else if (action === 'save-section-image') {
-            const itemId = String(body.itemId || ('sec_img_' + Date.now()));
-            const newItem = {
-              itemId,
-              page: String(body.page || 'index.html'),
-              sectionKey: String(body.sectionKey || 'general_section'),
-              sectionTitle: String(body.sectionTitle || 'Featured Safari Gallery'),
-              title: String(body.title || 'Safari Wildlife Moment'),
-              caption: String(body.caption || ''),
-              src: String(body.src || ''),
-              r2Key: body.r2Key ? String(body.r2Key) : extractWorkerR2Key(body.src || ''),
-              alt: String(body.alt || body.title || 'Safari photo'),
-              order: typeof body.order === 'number' ? body.order : ((CMS_INVENTORY.sectionGalleryItems || []).length + 1),
-            };
-            if (!Array.isArray(CMS_INVENTORY.sectionGalleryItems)) CMS_INVENTORY.sectionGalleryItems = [];
-            const idx = CMS_INVENTORY.sectionGalleryItems.findIndex((i) => i.itemId === itemId);
-            if (idx >= 0) {
-              CMS_INVENTORY.sectionGalleryItems[idx] = newItem;
-            } else {
-              CMS_INVENTORY.sectionGalleryItems.push(newItem);
-            }
-          } else if (action === 'delete-slot-override') {
-            const slotId = String(body.slotId || '');
-            if (slotId) {
-              if (!CMS_INVENTORY.imageOverrides) CMS_INVENTORY.imageOverrides = {};
-              CMS_INVENTORY.imageOverrides[slotId] = {
-                ...(CMS_INVENTORY.imageOverrides[slotId] || {}),
-                slotId,
-                src: '',
-                lightboxHref: '',
-                r2Key: undefined,
-                isDeleted: true,
-                updatedAt: new Date().toISOString(),
-              };
-              const targetSlot = (IMAGES_INVENTORY.slots || []).find((s) => s.slotId === slotId);
-              if (targetSlot) {
-                targetSlot.src = '';
-                targetSlot.lightboxHref = '';
-                targetSlot.r2Key = undefined;
-                targetSlot.isDeleted = true;
-                targetSlot.isModified = true;
-              }
-            }
-          }
-        } catch (e) {}
-        return new Response(JSON.stringify({ ok: true, ...CMS_INVENTORY }), {
-          status: 200,
-          headers: JSON_HEADERS,
-        });
-      }
+      return new Response(
+        JSON.stringify({ error: 'Text and image edits persist directly in Firestore + Cloudflare R2.' }),
+        { status: 405, headers: JSON_HEADERS }
+      );
     }
 
     // Sitemap XML: /sitemap.xml and /sitemap_index.xml
@@ -1621,42 +1219,35 @@ const worker = {
           : 'https://' + url.host;
       const nowIso = new Date().toISOString();
       const pagesMeta = [
-        { path: '/', file: 'index.html', priority: '1.0', title: 'Yala Safari & Sri Lanka Safari Tours' },
-        { path: '/yala-safari.html', file: 'yala-safari.html', priority: '1.0', title: 'Yala National Park Safari & Leopard Jeep Tours' },
-        { path: '/udawalawe-safari.html', file: 'udawalawe-safari.html', priority: '0.9', title: 'Udawalawe National Park Elephant Safari' },
-        { path: '/bundala-birding-safari.html', file: 'bundala-birding-safari.html', priority: '0.9', title: 'Bundala National Park Bird Watching Safari' },
-        { path: '/wilpattu-safari.html', file: 'wilpattu-safari.html', priority: '0.9', title: 'Wilpattu National Park Leopard Safari' },
-        { path: '/minneriya-safari.html', file: 'minneriya-safari.html', priority: '0.9', title: 'Minneriya National Park Elephant Gathering Safari' },
-        { path: '/kumana-birding-safari.html', file: 'kumana-birding-safari.html', priority: '0.9', title: 'Kumana National Park Bird Watching Safari' },
-        { path: '/safari-parks.html', file: 'safari-parks.html', priority: '0.9', title: 'Sri Lanka National Park Safari Tours' },
-        { path: '/about.html', file: 'about.html', priority: '0.8', title: 'About Nisha Safari Jeep Tours' },
-        { path: '/gallery.html', file: 'gallery.html', priority: '0.8', title: 'Sri Lanka Wildlife Safari Photo Gallery' },
-        { path: '/reviews.html', file: 'reviews.html', priority: '0.8', title: 'Yala Safari Guest Reviews' },
-        { path: '/contact.html', file: 'contact.html', priority: '0.8', title: 'Yala Safari Booking & Contact' },
+        { path: '/', priority: '1.0' },
+        { path: '/yala-safari.html', priority: '0.9' },
+        { path: '/udawalawe-safari.html', priority: '0.9' },
+        { path: '/bundala-birding-safari.html', priority: '0.9' },
+        { path: '/wilpattu-safari.html', priority: '0.9' },
+        { path: '/minneriya-safari.html', priority: '0.9' },
+        { path: '/kumana-birding-safari.html', priority: '0.9' },
+        { path: '/safari-parks.html', priority: '0.9' },
+        { path: '/about.html', priority: '0.8' },
+        { path: '/gallery.html', priority: '0.8' },
+        { path: '/reviews.html', priority: '0.8' },
+        { path: '/contact.html', priority: '0.8' },
       ];
       const urlsXml = pagesMeta
         .map((p) => {
           const loc = p.path === '/' ? origin + '/' : origin + p.path;
-          const imgLoc =
-            origin + '/api/r2/file/slots/' + p.file.replace('.', '_') + '__slot_1.jpg';
           return (
             '  <url>\\n' +
             '    <loc>' + loc + '</loc>\\n' +
             '    <lastmod>' + nowIso + '</lastmod>\\n' +
             '    <changefreq>weekly</changefreq>\\n' +
             '    <priority>' + p.priority + '</priority>\\n' +
-            '    <image:image>\\n' +
-            '      <image:loc>' + imgLoc + '</image:loc>\\n' +
-            '      <image:title>' + p.title.replace(/&/g, '&amp;') + '</image:title>\\n' +
-            '    </image:image>\\n' +
             '  </url>'
           );
         })
         .join('\\n');
       const sitemapXml =
         '<?xml version="1.0" encoding="UTF-8"?>\\n' +
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\\n' +
-        '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\\n' +
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\\n' +
         urlsXml +
         '\\n</urlset>\\n';
       return new Response(sitemapXml, {
@@ -1668,7 +1259,7 @@ const worker = {
       });
     }
 
-    // Robots.txt for Google Search Console & Crawlers: /robots.txt
+    // Robots.txt: /robots.txt
     if (pathname === '/robots.txt') {
       const origin =
         url.hostname === 'localhost' || url.hostname === '127.0.0.1'
@@ -1679,21 +1270,14 @@ const worker = {
         'Allow: /\\n' +
         'Allow: /assets/\\n' +
         'Allow: /api/r2/file/\\n' +
-        'Allow: /api/media/\\n' +
         'Disallow: /admin\\n' +
         'Disallow: /api/admin/\\n\\n' +
         'User-agent: Googlebot\\n' +
         'Allow: /\\n' +
         'Allow: /assets/\\n' +
         'Allow: /api/r2/file/\\n' +
-        'Allow: /api/media/\\n' +
         'Disallow: /admin\\n' +
         'Disallow: /api/admin/\\n\\n' +
-        'User-agent: Googlebot-Image\\n' +
-        'Allow: /\\n' +
-        'Allow: /assets/\\n' +
-        'Allow: /api/r2/file/\\n' +
-        'Allow: /api/media/\\n\\n' +
         'Sitemap: ' + origin + '/sitemap.xml\\n';
       return new Response(robotsTxt, {
         status: 200,
@@ -1711,12 +1295,6 @@ const worker = {
       return env.ASSETS.fetch(new Request(new URL(target, url.origin), request));
     }
 
-    // API: /api/media/:path*
-    if (pathname.startsWith('/api/media/')) {
-      const mediaRel = pathname.slice('/api/media/'.length);
-      return env.ASSETS.fetch(new Request(new URL('/assets/media/' + mediaRel, url.origin), request));
-    }
-
     // Root route -> /index.html
     if (pathname === '/') {
       return env.ASSETS.fetch(new Request(new URL('/index.html', url.origin), request));
@@ -1727,7 +1305,7 @@ const worker = {
       return env.ASSETS.fetch(new Request(new URL('/admin.html', url.origin), request));
     }
 
-    // Clean slug routes without .html (e.g., /yala-safari -> /yala-safari.html)
+    // Clean slug routes without .html
     const cleanSlug = pathname.replace(/^\\/+|\\/+$/g, '');
     const knownHtmlPages = [
       'index',
