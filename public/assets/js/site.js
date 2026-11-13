@@ -375,24 +375,40 @@
     });
   }
 
-  // Bind all editable text slots in DOM order inside <main>
+  // Bind all editable text slots in DOM order inside <main> and <footer>
   const textElementMap = new Map();
-  function bindEditableTextSlots() {
-    const mainEl = document.querySelector("main") || document.body;
-    const candidates = Array.from(
-      mainEl.querySelectorAll(
-        "h1, h2, h3, h4, p, blockquote, li, span.wsite-button-inner, div.paragraph, span.paragraph, div.hero-editorial-kicker, span.hero-editorial-kicker, div.cross-score, span.cross-score, div.cross-metric, span.cross-metric, div.cross-title, span.cross-title, div.cross-caption, span.cross-caption"
-      )
-    ).filter((el) => {
-      if (el.closest("dialog") || el.closest(".firebase-section-showcase") || el.closest(".firebase-custom-texts-wrap")) {
+  const TEXT_CANDIDATE_SELECTOR =
+    "h1, h2, h3, h4, p, blockquote, li, span.wsite-button-inner, div.paragraph, span.paragraph, div.hero-editorial-kicker, span.hero-editorial-kicker, div.cross-score, span.cross-score, div.cross-metric, span.cross-metric, div.cross-title, span.cross-title, div.cross-caption, span.cross-caption";
+
+  function collectDomTextCandidates(rootEl, isFooterRegion) {
+    if (!rootEl) return [];
+    return Array.from(rootEl.querySelectorAll(TEXT_CANDIDATE_SELECTOR)).filter((el) => {
+      if (
+        el.closest("dialog") ||
+        el.closest(".firebase-section-showcase") ||
+        el.closest(".firebase-custom-texts-wrap")
+      ) {
         return false;
       }
       if (el.querySelector("p, div, ul, ol, table, h1, h2, h3, h4")) {
         return false;
       }
       const txt = (el.textContent || "").trim();
-      return txt.length >= 2;
+      if (txt.length < 2) return false;
+      // Skip multi-link Explore navigation list in footer (exact parity with lib/text-manager.ts)
+      if (isFooterRegion && el.querySelectorAll("a").length >= 2) {
+        return false;
+      }
+      return true;
     });
+  }
+
+  function bindEditableTextSlots() {
+    const mainEl = document.querySelector("main") || document.body;
+    const mainCandidates = collectDomTextCandidates(mainEl, false);
+    const footerEl = mainEl !== document.body ? document.querySelector("footer") : null;
+    const footerCandidates = collectDomTextCandidates(footerEl, true);
+    const candidates = mainCandidates.concat(footerCandidates);
 
     candidates.forEach((el, idx) => {
       const textId = `${safePagePrefix}__text_${idx}`;
@@ -400,6 +416,54 @@
       el.setAttribute("data-admin-text-id", textId);
       textElementMap.set(textId, { element: el, textIndex: idx, tagName: el.tagName.toUpperCase() });
     });
+  }
+
+  function applySafeTextContent(el, newContent) {
+    const textVal = String(newContent ?? "");
+    const iconEl = el.querySelector(".footer-contact-icon");
+    if (iconEl) {
+      const linkEl = el.querySelector("a");
+      if (linkEl && !textVal.includes("\n")) {
+        linkEl.textContent = textVal;
+        if (linkEl.getAttribute("href")?.startsWith("tel:")) {
+          const digits = textVal.replace(/[^+\d]/g, "");
+          if (digits) linkEl.setAttribute("href", `tel:${digits}`);
+        } else if (linkEl.getAttribute("href")?.startsWith("mailto:") && textVal.includes("@")) {
+          linkEl.setAttribute("href", `mailto:${textVal.trim()}`);
+        }
+        return;
+      }
+      // Preserve icon element, replace remaining nodes safely
+      Array.from(el.childNodes).forEach((node) => {
+        if (node !== iconEl) el.removeChild(node);
+      });
+      const lines = textVal.split("\n");
+      lines.forEach((line, i) => {
+        if (i > 0) el.appendChild(document.createElement("br"));
+        el.appendChild(document.createTextNode(line));
+      });
+      return;
+    }
+
+    const adminLink = el.querySelector('a[href="/admin"]');
+    if (adminLink) {
+      const cleanPrefix = textVal.replace(/\s*[•·]?\s*Admin Panel\s*$/i, "").trim();
+      el.innerHTML = "";
+      el.appendChild(document.createTextNode(`${cleanPrefix} \u00a0•\u00a0 `));
+      el.appendChild(adminLink);
+      return;
+    }
+
+    if (textVal.includes("\n")) {
+      el.innerHTML = "";
+      textVal.split("\n").forEach((line, i) => {
+        if (i > 0) el.appendChild(document.createElement("br"));
+        el.appendChild(document.createTextNode(line));
+      });
+      return;
+    }
+
+    el.textContent = textVal;
   }
 
   // Hero Section Multi-Image Slideshow (4-Second Interval)
@@ -770,7 +834,7 @@
         } else {
           entry.element.style.display = "";
           if (ft.content !== undefined) {
-            entry.element.textContent = ft.content;
+            applySafeTextContent(entry.element, ft.content);
           }
         }
       });

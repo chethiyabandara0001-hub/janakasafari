@@ -56,6 +56,7 @@ export interface SiteTextSlot {
   sectionContext: string;
   sectionName?: string;
   subSectionName?: string;
+  fieldLabel?: string;
   content: string;
   defaultContent: string;
   isDeleted: boolean;
@@ -136,7 +137,7 @@ export interface ParentSectionGroup {
   totalTexts: number;
 }
 
-export type AdminTab = 'pages' | 'r2-bucket' | 'sync-settings';
+export type AdminTab = 'pages' | 'texts' | 'r2-bucket' | 'sync-settings';
 
 export function splitSectionLabel(ctx: string): {
   sectionName: string;

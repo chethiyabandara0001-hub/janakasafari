@@ -63,6 +63,27 @@ import {
   type SyncReport,
 } from '@/components/admin/types';
 
+function getTextRoleLabel(txt: SiteTextSlot): string {
+  if (txt.fieldLabel) return txt.fieldLabel;
+  if (txt.isCustomAdded) return 'Custom Text Block';
+  switch (txt.tagName) {
+    case 'H1':
+    case 'H2':
+      return 'Section Heading';
+    case 'H3':
+    case 'H4':
+      return 'Sub-Heading';
+    case 'LI':
+      return 'List Item';
+    case 'BLOCKQUOTE':
+      return 'Quote';
+    case 'SPAN':
+      return 'Button / Label';
+    default:
+      return 'Body Copy';
+  }
+}
+
 export default function AdminStudioPage() {
   // Core Inventory State (pure HTML schema from /api/admin/images + /api/admin/cms)
   const [pages, setPages] = useState<PageMeta[]>([]);
@@ -100,6 +121,7 @@ export default function AdminStudioPage() {
   const [activeTab, setActiveTab] = useState<AdminTab>('pages');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [contentFilter, setContentFilter] = useState<'both' | 'images' | 'text'>('both');
+  const [textStatusFilter, setTextStatusFilter] = useState<'all' | 'modified'>('all');
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const [expandedSidebarSections, setExpandedSidebarSections] = useState<Record<string, boolean>>({});
 
@@ -412,6 +434,7 @@ export default function AdminStudioPage() {
         content: nextContent,
         isDeleted: nextDeleted,
         sectionContext: fbDoc.sectionContext || t.sectionContext,
+        fieldLabel: t.fieldLabel,
         isModified: t.isCustomAdded || nextContent !== t.defaultContent || Boolean(nextDeleted),
       };
     });
@@ -430,6 +453,7 @@ export default function AdminStudioPage() {
           sectionContext: fbDoc.sectionContext || 'Page Section',
           sectionName: splitCtx.sectionName,
           subSectionName: splitCtx.subSectionName,
+          fieldLabel: 'Custom Text Block',
           content: fbDoc.content || '',
           defaultContent: '',
           isDeleted: Boolean(fbDoc.isDeleted),
@@ -493,7 +517,9 @@ export default function AdminStudioPage() {
   // Hierarchical Parent Section -> Sub-Section Tree for Selected Page
   const parentSections = useMemo<ParentSectionGroup[]>(() => {
     const q = searchQuery.trim().toLowerCase();
-    const pageImages = mergedSlots.filter((s) => s.page === selectedPage);
+    const isTextsWorkspace = activeTab === 'texts';
+    const effectiveFilter = isTextsWorkspace ? 'text' : contentFilter;
+    const pageImages = effectiveFilter === 'text' ? [] : mergedSlots.filter((s) => s.page === selectedPage);
     const pageTexts = mergedTexts.filter((t) => t.page === selectedPage);
 
     const parentOrder: string[] = [];
@@ -554,6 +580,10 @@ export default function AdminStudioPage() {
           return resolvedSub === subName;
         });
 
+        if (isTextsWorkspace && textStatusFilter === 'modified') {
+          subTexts = subTexts.filter((t) => t.isModified || t.isDeleted || t.isCustomAdded);
+        }
+
         if (q) {
           const headerMatches =
             pName.toLowerCase().includes(q) || subName.toLowerCase().includes(q);
@@ -567,13 +597,15 @@ export default function AdminStudioPage() {
             subTexts = subTexts.filter(
               (t) =>
                 t.content.toLowerCase().includes(q) ||
-                t.sectionContext.toLowerCase().includes(q)
+                t.sectionContext.toLowerCase().includes(q) ||
+                (t.fieldLabel || '').toLowerCase().includes(q) ||
+                t.tagName.toLowerCase().includes(q)
             );
           }
         }
 
-        if (contentFilter === 'images') subTexts = [];
-        if (contentFilter === 'text') subImgs = [];
+        if (effectiveFilter === 'images') subTexts = [];
+        if (effectiveFilter === 'text') subImgs = [];
 
         if (subImgs.length === 0 && subTexts.length === 0) continue;
 
@@ -602,7 +634,17 @@ export default function AdminStudioPage() {
     }
 
     return groups;
-  }, [mergedSlots, mergedTexts, selectedPage, searchQuery, contentFilter]);
+  }, [mergedSlots, mergedTexts, selectedPage, searchQuery, contentFilter, activeTab, textStatusFilter]);
+
+  const pageTextStats = useMemo(() => {
+    const pageTexts = mergedTexts.filter((t) => t.page === selectedPage);
+    return {
+      total: pageTexts.length,
+      edited: pageTexts.filter((t) => t.isModified && !t.isDeleted).length,
+      hidden: pageTexts.filter((t) => t.isDeleted).length,
+      custom: pageTexts.filter((t) => t.isCustomAdded).length,
+    };
+  }, [mergedTexts, selectedPage]);
 
   const allSectionNamesOnPage = useMemo(() => {
     const names = new Set<string>();
@@ -1393,7 +1435,7 @@ export default function AdminStudioPage() {
           </span>
         </div>
 
-        {/* Center: 3 Workspace Tabs */}
+        {/* Center: 4 Workspace Tabs */}
         <nav
           aria-label="CMS Workspace"
           className="hidden md:flex items-center gap-1 bg-[#090d0b] p-1 rounded-md border border-emerald-950/80"
@@ -1401,6 +1443,7 @@ export default function AdminStudioPage() {
           {(
             [
               { id: 'pages', label: 'Pages & Sections' },
+              { id: 'texts', label: 'Site Texts Editor' },
               { id: 'r2-bucket', label: 'R2 Media Bucket' },
               { id: 'sync-settings', label: 'Sync & R2 Settings' },
             ] as { id: AdminTab; label: string }[]
@@ -1465,6 +1508,7 @@ export default function AdminStudioPage() {
         {(
           [
             { id: 'pages', label: 'Pages & Sections' },
+            { id: 'texts', label: 'Site Texts' },
             { id: 'r2-bucket', label: 'R2 Bucket' },
             { id: 'sync-settings', label: 'Sync & Settings' },
           ] as { id: AdminTab; label: string }[]
@@ -1522,6 +1566,8 @@ export default function AdminStudioPage() {
                   const isActive = selectedPage === p.file;
                   const imgCount = mergedSlots.filter((s) => s.page === p.file && !s.isDeleted).length;
                   const totalPageSlots = mergedSlots.filter((s) => s.page === p.file).length;
+                  const pageTxtList = mergedTexts.filter((t) => t.page === p.file);
+                  const editedTxtCount = pageTxtList.filter((t) => t.isModified || t.isDeleted).length;
 
                   return (
                     <button
@@ -1532,6 +1578,9 @@ export default function AdminStudioPage() {
                         setEditingTextId(null);
                         setEditingCaptionId(null);
                         setConfirmClearSlotId(null);
+                        if (activeTab !== 'pages' && activeTab !== 'texts') {
+                          setActiveTab('pages');
+                        }
                       }}
                       className={`w-full flex items-center justify-between px-2.5 py-2 rounded-md text-xs transition-colors whitespace-nowrap ${
                         isActive
@@ -1553,9 +1602,17 @@ export default function AdminStudioPage() {
                         className={`font-mono text-[11px] tabular-nums ml-2 ${
                           isActive ? 'text-slate-950/80' : 'text-slate-500'
                         }`}
-                        title={`${imgCount} active images / ${totalPageSlots} total slots`}
+                        title={
+                          activeTab === 'texts'
+                            ? `${editedTxtCount} edited / ${pageTxtList.length} text slots`
+                            : `${imgCount} active images / ${totalPageSlots} total slots`
+                        }
                       >
-                        {imgCount}/{totalPageSlots}
+                        {activeTab === 'texts'
+                          ? editedTxtCount > 0
+                            ? `${editedTxtCount}/${pageTxtList.length}`
+                            : `${pageTxtList.length}`
+                          : `${imgCount}/${totalPageSlots}`}
                       </span>
                     </button>
                   );
@@ -1566,7 +1623,9 @@ export default function AdminStudioPage() {
             {/* Step 2: Parent Section -> Sub-Section Jump Tree */}
             <div className="pt-4 border-t border-emerald-950/80 space-y-2">
               <div className="px-1.5 flex items-center justify-between text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
-                <span className="truncate">{currentPageMeta.title} Tree</span>
+                <span className="truncate">
+                  {activeTab === 'texts' ? `${currentPageMeta.title} Texts` : `${currentPageMeta.title} Tree`}
+                </span>
                 <span className="font-mono tabular-nums text-emerald-400">
                   {parentSections.length}
                 </span>
@@ -1606,7 +1665,11 @@ export default function AdminStudioPage() {
 
                         <a
                           href={`#${sec.id}`}
-                          onClick={() => setActiveTab('pages')}
+                          onClick={() => {
+                            if (activeTab !== 'pages' && activeTab !== 'texts') {
+                              setActiveTab('pages');
+                            }
+                          }}
                           className="flex-1 flex items-center justify-between px-2 py-1.5 rounded text-xs text-slate-300 hover:text-amber-300 hover:bg-[#101714] transition-colors min-w-0"
                         >
                           <span className="truncate">
@@ -1616,7 +1679,7 @@ export default function AdminStudioPage() {
                             {sec.sectionName}
                           </span>
                           <span className="font-mono text-[10px] text-slate-500 tabular-nums ml-1.5 shrink-0">
-                            {sec.totalImages + sec.totalTexts}
+                            {activeTab === 'texts' ? sec.totalTexts : sec.totalImages + sec.totalTexts}
                           </span>
                         </a>
                       </div>
@@ -1627,12 +1690,18 @@ export default function AdminStudioPage() {
                             <a
                               key={sub.id}
                               href={`#${sub.id}`}
-                              onClick={() => setActiveTab('pages')}
+                              onClick={() => {
+                                if (activeTab !== 'pages' && activeTab !== 'texts') {
+                                  setActiveTab('pages');
+                                }
+                              }}
                               className="flex items-center justify-between px-2 py-1 rounded text-[11px] text-slate-400 hover:text-slate-100 hover:bg-[#101714] transition-colors"
                             >
                               <span className="truncate">{sub.subSectionName}</span>
                               <span className="font-mono text-[10px] text-slate-600 tabular-nums ml-1.5 shrink-0">
-                                {sub.images.length + sub.texts.length}
+                                {activeTab === 'texts'
+                                  ? sub.texts.length
+                                  : sub.images.length + sub.texts.length}
                               </span>
                             </a>
                           ))}
@@ -1689,17 +1758,32 @@ export default function AdminStudioPage() {
               <section className="bg-[#101714] border border-emerald-950/90 rounded-lg p-5 space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
                       <span className="font-mono text-amber-400">{currentPageMeta.file}</span>
                       <span>·</span>
                       <span className="font-mono tabular-nums">
                         {parentSections.length} parent section
                         {parentSections.length === 1 ? '' : 's'}
                       </span>
+                      {activeTab === 'texts' && (
+                        <>
+                          <span>·</span>
+                          <span className="font-mono tabular-nums text-emerald-400">
+                            {pageTextStats.total} editable texts ({pageTextStats.edited} edited)
+                          </span>
+                        </>
+                      )}
                     </div>
                     <h1 className="text-xl font-semibold text-slate-100 tracking-tight">
-                      {currentPageMeta.title} Page Structure
+                      {activeTab === 'texts'
+                        ? `${currentPageMeta.title} — Site Texts Editor`
+                        : `${currentPageMeta.title} Page Structure`}
                     </h1>
+                    {activeTab === 'texts' && (
+                      <p className="text-xs text-slate-400">
+                        Edit Hero headlines, kickers, buttons, section headings, cards, and Site Footer copy directly to Firestore.
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
@@ -1725,46 +1809,77 @@ export default function AdminStudioPage() {
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder={`Search sections, sub-sections, images, or copy on ${currentPageMeta.title}...`}
+                      placeholder={
+                        activeTab === 'texts'
+                          ? `Search headings, buttons, sub-sections, footer or copy on ${currentPageMeta.title}...`
+                          : `Search sections, sub-sections, images, or copy on ${currentPageMeta.title}...`
+                      }
                       className="w-full bg-[#090d0b] border border-slate-800 focus:border-amber-500 rounded-md pl-9 pr-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none"
                     />
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <div className="inline-flex bg-[#090d0b] border border-slate-800 rounded-md p-0.5">
-                      {(
-                        [
-                          { id: 'both', label: 'All' },
-                          { id: 'images', label: 'Images' },
-                          { id: 'text', label: 'Text' },
-                        ] as const
-                      ).map((opt) => (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          onClick={() => setContentFilter(opt.id)}
-                          className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                            contentFilter === opt.id
-                              ? 'bg-amber-500 text-slate-950 font-semibold'
-                              : 'text-slate-400 hover:text-slate-100'
-                          }`}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {activeTab === 'texts' ? (
+                      <div className="inline-flex bg-[#090d0b] border border-slate-800 rounded-md p-0.5">
+                        {(
+                          [
+                            { id: 'all', label: `All Texts (${pageTextStats.total})` },
+                            {
+                              id: 'modified',
+                              label: `Edited (${pageTextStats.edited + pageTextStats.hidden})`,
+                            },
+                          ] as const
+                        ).map((opt) => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => setTextStatusFilter(opt.id)}
+                            className={`px-3 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap ${
+                              textStatusFilter === opt.id
+                                ? 'bg-amber-500 text-slate-950 font-semibold'
+                                : 'text-slate-400 hover:text-slate-100'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="inline-flex bg-[#090d0b] border border-slate-800 rounded-md p-0.5">
+                        {(
+                          [
+                            { id: 'both', label: 'All' },
+                            { id: 'images', label: 'Images' },
+                            { id: 'text', label: 'Text' },
+                          ] as const
+                        ).map((opt) => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => setContentFilter(opt.id)}
+                            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                              contentFilter === opt.id
+                                ? 'bg-amber-500 text-slate-950 font-semibold'
+                                : 'text-slate-400 hover:text-slate-100'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
 
                     <button
                       type="button"
                       onClick={() => toggleAllSections(false)}
-                      className="px-2.5 py-1.5 rounded-md text-xs text-slate-300 bg-[#090d0b] hover:bg-slate-900 border border-slate-800"
+                      className="px-2.5 py-1.5 rounded-md text-xs text-slate-300 bg-[#090d0b] hover:bg-slate-900 border border-slate-800 whitespace-nowrap"
                     >
                       Expand All
                     </button>
                     <button
                       type="button"
                       onClick={() => toggleAllSections(true)}
-                      className="px-2.5 py-1.5 rounded-md text-xs text-slate-300 bg-[#090d0b] hover:bg-slate-900 border border-slate-800"
+                      className="px-2.5 py-1.5 rounded-md text-xs text-slate-300 bg-[#090d0b] hover:bg-slate-900 border border-slate-800 whitespace-nowrap"
                     >
                       Collapse All
                     </button>
@@ -1892,7 +2007,9 @@ export default function AdminStudioPage() {
                         {!isCollapsed && (
                           <div className="p-5 space-y-6">
                             {/* Single Canonical Hero Slideshow (4s) Manager inside Hero Banner Section */}
-                            {sec.sectionName === 'Hero Banner' && contentFilter !== 'text' && (
+                            {sec.sectionName === 'Hero Banner' &&
+                              activeTab !== 'texts' &&
+                              contentFilter !== 'text' && (
                               <div className="bg-[#090d0b] border border-amber-500/30 rounded-lg p-4 space-y-4">
                                 <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
                                   <div className="space-y-0.5">
@@ -2291,28 +2408,32 @@ export default function AdminStudioPage() {
                                     {sub.texts.map((txt) => {
                                       const isEditingThis = editingTextId === txt.textId;
                                       const isSavingThis = savingTextId === txt.textId;
+                                      const roleLabel = getTextRoleLabel(txt);
 
                                       return (
                                         <div
                                           key={txt.textId}
                                           className={`p-3.5 flex flex-col sm:flex-row sm:items-start justify-between gap-3 ${
-                                            txt.isDeleted ? 'opacity-50' : ''
+                                            txt.isDeleted ? 'opacity-55' : ''
                                           }`}
                                         >
-                                          <div className="space-y-1 flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 text-[11px] text-slate-400">
-                                              <span className="font-mono text-amber-400 flex items-center gap-1">
+                                          <div className="space-y-1.5 flex-1 min-w-0">
+                                            <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
+                                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 font-medium">
                                                 <Type className="w-3 h-3" />
-                                                {txt.tagName}
+                                                {roleLabel}
+                                              </span>
+                                              <span className="font-mono text-[10px] text-slate-500">
+                                                {txt.textIndex >= 0 ? `#${txt.textIndex}` : 'CUSTOM'} · &lt;{txt.tagName}&gt;
                                               </span>
                                               {txt.isModified && !txt.isDeleted && (
-                                                <span className="text-emerald-400">· Edited</span>
+                                                <span className="text-emerald-400 font-medium">· Edited</span>
                                               )}
                                               {txt.isCustomAdded && (
-                                                <span className="text-sky-400">· Custom</span>
+                                                <span className="text-sky-400 font-medium">· Custom</span>
                                               )}
                                               {txt.isDeleted && (
-                                                <span className="text-red-400">· Hidden</span>
+                                                <span className="text-red-400 font-medium">· Hidden</span>
                                               )}
                                             </div>
 
@@ -2320,12 +2441,25 @@ export default function AdminStudioPage() {
                                               <div className="space-y-2 pt-1">
                                                 <textarea
                                                   rows={3}
+                                                  autoFocus
                                                   value={editingTextValue}
                                                   onChange={(e) =>
                                                     setEditingTextValue(e.target.value)
                                                   }
-                                                  className="w-full bg-[#090d0b] border border-amber-500/80 rounded px-3 py-2 text-xs text-slate-100 focus:outline-none"
+                                                  onKeyDown={(e) => {
+                                                    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !isSavingThis) {
+                                                      e.preventDefault();
+                                                      void handleSaveTextContent(txt, editingTextValue);
+                                                    }
+                                                  }}
+                                                  className="w-full bg-[#090d0b] border border-amber-500/80 rounded px-3 py-2 text-xs sm:text-sm text-slate-100 focus:outline-none leading-relaxed"
                                                 />
+                                                {!txt.isCustomAdded && txt.defaultContent && (
+                                                  <div className="text-[11px] text-slate-500 bg-[#090d0b] border border-slate-800/80 rounded px-2.5 py-1.5">
+                                                    <span className="font-semibold text-slate-400">Default:</span>{' '}
+                                                    {txt.defaultContent}
+                                                  </div>
+                                                )}
                                                 <div className="flex items-center gap-2">
                                                   <button
                                                     type="button"
@@ -2353,9 +2487,19 @@ export default function AdminStudioPage() {
                                                 </div>
                                               </div>
                                             ) : (
-                                              <p className="text-xs sm:text-sm text-slate-100 leading-relaxed break-words">
-                                                {txt.content}
-                                              </p>
+                                              <div className="space-y-1">
+                                                <p className="text-xs sm:text-sm text-slate-100 leading-relaxed break-words whitespace-pre-line">
+                                                  {txt.content}
+                                                </p>
+                                                {txt.isModified &&
+                                                  !txt.isCustomAdded &&
+                                                  txt.defaultContent &&
+                                                  txt.content !== txt.defaultContent && (
+                                                    <p className="text-[11px] text-slate-500 line-clamp-2">
+                                                      Original: {txt.defaultContent}
+                                                    </p>
+                                                  )}
+                                              </div>
                                             )}
                                           </div>
 
@@ -2381,10 +2525,11 @@ export default function AdminStudioPage() {
                                                       void handleRestoreOrDeleteText(txt, true)
                                                     }
                                                     disabled={isSavingThis}
-                                                    className="p-1.5 rounded bg-[#090d0b] hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800"
+                                                    className="inline-flex items-center gap-1 px-2 py-1.5 rounded bg-[#090d0b] hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs"
                                                     title="Restore default copy"
                                                   >
-                                                    <RotateCcw className="w-3.5 h-3.5" />
+                                                    <RotateCcw className="w-3 h-3" />
+                                                    <span className="hidden lg:inline">Restore</span>
                                                   </button>
                                                 )}
 
