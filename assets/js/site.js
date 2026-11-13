@@ -110,10 +110,21 @@
       anchor.addEventListener("click", (e) => {
         e.preventDefault();
         const groupKey = anchor.getAttribute("data-lightbox") || "single";
-        const anchors =
+        const isVisibleLightboxAnchor = (a) => {
+          const img = a.querySelector("img");
+          const href = a.getAttribute("href") || "";
+          if (!href || href.includes("empty-slot.svg") || href === "/deleted") return false;
+          if (img && (img.style.display === "none" || !img.getAttribute("src") || (img.getAttribute("src") || "").includes("empty-slot.svg"))) {
+            return false;
+          }
+          return true;
+        };
+        const rawAnchors =
           groupKey === "single"
             ? [anchor]
             : Array.from(document.querySelectorAll(`a[data-lightbox="${groupKey}"]`));
+        const anchors = rawAnchors.filter(isVisibleLightboxAnchor);
+        if (!anchors.length) return;
         const group = anchors.map((a) => {
           const img = a.querySelector("img");
           return {
@@ -290,157 +301,15 @@
   }
 
   // 5. Firebase CMS Live Hydrator, Floating Admin Dock, On-Page Image Editor & On-Page Text Editor
-  const pathname = window.location.pathname;
+  const pathname = window.location.pathname || "/";
+  const rawSlug = pathname.replace(/^\/+|\/+$/g, "");
   const currentPageFile =
-    pathname === "/" || pathname === ""
+    !rawSlug || rawSlug === "index" || rawSlug === "index.html"
       ? "index.html"
-      : pathname.replace(/^\/+/, "") || "index.html";
+      : rawSlug.endsWith(".html")
+        ? rawSlug
+        : `${rawSlug}.html`;
   const safePagePrefix = currentPageFile.replace(/[^a-zA-Z0-9_-]/g, "_");
-
-  const params = new URLSearchParams(window.location.search);
-  let editModeActive = params.get("editImages") === "1";
-  let textEditModeActive = params.get("editText") === "1";
-
-  // Floating Admin Dock removed per user request (accessible via /admin)
-
-  // Create Inline Image Editor Modal
-  const editorDialog = document.createElement("dialog");
-  editorDialog.className = "admin-inline-dialog";
-  editorDialog.innerHTML = `
-    <div class="admin-modal-header">
-      <div>
-        <div class="admin-modal-kicker" id="admin-slot-kicker">Firebase Image Slot</div>
-        <h3 id="admin-slot-title">Change Image</h3>
-      </div>
-      <button type="button" class="admin-modal-close" aria-label="Close">&times;</button>
-    </div>
-    <form class="admin-modal-body" id="admin-slot-form">
-      <div class="admin-preview-grid">
-        <div>
-          <span class="admin-field-label">Current Image</span>
-          <div class="admin-preview-box">
-            <img id="admin-current-preview" src="" alt="Current" />
-          </div>
-        </div>
-        <div>
-          <span class="admin-field-label">New Upload / Transfer</span>
-          <div class="admin-preview-box is-upload" id="admin-upload-trigger">
-            <img id="admin-new-preview" src="" alt="New preview" hidden />
-            <span id="admin-upload-prompt">Click to upload image<br/><small>JPG, PNG, WebP, SVG</small></span>
-          </div>
-          <input type="file" id="admin-file-input" accept="image/*" hidden />
-        </div>
-      </div>
-      <div class="admin-scope-row">
-        <label>
-          <input type="radio" name="adminScope" value="slot" checked />
-          <span>Update only this slot</span>
-        </label>
-        <label>
-          <input type="radio" name="adminScope" value="global" />
-          <span>Update everywhere file is used</span>
-        </label>
-      </div>
-      <div>
-        <label class="admin-field-label" for="admin-url-input">Or Direct Image URL</label>
-        <input type="text" id="admin-url-input" class="admin-input" placeholder="https://images.unsplash.com/... (direct web image link)" />
-      </div>
-      <div id="admin-alt-wrap">
-        <label class="admin-field-label" for="admin-alt-input">Alt Text</label>
-        <input type="text" id="admin-alt-input" class="admin-input" placeholder="Describe image..." />
-      </div>
-      <div class="admin-modal-footer">
-        <a href="/admin" class="admin-dock-btn">Open Firebase Studio</a>
-        <div style="display:flex;gap:8px;">
-          <button type="button" class="admin-dock-btn" id="admin-cancel-btn">Cancel</button>
-          <button type="submit" class="admin-dock-btn is-primary" id="admin-save-btn">Save via Firebase</button>
-        </div>
-      </div>
-    </form>
-  `;
-  document.body.appendChild(editorDialog);
-
-  // Create Inline Text Editor Modal
-  const textEditorDialog = document.createElement("dialog");
-  textEditorDialog.className = "admin-inline-dialog";
-  textEditorDialog.innerHTML = `
-    <div class="admin-modal-header">
-      <div>
-        <div class="admin-modal-kicker" id="admin-text-kicker">Firebase Text Element</div>
-        <h3 id="admin-text-title">Edit Site Text</h3>
-      </div>
-      <button type="button" class="admin-modal-close" id="admin-text-close" aria-label="Close">&times;</button>
-    </div>
-    <form class="admin-modal-body" id="admin-text-form">
-      <div>
-        <label class="admin-field-label" for="admin-text-textarea">Text Content</label>
-        <textarea id="admin-text-textarea" rows="5" class="admin-input" placeholder="Enter text content..." required></textarea>
-      </div>
-      <div class="admin-modal-footer">
-        <button type="button" class="admin-dock-btn" id="admin-text-delete-btn" style="color:#fca5a5;border-color:#5c2424;">Delete / Hide Text</button>
-        <div style="display:flex;gap:8px;">
-          <button type="button" class="admin-dock-btn" id="admin-text-cancel-btn">Cancel</button>
-          <button type="submit" class="admin-dock-btn is-primary" id="admin-text-save-btn">Save Text</button>
-        </div>
-      </div>
-    </form>
-  `;
-  document.body.appendChild(textEditorDialog);
-
-  const closeInlineBtn = editorDialog.querySelector(".admin-modal-close");
-  const cancelInlineBtn = document.getElementById("admin-cancel-btn");
-  const uploadTrigger = document.getElementById("admin-upload-trigger");
-  const fileInput = document.getElementById("admin-file-input");
-  const newPreviewImg = document.getElementById("admin-new-preview");
-  const uploadPrompt = document.getElementById("admin-upload-prompt");
-  const currentPreviewImg = document.getElementById("admin-current-preview");
-  const urlInput = document.getElementById("admin-url-input");
-  const altInput = document.getElementById("admin-alt-input");
-  const altWrap = document.getElementById("admin-alt-wrap");
-  const slotForm = document.getElementById("admin-slot-form");
-  const saveBtn = document.getElementById("admin-save-btn");
-  const slotKicker = document.getElementById("admin-slot-kicker");
-  const slotTitle = document.getElementById("admin-slot-title");
-
-  const textCloseBtn = document.getElementById("admin-text-close");
-  const textCancelBtn = document.getElementById("admin-text-cancel-btn");
-  const textDeleteBtn = document.getElementById("admin-text-delete-btn");
-  const textSaveBtn = document.getElementById("admin-text-save-btn");
-  const textForm = document.getElementById("admin-text-form");
-  const textArea = document.getElementById("admin-text-textarea");
-  const textKicker = document.getElementById("admin-text-kicker");
-  const textTitle = document.getElementById("admin-text-title");
-
-  let activeDomSlot = null;
-  let selectedUploadFile = null;
-  let activeDomTextSlot = null;
-
-  if (closeInlineBtn) closeInlineBtn.addEventListener("click", () => editorDialog.close());
-  if (cancelInlineBtn) cancelInlineBtn.addEventListener("click", () => editorDialog.close());
-  editorDialog.addEventListener("click", (e) => {
-    if (e.target === editorDialog) editorDialog.close();
-  });
-
-  if (textCloseBtn) textCloseBtn.addEventListener("click", () => textEditorDialog.close());
-  if (textCancelBtn) textCancelBtn.addEventListener("click", () => textEditorDialog.close());
-  textEditorDialog.addEventListener("click", (e) => {
-    if (e.target === textEditorDialog) textEditorDialog.close();
-  });
-
-  if (uploadTrigger && fileInput) {
-    uploadTrigger.addEventListener("click", () => fileInput.click());
-    fileInput.addEventListener("change", () => {
-      const f = fileInput.files && fileInput.files[0];
-      if (!f) return;
-      selectedUploadFile = f;
-      if (urlInput) urlInput.value = "";
-      if (newPreviewImg) {
-        newPreviewImg.src = URL.createObjectURL(f);
-        newPreviewImg.hidden = false;
-      }
-      if (uploadPrompt) uploadPrompt.hidden = true;
-    });
-  }
 
   // Bind all editable image slots in exact DOM document order (matching parsePageSlots in lib/image-manager.ts)
   const slotElementMap = new Map();
@@ -449,8 +318,7 @@
     const candidates = Array.from(
       document.querySelectorAll('div[style*="background-image"], img')
     ).filter((el) => {
-      if (el.closest("dialog") || el.closest(".firebase-section-showcase") || el.closest(".hero-cross-bridge-wrap")) return false;
-      if (el.classList.contains("cross-top-img")) return false;
+      if (el.closest("dialog") || el.closest(".firebase-section-showcase")) return false;
       if (el.tagName.toLowerCase() === "div") {
         const styleAttr = el.getAttribute("style") || "";
         if (!/background-image\s*:\s*url\(/i.test(styleAttr)) return false;
@@ -469,50 +337,25 @@
 
       if (el.tagName.toLowerCase() === "div") {
         slotElementMap.set(slotId, { type: "hero-bg", element: el, slotIndex: idx });
-        let heroBtn = el.querySelector(".admin-hero-edit-btn");
-        if (!heroBtn) {
-          heroBtn = document.createElement("button");
-          heroBtn.type = "button";
-          heroBtn.className = "admin-hero-edit-btn";
-          heroBtn.textContent = "Change Hero Banner Image";
-          el.appendChild(heroBtn);
-          heroBtn.addEventListener("click", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const styleAttr = el.getAttribute("style") || "";
-            const match = styleAttr.match(/url\(['"]?([^'")]+)['"]?\)/i);
-            const currentBg = match ? match[1] : "";
-            openInlineEditor({
-              slotId,
-              slotIndex: idx,
-              type: "hero-bg",
-              label: "Hero Background Banner",
-              src: currentBg,
-              alt: "",
-              element: el,
-            });
-          });
+        const initStyle = el.getAttribute("style") || "";
+        if (initStyle.includes("empty-slot.svg")) {
+          el.style.backgroundImage = "none";
         }
       } else {
         slotElementMap.set(slotId, { type: "img", element: el, slotIndex: idx });
-        el.addEventListener(
-          "click",
-          (e) => {
-            if (!editModeActive) return;
-            e.preventDefault();
-            e.stopPropagation();
-            openInlineEditor({
-              slotId,
-              slotIndex: idx,
-              type: "img",
-              label: el.getAttribute("alt") || `Image Slot #${idx + 1}`,
-              src: el.getAttribute("src") || el.src,
-              alt: el.getAttribute("alt") || "",
-              element: el,
-            });
-          },
-          true
-        );
+        const initSrc = el.getAttribute("src") || "";
+        if (initSrc.includes("empty-slot.svg")) {
+          if (!el.classList.contains("janaka-brand-logo") && !el.classList.contains("cross-top-img")) {
+            el.style.display = "none";
+            const holder =
+              el.closest(".galleryImageHolder") ||
+              el.closest("a[data-lightbox]") ||
+              el.closest(".wsite-image");
+            if (holder) {
+              holder.style.display = "none";
+            }
+          }
+        }
       }
     });
   }
@@ -522,12 +365,13 @@
   function bindEditableTextSlots() {
     const mainEl = document.querySelector("main") || document.body;
     const candidates = Array.from(
-      mainEl.querySelectorAll("h1, h2, h3, h4, p, blockquote, li, span.wsite-button-inner")
+      mainEl.querySelectorAll(
+        "h1, h2, h3, h4, p, blockquote, li, span.wsite-button-inner, div.paragraph, span.paragraph, div.hero-editorial-kicker, span.hero-editorial-kicker, div.cross-score, span.cross-score, div.cross-metric, span.cross-metric, div.cross-title, span.cross-title, div.cross-caption, span.cross-caption"
+      )
     ).filter((el) => {
       if (el.closest("dialog") || el.closest(".firebase-section-showcase") || el.closest(".firebase-custom-texts-wrap")) {
         return false;
       }
-      // Skip elements containing nested block elements
       if (el.querySelector("p, div, ul, ol, table, h1, h2, h3, h4")) {
         return false;
       }
@@ -540,253 +384,475 @@
       el.setAttribute("data-admin-text-slot", String(idx));
       el.setAttribute("data-admin-text-id", textId);
       textElementMap.set(textId, { element: el, textIndex: idx, tagName: el.tagName.toUpperCase() });
+    });
+  }
 
-      el.addEventListener(
-        "click",
-        (e) => {
-          if (!textEditModeActive) return;
+  // Hero Section Multi-Image Slideshow (4-Second Interval)
+  let heroSlideshowTimer = null;
+  let activeHeroSlideIndex = 0;
+  const heroHeaderSectionEl = document.querySelector(".banner-wrap .wsite-header-section");
+  const heroBannerWrapEl = document.querySelector(".banner-wrap");
+  const initialHeroStyle = (heroHeaderSectionEl && heroHeaderSectionEl.getAttribute("style")) || "";
+  const initialHeroMatch = initialHeroStyle.match(/url\(['"]?([^'")]+)['"]?\)/i);
+  const rawInitialHeroBannerSrc = initialHeroMatch ? initialHeroMatch[1] : "";
+  let primaryHeroBannerSrc = rawInitialHeroBannerSrc.includes("empty-slot.svg")
+    ? ""
+    : rawInitialHeroBannerSrc;
+
+  const DEFAULT_HERO_SLIDES_BY_PAGE = {};
+
+  function extractR2KeyClient(src, explicitKey) {
+    if (explicitKey && String(explicitKey).trim()) {
+      return String(explicitKey).trim().replace(/^\/+/, "");
+    }
+    if (!src) return "";
+    const clean = String(src).split("?")[0].trim();
+    if (clean.includes("/api/r2/file/")) {
+      return clean.slice(clean.indexOf("/api/r2/file/") + "/api/r2/file/".length).replace(/^\/+/, "");
+    }
+    if (clean.includes("/assets/r2-bucket/")) {
+      return clean.slice(clean.indexOf("/assets/r2-bucket/") + "/assets/r2-bucket/".length).replace(/^\/+/, "");
+    }
+    const cdnMatch = clean.match(/^https?:\/\/[^/]+\/((?:slots|sections|media|uploads|index|yala-safari|udawalawe-safari|bundala-birding-safari|wilpattu-safari|minneriya-safari|kumana-birding-safari|safari-parks|about|gallery|reviews|contact)\/.+)$/i);
+    if (cdnMatch && cdnMatch[1]) {
+      return cdnMatch[1].replace(/^\/+/, "");
+    }
+    return "";
+  }
+
+  function normalizeSlideSrc(src, r2Key) {
+    if (!src) return "";
+    const trimmed = String(src).trim();
+    if (trimmed === "/deleted" || trimmed.includes("empty-slot.svg")) return "";
+    const key = extractR2KeyClient(trimmed, r2Key);
+    if (
+      key &&
+      (key.startsWith("sections/") || key.startsWith("slots/")) &&
+      trimmed.startsWith("/api/r2/file/")
+    ) {
+      return `/assets/r2-bucket/${key}`;
+    }
+    if (
+      trimmed.startsWith("http://") ||
+      trimmed.startsWith("https://") ||
+      trimmed.startsWith("/") ||
+      trimmed.startsWith("data:")
+    ) {
+      return trimmed;
+    }
+    if (trimmed.includes(".")) {
+      return "https://" + trimmed;
+    }
+    return "/" + trimmed;
+  }
+
+  function buildFallbackUrls(primaryUrl, r2Key) {
+    const candidates = [primaryUrl];
+    const key = extractR2KeyClient(primaryUrl, r2Key);
+    if (key) {
+      const staticBucketUrl = `/assets/r2-bucket/${key}`;
+      const workerApiUrl = `/api/r2/file/${key}`;
+      const cdnUrl = `https://cdn.srilankabestsafari.com/${key}`;
+      [staticBucketUrl, cdnUrl, workerApiUrl].forEach((u) => {
+        if (!candidates.includes(u)) candidates.push(u);
+      });
+    }
+    return candidates;
+  }
+
+  function initOrUpdateHeroSlideshow(slidesList) {
+    if (!heroHeaderSectionEl || document.body.classList.contains("janaka-contact")) return;
+
+    if (heroSlideshowTimer) {
+      clearInterval(heroSlideshowTimer);
+      heroSlideshowTimer = null;
+    }
+
+    const seen = new Set();
+    const validSlides = [];
+    (slidesList || []).forEach((item) => {
+      const rawSrc = typeof item === "string" ? item : item && item.src;
+      const rawKey = typeof item === "object" && item ? item.r2Key : "";
+      const normalized = normalizeSlideSrc(rawSrc, rawKey);
+      if (!normalized || /^data:/i.test(normalized) || /payment-|visa|mastercard/i.test(normalized)) {
+        return;
+      }
+      const dedupeKey = extractR2KeyClient(normalized, rawKey) || normalized;
+      if (!seen.has(dedupeKey)) {
+        seen.add(dedupeKey);
+        validSlides.push({
+          src: normalized,
+          r2Key: rawKey || extractR2KeyClient(normalized, ""),
+          alt: (typeof item === "object" && item && (item.alt || item.title)) || "Sri Lanka Safari Hero Slide",
+        });
+      }
+    });
+
+    let stage = heroHeaderSectionEl.querySelector(".hero-slideshow-stage");
+    let dotsWrap = heroBannerWrapEl ? heroBannerWrapEl.querySelector(".hero-slideshow-dots") : null;
+
+    if (validSlides.length === 0) {
+      if (stage) stage.remove();
+      if (dotsWrap) dotsWrap.remove();
+      heroHeaderSectionEl.style.backgroundImage = "none";
+      return;
+    }
+
+    if (!stage) {
+      stage = document.createElement("div");
+      stage.className = "hero-slideshow-stage";
+      stage.setAttribute("aria-hidden", "true");
+      heroHeaderSectionEl.insertBefore(stage, heroHeaderSectionEl.firstChild);
+    }
+
+    stage.innerHTML = "";
+    activeHeroSlideIndex = 0;
+
+    validSlides.forEach((slide, idx) => {
+      const layer = document.createElement("div");
+      layer.className = "hero-slide-layer" + (idx === 0 ? " is-active" : "");
+      layer.style.backgroundImage = `url("${slide.src}")`;
+      layer.setAttribute("role", "img");
+      layer.setAttribute("aria-label", slide.alt);
+      stage.appendChild(layer);
+
+      // Verify image URL loads and automatically fall back if needed on Cloudflare Pages
+      const fallbacks = buildFallbackUrls(slide.src, slide.r2Key);
+      if (fallbacks.length > 1) {
+        let attempt = 0;
+        const testLoad = (urlToTry) => {
+          const probe = new Image();
+          probe.onload = () => {
+            if (attempt > 0) {
+              slide.src = urlToTry;
+              layer.style.backgroundImage = `url("${urlToTry}")`;
+              if (activeHeroSlideIndex === idx) {
+                heroHeaderSectionEl.style.backgroundImage = `url("${urlToTry}")`;
+              }
+            }
+          };
+          probe.onerror = () => {
+            attempt++;
+            if (attempt < fallbacks.length) {
+              testLoad(fallbacks[attempt]);
+            }
+          };
+          probe.src = urlToTry;
+        };
+        testLoad(fallbacks[0]);
+      }
+    });
+
+    heroHeaderSectionEl.style.backgroundImage = `url("${validSlides[0].src}")`;
+    heroHeaderSectionEl.style.backgroundSize = "cover";
+    heroHeaderSectionEl.style.backgroundPosition = "center 35%";
+
+    if (validSlides.length > 1 && heroBannerWrapEl) {
+      if (!dotsWrap) {
+        dotsWrap = document.createElement("div");
+        dotsWrap.className = "hero-slideshow-dots";
+        dotsWrap.setAttribute("role", "tablist");
+        dotsWrap.setAttribute("aria-label", "Hero Section Slideshow Controls");
+        heroBannerWrapEl.appendChild(dotsWrap);
+      }
+      dotsWrap.innerHTML = "";
+
+      const goToSlide = (targetIdx) => {
+        const layers = stage.querySelectorAll(".hero-slide-layer");
+        const dots = dotsWrap ? dotsWrap.querySelectorAll(".hero-slideshow-dot") : [];
+        if (!layers.length) return;
+        activeHeroSlideIndex = ((targetIdx % validSlides.length) + validSlides.length) % validSlides.length;
+        layers.forEach((l, i) => {
+          l.classList.toggle("is-active", i === activeHeroSlideIndex);
+        });
+        dots.forEach((d, i) => {
+          d.classList.toggle("is-active", i === activeHeroSlideIndex);
+          d.setAttribute("aria-selected", String(i === activeHeroSlideIndex));
+        });
+        heroHeaderSectionEl.style.backgroundImage = `url("${validSlides[activeHeroSlideIndex].src}")`;
+      };
+
+      const startTimer = () => {
+        if (heroSlideshowTimer) clearInterval(heroSlideshowTimer);
+        heroSlideshowTimer = setInterval(() => {
+          goToSlide(activeHeroSlideIndex + 1);
+        }, 4000);
+      };
+
+      validSlides.forEach((slide, idx) => {
+        const dot = document.createElement("button");
+        dot.type = "button";
+        dot.className = "hero-slideshow-dot" + (idx === 0 ? " is-active" : "");
+        dot.setAttribute("role", "tab");
+        dot.setAttribute("aria-selected", String(idx === 0));
+        dot.setAttribute("aria-label", `Hero Slide ${idx + 1}: ${slide.alt}`);
+        dot.addEventListener("click", (e) => {
           e.preventDefault();
           e.stopPropagation();
-          openInlineTextEditor({
-            textId,
-            textIndex: idx,
-            tagName: el.tagName.toUpperCase(),
-            content: (el.textContent || "").trim(),
-            element: el,
-          });
-        },
-        true
-      );
-    });
-  }
-
-  function openInlineEditor(slotInfo) {
-    activeDomSlot = slotInfo;
-    selectedUploadFile = null;
-    if (fileInput) fileInput.value = "";
-    if (newPreviewImg) {
-      newPreviewImg.src = "";
-      newPreviewImg.hidden = true;
-    }
-    if (uploadPrompt) uploadPrompt.hidden = false;
-    if (currentPreviewImg) currentPreviewImg.src = slotInfo.src;
-    if (urlInput) urlInput.value = "";
-    if (altInput) altInput.value = slotInfo.alt || "";
-    if (altWrap) altWrap.hidden = slotInfo.type === "hero-bg";
-    if (slotKicker) {
-      slotKicker.textContent = `${currentPageFile} · Slot #${slotInfo.slotIndex + 1}`;
-    }
-    if (slotTitle) {
-      slotTitle.textContent = slotInfo.label;
-    }
-    if (typeof editorDialog.showModal === "function") {
-      editorDialog.showModal();
-    }
-  }
-
-  function openInlineTextEditor(textInfo) {
-    activeDomTextSlot = textInfo;
-    if (textKicker) {
-      textKicker.textContent = `${currentPageFile} · ${textInfo.tagName} (#${textInfo.textIndex + 1})`;
-    }
-    if (textTitle) {
-      textTitle.textContent = "Edit or Delete Site Text via Firebase";
-    }
-    if (textArea) {
-      textArea.value = textInfo.content;
-    }
-    if (typeof textEditorDialog.showModal === "function") {
-      textEditorDialog.showModal();
-    }
-  }
-
-  if (slotForm) {
-    slotForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      if (!activeDomSlot) return;
-      if (saveBtn) {
-        saveBtn.disabled = true;
-        saveBtn.textContent = "Saving...";
-      }
-      try {
-        const scopeInput = slotForm.querySelector('input[name="adminScope"]:checked');
-        const scope = scopeInput ? scopeInput.value : "slot";
-        const newAlt = altInput ? altInput.value : "";
-        const customUrl = urlInput ? urlInput.value.trim() : "";
-
-        let updatedSrc = activeDomSlot.src;
-        let updatedR2Key = undefined;
-
-        if (selectedUploadFile) {
-          const r2Fd = new FormData();
-          r2Fd.append("file", selectedUploadFile);
-          r2Fd.append("alt", newAlt || activeDomSlot.label || "");
-          r2Fd.append("title", activeDomSlot.label || selectedUploadFile.name);
-          r2Fd.append("page", currentPageFile);
-
-          const r2Res = await fetch("/api/r2", {
-            method: "POST",
-            body: r2Fd,
-          });
-          const r2Data = await r2Res.json();
-          if (!r2Res.ok || !r2Data.cdnUrl) {
-            throw new Error(r2Data.error || "R2 bucket upload failed");
-          }
-          updatedSrc = r2Data.cdnUrl;
-          updatedR2Key = r2Data.r2Key;
-        } else if (customUrl) {
-          updatedSrc = customUrl;
-        }
-
-        const res = await fetch("/api/admin/images", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "update-slot-meta",
-            page: currentPageFile,
-            slotIndex: activeDomSlot.slotIndex,
-            scope,
-            altText: newAlt,
-            externalUrl: updatedSrc,
-            r2Key: updatedR2Key,
-          }),
+          goToSlide(idx);
+          startTimer();
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Update failed");
-        const cacheUrl = updatedSrc.includes("?")
-          ? `${updatedSrc}&v=${Date.now()}`
-          : `${updatedSrc}?v=${Date.now()}`;
+        dotsWrap.appendChild(dot);
+      });
 
-        if (activeDomSlot.type === "hero-bg") {
-          activeDomSlot.element.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)), url("${cacheUrl}")`;
-        } else {
-          activeDomSlot.element.src = cacheUrl;
-          activeDomSlot.element.alt = newAlt;
-          const parentAnchor = activeDomSlot.element.closest("a[data-lightbox]");
-          if (parentAnchor) {
-            parentAnchor.href = cacheUrl;
-          }
-        }
-        editorDialog.close();
-      } catch (err) {
-        console.error(err);
-      } finally {
-        if (saveBtn) {
-          saveBtn.disabled = false;
-          saveBtn.textContent = "Save via Firebase";
-        }
-      }
-    });
+      startTimer();
+    } else if (dotsWrap) {
+      dotsWrap.remove();
+    }
   }
 
-  if (textForm) {
-    textForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      if (!activeDomTextSlot || !textArea) return;
-      if (textSaveBtn) {
-        textSaveBtn.disabled = true;
-        textSaveBtn.textContent = "Saving...";
-      }
-      try {
-        const newContent = textArea.value;
-        const res = await fetch("/api/admin/cms", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "save-text",
-            textId: activeDomTextSlot.textId,
-            page: currentPageFile,
-            textIndex: activeDomTextSlot.textIndex,
-            tagName: activeDomTextSlot.tagName,
-            sectionContext: "Live Page Edit",
-            content: newContent,
-            isDeleted: false,
-            isCustomAdded: Boolean(activeDomTextSlot.isCustomAdded),
-          }),
-        });
-        if (!res.ok) throw new Error("Failed to save text");
-        activeDomTextSlot.element.textContent = newContent;
-        activeDomTextSlot.element.style.display = "";
-        textEditorDialog.close();
-      } catch (err) {
-        console.error(err);
-      } finally {
-        if (textSaveBtn) {
-          textSaveBtn.disabled = false;
-          textSaveBtn.textContent = "Save Text";
-        }
-      }
-    });
+  // Direct Firebase Firestore REST API reader so Cloudflare Pages deployments always reflect live /admin edits
+  const FIRESTORE_BASE_URL =
+    "https://firestore.googleapis.com/v1/projects/gen-lang-client-0113753106/databases/ai-studio-janakasafarijeep-76940b71-abf8-4b59-aaeb-d5237818c8d7/documents";
+
+  function parseFirestoreRestDoc(docObj) {
+    if (!docObj || !docObj.fields) return null;
+    const out = {};
+    for (const [k, v] of Object.entries(docObj.fields)) {
+      if (!v || typeof v !== "object") continue;
+      if ("stringValue" in v) out[k] = v.stringValue;
+      else if ("integerValue" in v) out[k] = Number(v.integerValue);
+      else if ("doubleValue" in v) out[k] = Number(v.doubleValue);
+      else if ("booleanValue" in v) out[k] = Boolean(v.booleanValue);
+      else if ("timestampValue" in v) out[k] = v.timestampValue;
+      else if ("nullValue" in v) out[k] = null;
+    }
+    return out;
   }
 
-  if (textDeleteBtn) {
-    textDeleteBtn.addEventListener("click", async () => {
-      if (!activeDomTextSlot) return;
-      try {
-        await fetch("/api/admin/cms", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "delete-text",
-            textId: activeDomTextSlot.textId,
-            page: currentPageFile,
-            textIndex: activeDomTextSlot.textIndex,
-            tagName: activeDomTextSlot.tagName,
-            content: activeDomTextSlot.content,
-            restoreDefault: false,
-          }),
-        });
-        activeDomTextSlot.element.style.display = "none";
-        textEditorDialog.close();
-      } catch (err) {
-        console.error(err);
-      }
-    });
+  async function fetchFirestorePublicCollection(collectionName) {
+    try {
+      const res = await fetch(`${FIRESTORE_BASE_URL}/${collectionName}?pageSize=300`, {
+        cache: "no-store",
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      if (!Array.isArray(data.documents)) return [];
+      return data.documents.map(parseFirestoreRestDoc).filter(Boolean);
+    } catch {
+      return [];
+    }
   }
 
-  // Hydrate page with Firebase CMS state (slot image R2 CDN overrides, section wildlife galleries, text edits, and custom text blocks)
-  async function hydrateFromFirebaseCms() {
+  async function fetchBaseCmsState() {
     try {
       const res = await fetch(`/api/admin/cms?t=${Date.now()}`, { cache: "no-store" });
-      if (!res.ok) return;
-      const cms = await res.json();
+      if (res.ok) {
+        const ct = res.headers.get("content-type") || "";
+        if (ct.includes("application/json")) {
+          return await res.json();
+        }
+      }
+    } catch {
+      // fallback to static JSON asset on Cloudflare Pages
+    }
+    try {
+      const fallbackRes = await fetch(`/assets/firebase-cms-state.json?t=${Date.now()}`, {
+        cache: "no-store",
+      });
+      if (fallbackRes.ok) {
+        return await fallbackRes.json();
+      }
+    } catch {
+      // ignore
+    }
+    return {
+      sectionGalleryItems: [],
+      imageOverrides: {},
+      textSlots: [],
+      customTexts: [],
+    };
+  }
 
-      // 1. Apply image slot overrides (strictly R2 CDN / HTTP URLs, never raw data: URIs)
+  // Hydrate page with Firebase CMS state (slot image R2 CDN overrides, 4s hero slideshow, section wildlife galleries, text edits, and custom text blocks)
+  async function hydrateFromFirebaseCms() {
+    try {
+      const [cms, fbSiteImages, fbSectionItems, fbSiteTexts] = await Promise.all([
+        fetchBaseCmsState(),
+        fetchFirestorePublicCollection("site_images"),
+        fetchFirestorePublicCollection("section_gallery_items"),
+        fetchFirestorePublicCollection("site_texts"),
+      ]);
+
+      if (!cms.imageOverrides) cms.imageOverrides = {};
+      if (!Array.isArray(cms.sectionGalleryItems)) cms.sectionGalleryItems = [];
+
+      // Merge live Firestore site_images on top of cms.imageOverrides
+      fbSiteImages.forEach((docItem) => {
+        if (!docItem || !docItem.slotId) return;
+        if (docItem.src === "/deleted" || docItem.isDeleted) {
+          cms.imageOverrides[docItem.slotId] = {
+            ...docItem,
+            src: "",
+            lightboxHref: "",
+            isDeleted: true,
+          };
+        } else if (
+          docItem.src &&
+          !/^data:/i.test(docItem.src) &&
+          !String(docItem.src).includes("empty-slot.svg")
+        ) {
+          const existingOv = cms.imageOverrides[docItem.slotId];
+          cms.imageOverrides[docItem.slotId] = {
+            ...existingOv,
+            ...docItem,
+            isDeleted: false,
+          };
+        }
+      });
+
+      // Merge live Firestore section_gallery_items (including hero_slideshow additions & deletions)
+      if (fbSectionItems.length > 0) {
+        const secMap = new Map();
+        cms.sectionGalleryItems.forEach((item) => {
+          if (item && item.itemId) secMap.set(item.itemId, item);
+        });
+        fbSectionItems.forEach((fbItem) => {
+          if (!fbItem || !fbItem.itemId) return;
+          if (fbItem.sectionKey === "deleted_section_item" || fbItem.src === "/deleted") {
+            secMap.delete(fbItem.itemId);
+          } else {
+            secMap.set(fbItem.itemId, fbItem);
+          }
+        });
+        cms.sectionGalleryItems = Array.from(secMap.values());
+      }
+
+      // Merge live Firestore site_texts
+      if (fbSiteTexts.length > 0) {
+        if (!Array.isArray(cms.textSlots)) cms.textSlots = [];
+        if (!Array.isArray(cms.customTexts)) cms.customTexts = [];
+        const textSlotMap = new Map(cms.textSlots.map((t) => [t.textId, t]));
+        const customTextMap = new Map(cms.customTexts.map((t) => [t.textId, t]));
+
+        fbSiteTexts.forEach((ft) => {
+          if (!ft || !ft.textId) return;
+          if (ft.isCustomAdded) {
+            customTextMap.set(ft.textId, { ...ft, isModified: true });
+          } else if (textSlotMap.has(ft.textId)) {
+            textSlotMap.set(ft.textId, {
+              ...textSlotMap.get(ft.textId),
+              ...ft,
+              isModified: true,
+            });
+          } else {
+            textSlotMap.set(ft.textId, { ...ft, isModified: true });
+          }
+        });
+        cms.textSlots = Array.from(textSlotMap.values());
+        cms.customTexts = Array.from(customTextMap.values());
+      }
+
+      let heroSlotDeleted = false;
+
+      // 1. Apply image slot overrides (strictly R2 CDN links or explicit slot deletions, never raw data: URIs)
       if (cms.imageOverrides) {
         Object.values(cms.imageOverrides).forEach((ov) => {
-          if (!ov || ov.page !== currentPageFile || !ov.src || /^data:/i.test(ov.src)) return;
+          if (!ov || ov.page !== currentPageFile) return;
           const entry = slotElementMap.get(ov.slotId);
           if (!entry) return;
+
+          if (
+            ov.isDeleted ||
+            ov.src === "/deleted" ||
+            !ov.src ||
+            String(ov.src).includes("empty-slot.svg")
+          ) {
+            if (entry.type === "hero-bg") {
+              heroSlotDeleted = true;
+              primaryHeroBannerSrc = "";
+              entry.element.style.backgroundImage = "none";
+            } else if (entry.element.classList.contains("janaka-brand-logo")) {
+              entry.element.style.display = "";
+              if (!entry.element.getAttribute("src") || (entry.element.getAttribute("src") || "").includes("empty-slot.svg")) {
+                entry.element.src = "/assets/media/nisha-safari-logo.svg";
+              }
+            } else if (entry.element.classList.contains("cross-top-img")) {
+              // Keep built-in trust badge icons visible unless replaced by R2 icon
+              entry.element.style.display = "";
+            } else {
+              entry.element.removeAttribute("src");
+              entry.element.style.display = "none";
+              const holder =
+                entry.element.closest(".galleryImageHolder") ||
+                entry.element.closest("a[data-lightbox]") ||
+                entry.element.closest(".wsite-image");
+              if (holder) {
+                holder.style.display = "none";
+              }
+            }
+            return;
+          }
+
+          if (/^data:/i.test(ov.src)) return;
+          const resolvedOvSrc = normalizeSlideSrc(ov.src, ov.r2Key);
+          if (!resolvedOvSrc) return;
+
           if (entry.type === "hero-bg") {
-            if (/payment-|visa|mastercard/i.test(ov.src)) return;
+            if (/payment-|visa|mastercard/i.test(resolvedOvSrc)) return;
             if (entry.element.classList.contains("wsite-body-section")) return;
             if (document.body.classList.contains("janaka-contact")) return;
-            entry.element.style.backgroundImage = `url("${ov.src}")`;
+            primaryHeroBannerSrc = resolvedOvSrc;
+            entry.element.style.backgroundImage = `url("${resolvedOvSrc}")`;
             entry.element.style.backgroundSize = "cover";
             entry.element.style.backgroundPosition = "center center";
-            if (document.body.classList.contains("wsite-page-index") && window.innerWidth > 767) {
-              entry.element.style.minHeight = "135vh";
-              entry.element.style.height = "135vh";
-            }
           } else {
-            if (
-              entry.element.classList.contains("janaka-brand-logo") ||
-              entry.element.classList.contains("tripadvisor-user-award-img") ||
-              entry.element.id === "CDSWIDCOELOGO" ||
-              entry.element.closest(".hero-cross-bridge-wrap") ||
-              entry.element.closest(".home-review-award") ||
-              entry.element.closest(".logo") ||
-              entry.element.closest(".footer-wrap")
-            ) {
+            if (entry.element.id === "CDSWIDCOELOGO") {
               return;
             }
-            entry.element.src = ov.src;
+            entry.element.style.display = "";
+            const holder =
+              entry.element.closest(".galleryImageHolder") ||
+              entry.element.closest("a[data-lightbox]") ||
+              entry.element.closest(".wsite-image");
+            if (holder) {
+              holder.style.display = "";
+            }
+            const wrapContainer = entry.element.closest('[id*="-imageContainer"]');
+            if (wrapContainer) {
+              wrapContainer.style.display = "";
+            }
+            entry.element.src = resolvedOvSrc;
             if (ov.alt) entry.element.alt = ov.alt;
             const parentAnchor = entry.element.closest("a[data-lightbox]");
-            if (parentAnchor) parentAnchor.href = ov.lightboxHref || ov.src;
+            if (parentAnchor) parentAnchor.href = normalizeSlideSrc(ov.lightboxHref || ov.src, ov.r2Key);
           }
         });
       }
+
+      // 1b. Build & start 4-Second Hero Section Multi-Image Slideshow for this page
+      const pageHeroSlides = Array.isArray(cms.sectionGalleryItems)
+        ? cms.sectionGalleryItems
+            .filter(
+              (item) =>
+                item.page === currentPageFile &&
+                item.sectionKey === "hero_slideshow" &&
+                item.src &&
+                item.src !== "/deleted" &&
+                !String(item.src).includes("empty-slot.svg") &&
+                !/^data:/i.test(item.src)
+            )
+            .sort((a, b) => (a.order || 0) - (b.order || 0))
+        : [];
+
+      const combinedHeroSlides = [];
+      if (pageHeroSlides.length > 0) {
+        // Use strictly the hero slideshow photos uploaded by the user (no extra blank or default slide)
+        pageHeroSlides.forEach((s) => {
+          combinedHeroSlides.push({
+            src: s.src,
+            r2Key: s.r2Key,
+            alt: s.alt || s.title || "Sri Lanka Safari Hero Slide",
+          });
+        });
+      } else if (!heroSlotDeleted && primaryHeroBannerSrc && !primaryHeroBannerSrc.includes("empty-slot.svg")) {
+        // Only use single banner if no slideshow slides are configured
+        combinedHeroSlides.push({
+          src: primaryHeroBannerSrc,
+          alt: document.title || "Sri Lanka Safari Hero Banner",
+        });
+      }
+      initOrUpdateHeroSlideshow(combinedHeroSlides);
 
       // 2. Apply text overrides & deletions for this page
       if (Array.isArray(cms.textSlots)) {
@@ -826,29 +892,23 @@
           const p = document.createElement("p");
           p.textContent = block.content;
           p.setAttribute("data-admin-text-slot", "custom");
-          p.addEventListener("click", (e) => {
-            if (!textEditModeActive) return;
-            e.preventDefault();
-            e.stopPropagation();
-            openInlineTextEditor({
-              textId: block.textId,
-              textIndex: -1,
-              tagName: "CUSTOM",
-              content: block.content,
-              isCustomAdded: true,
-              element: p,
-            });
-          });
           card.appendChild(h3);
           card.appendChild(p);
           customTextWrap.appendChild(card);
         });
       }
 
-      // 4. Render Curated Firebase Section Wildlife Gallery for this page (from R2 CDN links)
+      // 4. Render Curated Firebase Section Wildlife Gallery for this page (excluding hero_slideshow items)
       const pageSectionItems = Array.isArray(cms.sectionGalleryItems)
         ? cms.sectionGalleryItems.filter(
-            (item) => item.page === currentPageFile && item.src && !/^data:/i.test(item.src)
+            (item) =>
+              item.page === currentPageFile &&
+              item.sectionKey !== "hero_slideshow" &&
+              item.sectionKey !== "deleted_section_item" &&
+              item.src &&
+              item.src !== "/deleted" &&
+              !String(item.src).includes("empty-slot.svg") &&
+              !/^data:/i.test(item.src)
           )
         : [];
       if (pageSectionItems.length > 0 && mainEl) {
@@ -864,10 +924,9 @@
         showcase.innerHTML = `
           <div class="firebase-section-header">
             <div>
-              <div class="firebase-section-kicker">R2 Bucket + Firebase Section Gallery</div>
+              <div class="firebase-section-kicker">Sri Lanka Wildlife Gallery</div>
               <h2 class="firebase-section-title">${sectionGroupsTitle}</h2>
             </div>
-            <a href="/admin" class="admin-dock-btn">Manage R2 Photos in Studio</a>
           </div>
           <div class="firebase-section-grid" id="firebase-section-grid"></div>
         `;
@@ -876,10 +935,11 @@
         pageSectionItems.forEach((item) => {
           const card = document.createElement("article");
           card.className = "firebase-section-card";
+          const displaySecSrc = normalizeSlideSrc(item.src, item.r2Key);
           card.innerHTML = `
             <div>
               <div class="firebase-section-card-media">
-                <img src="${item.src}" alt="${item.alt || item.title}" loading="lazy" />
+                <img src="${displaySecSrc}" alt="${item.alt || item.title}" loading="lazy" />
               </div>
               <div class="firebase-section-card-body">
                 <div class="firebase-section-card-tag">${item.sectionTitle}</div>
@@ -887,42 +947,59 @@
                 <p class="firebase-section-card-caption">${item.caption || ""}</p>
               </div>
             </div>
-            <div class="firebase-section-card-actions">
-              <a href="/admin" class="admin-dock-btn is-primary">Edit / Replace in R2 Studio</a>
-              <button type="button" class="admin-dock-btn" data-delete-sec-img="${item.itemId}">Delete</button>
-            </div>
           `;
-          const delBtn = card.querySelector("[data-delete-sec-img]");
-          if (delBtn) {
-            delBtn.addEventListener("click", async () => {
-              if (item.r2Key) {
-                await fetch(`/api/r2?key=${encodeURIComponent(item.r2Key)}`, {
-                  method: "DELETE",
-                }).catch(() => {});
-              }
-              await fetch("/api/admin/cms", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  action: "delete-section-image",
-                  itemId: item.itemId,
-                  r2Key: item.r2Key,
-                }),
-              });
-              card.remove();
-            });
-          }
           if (grid) grid.appendChild(card);
         });
+      } else {
+        const existingShowcase = document.getElementById("firebase-section-gallery");
+        if (existingShowcase) existingShowcase.remove();
       }
+
+      // 5. Collapse empty image gallery slots & empty left/right media columns (e.g., reviews/gallery pages)
+      document.querySelectorAll(".imageGallery").forEach((galleryEl) => {
+        const containers = Array.from(galleryEl.querySelectorAll('[id*="-imageContainer"]'));
+        let visibleCount = 0;
+        containers.forEach((box) => {
+          const img = box.querySelector("img.galleryImage");
+          const srcVal = (img && img.getAttribute("src")) || "";
+          const hidden = !img || img.style.display === "none" || !srcVal || srcVal.includes("empty-slot.svg");
+          if (hidden) {
+            box.style.display = "none";
+          } else {
+            box.style.display = "";
+            visibleCount++;
+          }
+        });
+        galleryEl.classList.toggle("is-gallery-empty", visibleCount === 0);
+      });
+
+      document.querySelectorAll(".wsite-multicol-tr").forEach((row) => {
+        const cols = Array.from(row.children).filter((c) => c.classList && c.classList.contains("wsite-multicol-col"));
+        if (cols.length < 2) return;
+        let hiddenMediaCols = 0;
+        cols.forEach((col) => {
+          const imgs = Array.from(col.querySelectorAll("img"));
+          const hasVisibleImg = imgs.some((img) => {
+            const s = img.getAttribute("src") || "";
+            return img.style.display !== "none" && s && !s.includes("empty-slot.svg");
+          });
+          const hasButtonOrHeading = Boolean(col.querySelector(".wsite-button, h2, h3, h4, form"));
+          const substantialParas = Array.from(col.querySelectorAll(".paragraph")).filter((p) => {
+            const isTinyCaption = Boolean(p.querySelector('font[size="1"]'));
+            return !isTinyCaption && (p.textContent || "").trim().length > 0;
+          });
+          if (imgs.length > 0 && !hasVisibleImg && !hasButtonOrHeading && substantialParas.length === 0) {
+            col.classList.add("is-media-empty");
+            hiddenMediaCols++;
+          } else {
+            col.classList.remove("is-media-empty");
+          }
+        });
+        row.classList.toggle("is-media-empty", hiddenMediaCols > 0 && hiddenMediaCols < cols.length);
+      });
     } catch (err) {
       console.error("Failed to hydrate Firebase CMS state:", err);
     }
-  }
-
-  function applyEditModeState() {
-    document.body.classList.toggle("admin-edit-mode", editModeActive);
-    document.body.classList.toggle("admin-text-edit-mode", textEditModeActive);
   }
 
   function initUltraSmoothScroll() {
@@ -1422,8 +1499,8 @@
         });
         crossTl.fromTo(
           crossCard,
-          { y: 24, autoAlpha: 0 },
-          { y: 0, autoAlpha: 1, duration: 0.55, ease: "power2.out" }
+          { yPercent: 5, autoAlpha: 0 },
+          { yPercent: -30, autoAlpha: 1, duration: 0.55, ease: "power2.out" }
         );
         const crossSubs = gsap.utils.toArray(".hero-cross-sub-section");
         if (crossSubs.length > 0) {
@@ -1884,9 +1961,10 @@
         const heroBtn = document.querySelector(".banner .wsite-button");
         const heroBg = document.querySelector(".banner-wrap .wsite-header-section");
         const isHome = document.body.classList.contains("wsite-page-index");
-        const contentCounterScale = isHome ? 0.81967 : 0.89285;
+        const isFullDesktop = window.innerWidth >= 921;
+        const contentCounterScale = isFullDesktop ? (isHome ? 0.81967 : 0.89285) : 1;
 
-        if (heroBg) {
+        if (heroBg && isFullDesktop) {
           const baseScale = isHome ? 1.22 : 1.12;
           gsap.fromTo(
             heroBg,
@@ -1983,8 +2061,8 @@
 
         crossTl.fromTo(
           crossCard,
-          { y: 60, autoAlpha: 0, scale: 0.94, rotateX: 10, transformPerspective: 1100 },
-          { y: 0, autoAlpha: 1, scale: 1, rotateX: 0, transformPerspective: 1100, duration: 0.85, ease: "power3.out" }
+          { yPercent: 10, autoAlpha: 0, scale: 0.94, rotateX: 10, transformPerspective: 1100 },
+          { yPercent: -30, autoAlpha: 1, scale: 1, rotateX: 0, transformPerspective: 1100, duration: 0.85, ease: "power3.out" }
         );
 
         if (subLeft) {
@@ -2082,10 +2160,12 @@
 
         const distinctBenefitFromVars = [
           { x: -75, y: 45, rotate: -6, autoAlpha: 0, scale: 0.86 },
-          { y: 75, rotateX: 40, transformPerspective: 900, autoAlpha: 0, scale: 0.84 },
-          { y: -70, rotateX: -40, transformPerspective: 900, autoAlpha: 0, scale: 0.84 },
+          { y: 65, rotateX: 35, transformPerspective: 900, autoAlpha: 0, scale: 0.84 },
+          { y: 65, rotateX: -35, transformPerspective: 900, autoAlpha: 0, scale: 0.84 },
           { x: 75, y: 45, rotate: 6, autoAlpha: 0, scale: 0.86 },
         ];
+
+        const benefitsRow = benefitsSection.querySelector(".wsite-multicol-tr") || benefitsContainer;
 
         benefitCols.forEach((col, i) => {
           const fromVars = distinctBenefitFromVars[i % distinctBenefitFromVars.length];
@@ -2095,8 +2175,8 @@
 
           const tl = gsap.timeline({
             scrollTrigger: {
-              trigger: col,
-              start: "top 90%",
+              trigger: benefitsRow,
+              start: "top 86%",
               toggleActions: "play none none none",
               once: true,
             },
@@ -2114,7 +2194,7 @@
               autoAlpha: 1,
               scale: 1,
               duration: 0.85,
-              delay: (i % 4) * 0.08,
+              delay: i * 0.12,
               ease: "back.out(1.5)",
             }
           );
@@ -2143,7 +2223,7 @@
               "-=0.35"
             );
           }
-          registerForViewportReplay(tl, col);
+          registerForViewportReplay(tl, benefitsRow);
         });
 
         bindGsap3DHover(benefitCols, 7, -8, 1.03);
@@ -2944,7 +3024,6 @@
 
   bindEditableSlots();
   bindEditableTextSlots();
-  applyEditModeState();
   initUltraSmoothScroll();
   void initDistinctGsapAnimations();
   void hydrateFromFirebaseCms().then(() => {

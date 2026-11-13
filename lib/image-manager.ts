@@ -8,6 +8,8 @@ export interface ImageSlot {
   slotIndex: number;
   kind: 'hero-bg' | 'img' | 'gallery-img' | 'logo';
   sectionContext: string;
+  sectionName: string;
+  subSectionName?: string;
   src: string;
   lightboxHref?: string;
   alt: string;
@@ -91,8 +93,34 @@ function stripTags(html: string): string {
     .trim();
 }
 
+export function splitSectionContext(sectionContext: string): {
+  sectionName: string;
+  subSectionName?: string;
+} {
+  const clean = (sectionContext || 'Page Content').trim();
+  if (clean === 'Header Navigation Logo') {
+    return { sectionName: 'Site Header', subSectionName: 'Navigation Brand Logo' };
+  }
+  if (clean === 'Footer Brand Logo') {
+    return { sectionName: 'Site Footer', subSectionName: 'Footer Brand Logo' };
+  }
+  const heroMatch = clean.match(/^Hero Banner\s*\(([\s\S]+)\)$/i);
+  if (heroMatch) {
+    return { sectionName: 'Hero Banner', subSectionName: heroMatch[1].trim() };
+  }
+  const sepIdx = clean.indexOf(' · ');
+  if (sepIdx !== -1) {
+    return {
+      sectionName: clean.slice(0, sepIdx).trim(),
+      subSectionName: clean.slice(sepIdx + 3).trim() || undefined,
+    };
+  }
+  return { sectionName: clean };
+}
+
 function findSectionContext(
-  htmlBefore: string,
+  html: string,
+  startIndex: number,
   isHeaderLogo: boolean,
   isFooterLogo: boolean,
   imgTag?: string
@@ -100,25 +128,94 @@ function findSectionContext(
   if (isHeaderLogo) return 'Header Navigation Logo';
   if (isFooterLogo) return 'Footer Brand Logo';
 
-  if (imgTag && (imgTag.includes('cross-top-img') || imgTag.includes('cross-top-'))) {
-    return 'Hero Cross-Section Awards & Trust Badges';
+  const htmlBefore = html.slice(0, startIndex);
+
+  if (imgTag) {
+    if (imgTag.includes('cross-top-google')) {
+      return 'Hero Bottom Cross-Section · Google Reviews Badge';
+    }
+    if (imgTag.includes('cross-top-tripadvisor')) {
+      return 'Hero Bottom Cross-Section · TripAdvisor Winner Badge';
+    }
+    if (imgTag.includes('cross-top-traveler')) {
+      return 'Hero Bottom Cross-Section · Happy Safari Explorers Badge';
+    }
+    if (imgTag.includes('cross-top-img')) {
+      return 'Hero Bottom Cross-Section · Trust Badge';
+    }
   }
-  if (htmlBefore.includes('hero-cross-bridge-wrap') && !htmlBefore.includes('</section>')) {
-    return 'Hero Cross-Section Awards & Trust Badges';
+  if (
+    htmlBefore.includes('hero-cross-bridge-wrap') &&
+    !htmlBefore.slice(htmlBefore.lastIndexOf('hero-cross-bridge-wrap')).includes('</section>')
+  ) {
+    return 'Hero Bottom Cross-Section · Trust Badge';
   }
 
-  // Find last h2 or strong title before this tag
-  const h2Matches = [...htmlBefore.matchAll(/<h2[^>]*>([\s\S]*?)<\/h2>/gi)];
-  const lastH2 = h2Matches.length > 0 ? stripTags(h2Matches[h2Matches.length - 1][1]) : '';
+  // Scope search strictly within the enclosing .wsite-section (or <section)
+  const secStart = Math.max(
+    htmlBefore.lastIndexOf('class="wsite-body-section'),
+    htmlBefore.lastIndexOf('class="wsite-header-section')
+  );
+  const nextSec = html.indexOf('class="wsite-body-section', startIndex);
+  const secEnd = nextSec !== -1 ? nextSec : Math.min(html.length, startIndex + 5000);
+  const sectionSlice = secStart !== -1 ? html.slice(secStart, secEnd) : htmlBefore;
+  const beforeInSection = secStart !== -1 ? html.slice(secStart, startIndex) : htmlBefore;
 
-  const strongMatches = [...htmlBefore.matchAll(/<strong[^>]*>([\s\S]*?)<\/strong>/gi)];
+  // Parent heading: prefer H2 inside current section before slot, else first H2 in current section
+  const h2Before = [...beforeInSection.matchAll(/<h2[^>]*>([\s\S]*?)<\/h2>/gi)]
+    .map((m) => stripTags(m[1]))
+    .filter((t) => t && !/^(OUR SAFARI EXPERIENCES|SAFARI PARKS|EXPLORE)$/i.test(t));
+  const h2InSec =
+    h2Before.length > 0
+      ? h2Before[h2Before.length - 1]
+      : [...sectionSlice.matchAll(/<h2[^>]*>([\s\S]*?)<\/h2>/gi)]
+          .map((m) => stripTags(m[1]))
+          .find((t) => t && !/^(OUR SAFARI EXPERIENCES|SAFARI PARKS|EXPLORE)$/i.test(t)) || '';
+
+  // Also check if wrapped in a card (<article ...>) or strong title immediately following image
+  const articleOpen = beforeInSection.lastIndexOf('<article');
+  const articleClose = beforeInSection.lastIndexOf('</article>');
+  let cardSub = '';
+  if (articleOpen !== -1 && articleOpen > articleClose) {
+    const articleEnd = html.indexOf('</article>', startIndex);
+    const articleSlice = html.slice(
+      (secStart !== -1 ? secStart : 0) + articleOpen,
+      articleEnd !== -1 ? articleEnd : startIndex + 700
+    );
+    const cardStrong = articleSlice.match(/<(?:h3|h4|strong)\b[^>]*>([\s\S]*?)<\/(?:h3|h4|strong)>/i);
+    if (cardStrong) cardSub = stripTags(cardStrong[1]);
+  }
+
+  // Fallback check if inside .wsite-multicol-col with a strong title nearby or payment badge
+  if (!cardSub) {
+    const colOpen = beforeInSection.lastIndexOf('wsite-multicol-col');
+    const colClose = beforeInSection.lastIndexOf('</td>');
+    if (colOpen !== -1 && colOpen > colClose) {
+      const colSlice = html.slice(
+        (secStart !== -1 ? secStart : 0) + colOpen,
+        Math.min(html.length, startIndex + 900)
+      );
+      const colStrong = colSlice.match(/<(?:h3|h4|strong)\b[^>]*>([\s\S]*?)<\/(?:h3|h4|strong)>/i);
+      if (colStrong) cardSub = stripTags(colStrong[1]);
+    }
+  }
+
+  if (htmlBefore.slice(-300).includes('janaka-payment')) {
+    const altM = imgTag?.match(/\balt="([^"]*)"/i);
+    cardSub = altM?.[1] ? `Payment Badge (${altM[1]})` : 'Payment Badge';
+  }
+
+  const strongBefore = [...beforeInSection.matchAll(/<strong[^>]*>([\s\S]*?)<\/strong>/gi)];
   const lastStrong =
-    strongMatches.length > 0 ? stripTags(strongMatches[strongMatches.length - 1][1]) : '';
+    strongBefore.length > 0 ? stripTags(strongBefore[strongBefore.length - 1][1]) : '';
 
-  if (lastH2 && lastStrong && lastH2 !== lastStrong && lastStrong.length < 60) {
-    return `${lastH2} · ${lastStrong}`;
+  const parentHeading = h2InSec || lastStrong || 'Page Content';
+  const subHeading = cardSub || (lastStrong && lastStrong !== parentHeading ? lastStrong : '');
+
+  if (parentHeading && subHeading && parentHeading !== subHeading && subHeading.length < 70) {
+    return `${parentHeading} · ${subHeading}`;
   }
-  return lastH2 || lastStrong || 'Page Content';
+  return parentHeading;
 }
 
 interface RawMatch {
@@ -216,7 +313,7 @@ function parsePageSlots(html: string): RawMatch[] {
           ? 'gallery-img'
           : 'img';
 
-      const sectionContext = findSectionContext(htmlBefore, isHeaderLogo, isFooterLogo, imgTag);
+      const sectionContext = findSectionContext(html, startIndex, isHeaderLogo, isFooterLogo, imgTag);
 
       results.push({
         slotIndex: slotIndex++,
@@ -329,6 +426,7 @@ export async function getAllSiteImages(): Promise<{
       const srcChangedFromDefault = defSlot ? defSlot.src !== cleanSrc : false;
       const fileModified = isEmptyPlaceholder ? false : await checkMod(cleanSrc);
 
+      const splitCtx = splitSectionContext(m.sectionContext);
       slots.push({
         id: `${page.file}::slot-${m.slotIndex}`,
         page: page.file,
@@ -336,6 +434,8 @@ export async function getAllSiteImages(): Promise<{
         slotIndex: m.slotIndex,
         kind: m.kind,
         sectionContext: m.sectionContext,
+        sectionName: splitCtx.sectionName,
+        subSectionName: splitCtx.subSectionName,
         src: isEmptyPlaceholder ? '' : m.src,
         lightboxHref:
           m.lightboxHref && !m.lightboxHref.includes('empty-slot.svg')

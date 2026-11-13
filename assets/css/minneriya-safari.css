@@ -1,400 +1,236 @@
-/* Sri Lanka Yala Safaris — Udawalawe, Wilpattu, Minneriya, Kumana Shared Styles */
-.wsite-background-20,
-.wsite-background-37,
-.wsite-background-44,
+/* ==========================================================================
+   MINNERIYA-SAFARI.CSS — Minneriya Packages, Wildlife, Map & Info
+   Mobile-First Responsive Architecture
+   ========================================================================== */
+
+/* 1. Minneriya Packages (.wsite-background-46 & .wsite-background-90) — Mobile-First */
+.wsite-background-46,
+.wsite-background-90 {
+  background-color: var(--bg-primary) !important;
+}
+
+.wsite-background-46 {
+  padding-bottom: 24px !important;
+}
+
+.wsite-background-90 {
+  padding-top: 0 !important;
+}
+
+.wsite-background-46 .wsite-multicol-table,
+.wsite-background-46 .wsite-multicol-tbody {
+  display: block !important;
+  width: 100% !important;
+}
+
+.wsite-background-46 .wsite-multicol-tr {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 20px !important;
+  margin-top: 24px;
+}
+
+.wsite-background-46 .wsite-multicol-col {
+  width: 100% !important;
+  padding: 22px 18px !important;
+  background: #FFFFFF !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-subtle);
+  display: flex !important;
+  flex-direction: column;
+}
+
+.wsite-background-46 .wsite-multicol-col .wsite-image {
+  margin: -22px -18px 18px -18px !important;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+}
+
+.wsite-background-46 .wsite-multicol-col .wsite-image img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+  border-radius: 0 !important;
+}
+
+.wsite-background-46 .wsite-multicol-col > div:last-child {
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+.wsite-background-46 .wsite-multicol-col .wsite-button {
+  width: 100%;
+}
+
+@media screen and (min-width: 768px) {
+  .wsite-background-46 .wsite-multicol-tr {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 28px !important;
+    margin-top: 28px;
+  }
+
+  .wsite-background-46 .wsite-multicol-col {
+    padding: 28px 24px !important;
+  }
+
+  .wsite-background-46 .wsite-multicol-col .wsite-image {
+    margin: -28px -24px 20px -24px !important;
+  }
+}
+
+/* 2. Discover Minneriya Wildlife (.wsite-background-47) — Mobile-First */
+.wsite-background-47 {
+  background-color: var(--bg-dark-earth) !important;
+  color: var(--text-on-dark);
+}
+
+.wsite-background-47 h2.wsite-content-title,
+.wsite-background-47 h2.wsite-content-title font,
+.wsite-background-47 .paragraph,
+.wsite-background-47 .paragraph span,
+.wsite-background-47 .paragraph font {
+  color: #E6E3DC !important;
+}
+
+.wsite-background-47 .paragraph strong {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: #FFFFFF !important;
+}
+
+.wsite-background-47 .wsite-multicol-table,
+.wsite-background-47 .wsite-multicol-tbody {
+  display: block !important;
+  width: 100% !important;
+}
+
+.wsite-background-47 .wsite-multicol-tr {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 20px !important;
+  margin-top: 20px;
+}
+
+.wsite-background-47 .wsite-multicol-col {
+  width: 100% !important;
+  padding: 20px 18px !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: var(--radius-md) !important;
+}
+
+.wsite-background-47 .wsite-image {
+  margin-bottom: 14px !important;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+}
+
+.wsite-background-47 .wsite-image img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+}
+
+@media screen and (min-width: 768px) {
+  .wsite-background-47 .wsite-multicol:first-of-type .wsite-multicol-tr {
+    grid-template-columns: 1.2fr 0.8fr !important;
+    gap: 24px !important;
+  }
+
+  .wsite-background-47 .wsite-multicol:last-of-type .wsite-multicol-tr {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 24px !important;
+  }
+
+  .wsite-background-47 .wsite-multicol-col {
+    padding: 24px !important;
+  }
+}
+
+/* 3. Location Map, Safari Experience, Info & FAQ (.wsite-background-48, 49, 50, 51, 52) — Mobile-First */
+.wsite-background-48,
+.wsite-background-50 {
+  background-color: var(--bg-primary) !important;
+}
+
+.wsite-background-49,
 .wsite-background-51 {
-  background: #faf5ec !important;
+  background-color: var(--bg-elevated) !important;
+  border-top: 1px solid var(--border-hairline);
+  border-bottom: 1px solid var(--border-hairline);
 }
 
-.wsite-background-20 .wsite-multicol-table-wrap,
-.wsite-background-37 .wsite-multicol-table-wrap,
-.wsite-background-44 .wsite-multicol-table-wrap,
-.wsite-background-51 .wsite-multicol-table-wrap,
-.udawalawe-wildlife .wsite-multicol-table-wrap,
-.wilpattu-wildlife .wsite-multicol-table-wrap,
-.minneriya-wildlife .wsite-multicol-table-wrap,
-.kumana-wildlife .wsite-multicol-table-wrap,
-.udawalawe-info .wsite-multicol-table-wrap,
-.wilpattu-info .wsite-multicol-table-wrap,
-.minneriya-info .wsite-multicol-table-wrap,
-.kumana-info .wsite-multicol-table-wrap {
-  margin: 0 !important;
-}
-
-.wsite-background-20 .wsite-multicol-table,
-.wsite-background-20 .wsite-multicol-tbody,
-.wsite-background-37 .wsite-multicol-table,
-.wsite-background-37 .wsite-multicol-tbody,
-.wsite-background-44 .wsite-multicol-table,
-.wsite-background-44 .wsite-multicol-tbody,
-.wsite-background-51 .wsite-multicol-table,
-.wsite-background-51 .wsite-multicol-tbody,
-.udawalawe-wildlife .wsite-multicol-table,
-.udawalawe-wildlife .wsite-multicol-tbody,
-.wilpattu-wildlife .wsite-multicol-table,
-.wilpattu-wildlife .wsite-multicol-tbody,
-.minneriya-wildlife .wsite-multicol-table,
-.minneriya-wildlife .wsite-multicol-tbody,
-.kumana-wildlife .wsite-multicol-table,
-.kumana-wildlife .wsite-multicol-tbody,
-.udawalawe-info .wsite-multicol-table,
-.udawalawe-info .wsite-multicol-tbody,
-.wilpattu-info .wsite-multicol-table,
-.wilpattu-info .wsite-multicol-tbody,
-.minneriya-info .wsite-multicol-table,
-.minneriya-info .wsite-multicol-tbody,
-.kumana-info .wsite-multicol-table,
-.kumana-info .wsite-multicol-tbody {
-  display: block;
-  width: 100%;
-}
-
-.wsite-background-20 .wsite-multicol-tr,
-.wsite-background-37 .wsite-multicol-tr,
-.udawalawe-info .wsite-multicol-tr,
-.wilpattu-info .wsite-multicol-tr,
-.minneriya-info .wsite-multicol-tr,
-.kumana-info .wsite-multicol-tr {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
-  align-items: stretch;
-  counter-reset: park-pkg;
-}
-
-.wsite-background-44 .wsite-multicol-tr,
-.wsite-background-51 .wsite-multicol-tr {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 28px;
-  align-items: stretch;
-  max-width: 1080px;
-  margin: 0 auto;
-  counter-reset: park-pkg;
-}
-
-.wsite-background-20 .wsite-multicol-col,
-.wsite-background-37 .wsite-multicol-col,
-.wsite-background-44 .wsite-multicol-col,
-.wsite-background-51 .wsite-multicol-col {
-  position: relative;
-  display: flex !important;
-  flex-direction: column;
-  width: auto !important;
-  padding: 32px !important;
-  background: #ffffff;
-  border: 1px solid #dfd3bd;
-  border-top: 5px solid #18382b;
-  border-radius: 14px;
-  overflow: hidden;
-  box-shadow: 0 12px 32px rgba(24, 56, 43, 0.08);
-  counter-increment: park-pkg;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-}
-
-.wsite-background-20 .wsite-multicol-col:nth-child(2),
-.wsite-background-37 .wsite-multicol-col:nth-child(2),
-.wsite-background-44 .wsite-multicol-col:nth-child(2),
-.wsite-background-51 .wsite-multicol-col:nth-child(2) {
-  border-top-color: #f5a623;
-}
-
-.wsite-background-20 .wsite-multicol-col:nth-child(3),
-.wsite-background-37 .wsite-multicol-col:nth-child(3) {
-  border-top-color: #b85d19;
-}
-
-.wsite-background-20 .wsite-multicol-col:hover,
-.wsite-background-37 .wsite-multicol-col:hover,
-.wsite-background-44 .wsite-multicol-col:hover,
-.wsite-background-51 .wsite-multicol-col:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 18px 40px rgba(24, 56, 43, 0.14);
-}
-
-.wsite-background-20 .wsite-multicol-col::before,
-.wsite-background-37 .wsite-multicol-col::before,
-.wsite-background-44 .wsite-multicol-col::before,
-.wsite-background-51 .wsite-multicol-col::before {
-  content: "PACKAGE 0" counter(park-pkg);
-  display: block;
-  margin-bottom: 14px;
-  color: #b85d19;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-}
-
-.wsite-background-20 .wsite-image,
-.wsite-background-37 .wsite-image,
-.wsite-background-44 .wsite-image,
-.wsite-background-51 .wsite-image {
-  padding: 0 !important;
-  margin: 0 0 24px !important;
-  border-radius: 10px;
-  overflow: hidden;
-  border: 1px solid #dfd3bd;
-}
-
-.wsite-background-20 .wsite-image img,
-.wsite-background-37 .wsite-image img,
-.wsite-background-44 .wsite-image img,
-.wsite-background-51 .wsite-image img {
-  display: block;
+.wsite-background-48 .wsite-multicol-table,
+.wsite-background-48 .wsite-multicol-tbody,
+.wsite-background-49 .wsite-multicol-table,
+.wsite-background-49 .wsite-multicol-tbody,
+.wsite-background-50 .wsite-multicol-table,
+.wsite-background-50 .wsite-multicol-tbody {
+  display: block !important;
   width: 100% !important;
-  aspect-ratio: 3 / 2;
-  object-fit: cover;
 }
 
-.wsite-background-20 .wsite-multicol-col > .paragraph,
-.wsite-background-37 .wsite-multicol-col > .paragraph,
-.wsite-background-44 .wsite-multicol-col > .paragraph,
-.wsite-background-51 .wsite-multicol-col > .paragraph {
-  padding: 0 !important;
-  margin: 0 0 14px !important;
-  text-align: left !important;
+.wsite-background-48 .wsite-multicol-tr,
+.wsite-background-49 .wsite-multicol-tr {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 24px !important;
+  align-items: center !important;
+  margin-top: 20px;
 }
 
-.wsite-background-20 .wsite-multicol-col > .paragraph:nth-of-type(1),
-.wsite-background-37 .wsite-multicol-col > .paragraph:nth-of-type(1),
-.wsite-background-44 .wsite-multicol-col > .paragraph:nth-of-type(1),
-.wsite-background-51 .wsite-multicol-col > .paragraph:nth-of-type(1) {
-  color: #92501e !important;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.wsite-background-20 .wsite-multicol-col > .paragraph:nth-of-type(2),
-.wsite-background-37 .wsite-multicol-col > .paragraph:nth-of-type(2),
-.wsite-background-44 .wsite-multicol-col > .paragraph:nth-of-type(2),
-.wsite-background-51 .wsite-multicol-col > .paragraph:nth-of-type(2) {
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 26px !important;
-  font-weight: 700 !important;
-  line-height: 1.2 !important;
-  color: #18382b !important;
-}
-
-.wsite-background-20 .wsite-multicol-col > .paragraph:nth-of-type(3),
-.wsite-background-37 .wsite-multicol-col > .paragraph:nth-of-type(3),
-.wsite-background-44 .wsite-multicol-col > .paragraph:nth-of-type(3),
-.wsite-background-51 .wsite-multicol-col > .paragraph:nth-of-type(3) {
-  flex-grow: 1;
-}
-
-.wsite-background-20 .wsite-multicol-col > .paragraph:nth-of-type(4),
-.wsite-background-37 .wsite-multicol-col > .paragraph:nth-of-type(4),
-.wsite-background-44 .wsite-multicol-col > .paragraph:nth-of-type(4),
-.wsite-background-51 .wsite-multicol-col > .paragraph:nth-of-type(4) {
-  padding-top: 18px !important;
-  border-top: 1px solid #e6dbc8;
-}
-
-.wsite-background-20 .wsite-multicol-col > div:last-child,
-.wsite-background-37 .wsite-multicol-col > div:last-child,
-.wsite-background-44 .wsite-multicol-col > div:last-child,
-.wsite-background-51 .wsite-multicol-col > div:last-child {
-  margin: 18px 0 0 !important;
-}
-
-.wsite-background-20 .wsite-button,
-.wsite-background-37 .wsite-button,
-.wsite-background-44 .wsite-button,
-.wsite-background-51 .wsite-button {
-  display: block;
-  width: 100%;
-}
-
-.udawalawe-port-card {
-  max-width: 1000px;
-  margin: 28px auto 0;
-  padding: 40px;
-  background: #ffffff;
-  border: 1px solid #c6d8be;
-  border-top: 5px solid #18382b;
-  border-radius: 14px;
-  box-shadow: 0 12px 32px rgba(24, 56, 43, 0.08);
-}
-
-/* Deep Jungle Green Wildlife Sections */
-body.header-page #wsite-content .udawalawe-wildlife,
-body.header-page #wsite-content .wilpattu-wildlife,
-body.header-page #wsite-content .minneriya-wildlife,
-body.header-page #wsite-content .kumana-wildlife {
-  background: linear-gradient(180deg, #13231b 0%, #18382b 100%) !important;
-}
-
-body.header-page #wsite-content .udawalawe-wildlife h2,
-body.header-page #wsite-content .udawalawe-wildlife h2 *,
-body.header-page #wsite-content .wilpattu-wildlife h2,
-body.header-page #wsite-content .wilpattu-wildlife h2 *,
-body.header-page #wsite-content .minneriya-wildlife h2,
-body.header-page #wsite-content .minneriya-wildlife h2 *,
-body.header-page #wsite-content .kumana-wildlife h2,
-body.header-page #wsite-content .kumana-wildlife h2 * {
-  color: #faf5ec !important;
-}
-
-.udawalawe-wildlife .wsite-multicol,
-.wilpattu-wildlife .wsite-multicol,
-.minneriya-wildlife .wsite-multicol,
-.kumana-wildlife .wsite-multicol {
-  margin-bottom: 0;
-}
-
-.udawalawe-wildlife .wsite-multicol-tr,
-.wilpattu-wildlife .wsite-multicol-tr,
-.minneriya-wildlife .wsite-multicol-tr,
-.kumana-wildlife .wsite-multicol-tr {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
-}
-
-.udawalawe-wildlife .wsite-multicol-tr:has(> .wsite-multicol-col:nth-child(2):last-child),
-.wilpattu-wildlife .wsite-multicol-tr:has(> .wsite-multicol-col:nth-child(2):last-child),
-.minneriya-wildlife .wsite-multicol-tr:has(> .wsite-multicol-col:nth-child(2):last-child),
-.kumana-wildlife .wsite-multicol-tr:has(> .wsite-multicol-col:nth-child(2):last-child) {
-  grid-template-columns: 1.5fr 1fr;
-}
-
-.udawalawe-wildlife .wsite-multicol-col,
-.wilpattu-wildlife .wsite-multicol-col,
-.minneriya-wildlife .wsite-multicol-col,
-.kumana-wildlife .wsite-multicol-col {
-  width: auto !important;
-  padding: 26px !important;
-  background: #faf5ec;
-  border: 1px solid rgba(245, 166, 35, 0.3);
-  border-top: 4px solid #f5a623;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
-}
-
-.udawalawe-wildlife .wsite-multicol-col .paragraph,
-.udawalawe-wildlife .wsite-multicol-col .paragraph *,
-.wilpattu-wildlife .wsite-multicol-col .paragraph,
-.wilpattu-wildlife .wsite-multicol-col .paragraph *,
-.minneriya-wildlife .wsite-multicol-col .paragraph,
-.minneriya-wildlife .wsite-multicol-col .paragraph *,
-.kumana-wildlife .wsite-multicol-col .paragraph,
-.kumana-wildlife .wsite-multicol-col .paragraph * {
-  color: #2c352d !important;
-}
-
-.udawalawe-wildlife .wsite-multicol-col .paragraph strong,
-.wilpattu-wildlife .wsite-multicol-col .paragraph strong,
-.minneriya-wildlife .wsite-multicol-col .paragraph strong,
-.kumana-wildlife .wsite-multicol-col .paragraph strong {
-  color: #18382b !important;
-}
-
-.udawalawe-wildlife .wsite-image,
-.wilpattu-wildlife .wsite-image,
-.minneriya-wildlife .wsite-image,
-.kumana-wildlife .wsite-image {
-  padding: 0 !important;
-  margin-bottom: 20px !important;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid #dfd3bd;
-}
-
-.udawalawe-wildlife .wsite-image img,
-.wilpattu-wildlife .wsite-image img,
-.minneriya-wildlife .wsite-image img,
-.kumana-wildlife .wsite-image img {
-  display: block;
+.wsite-background-48 .wsite-multicol-col,
+.wsite-background-49 .wsite-multicol-col {
   width: 100% !important;
-  height: 260px !important;
-  object-fit: cover;
-}
-
-.udawalawe-wildlife .wsite-multicol-col > .paragraph,
-.wilpattu-wildlife .wsite-multicol-col > .paragraph,
-.minneriya-wildlife .wsite-multicol-col > .paragraph,
-.kumana-wildlife .wsite-multicol-col > .paragraph {
   padding: 0 !important;
 }
 
-.udawalawe-info .wsite-multicol-col,
-.wilpattu-info .wsite-multicol-col,
-.minneriya-info .wsite-multicol-col,
-.kumana-info .wsite-multicol-col {
-  display: flex !important;
-  flex-direction: column;
-  width: auto !important;
-  padding: 32px !important;
-  background: #ffffff;
-  border: 1px solid #dfd3bd;
-  border-top: 4px solid #18382b;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(24, 56, 43, 0.06);
+.wsite-background-50 .wsite-multicol-tr {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 20px !important;
+  margin-top: 24px;
 }
 
-.udawalawe-info .wsite-multicol-col:nth-child(2),
-.wilpattu-info .wsite-multicol-col:nth-child(2),
-.minneriya-info .wsite-multicol-col:nth-child(2),
-.kumana-info .wsite-multicol-col:nth-child(2) {
-  border-top-color: #f5a623;
+.wsite-background-50 .wsite-multicol-col {
+  width: 100% !important;
+  padding: 22px 18px !important;
+  background: #FFFFFF !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-subtle);
 }
 
-.udawalawe-info .wsite-multicol-col:nth-child(3),
-.wilpattu-info .wsite-multicol-col:nth-child(3),
-.minneriya-info .wsite-multicol-col:nth-child(3),
-.kumana-info .wsite-multicol-col:nth-child(3) {
-  border-top-color: #b85d19;
-}
+@media screen and (min-width: 768px) {
+  .wsite-background-48 .wsite-multicol-tr {
+    grid-template-columns: 1.2fr 0.8fr !important;
+    gap: 36px !important;
+  }
 
-@media screen and (max-width: 979px) {
-  .wsite-background-20 .wsite-multicol-tr,
-  .wsite-background-37 .wsite-multicol-tr,
-  .udawalawe-info .wsite-multicol-tr,
-  .wilpattu-info .wsite-multicol-tr,
-  .minneriya-info .wsite-multicol-tr,
-  .kumana-info .wsite-multicol-tr {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .wsite-background-49 .wsite-multicol-tr {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 36px !important;
+  }
+
+  .wsite-background-50 .wsite-multicol-tr {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 24px !important;
+    margin-top: 28px;
+  }
+
+  .wsite-background-50 .wsite-multicol-col {
+    padding: 28px 24px !important;
   }
 }
 
-@media screen and (max-width: 767px) {
-  .wsite-background-20 .wsite-multicol-tr,
-  .wsite-background-37 .wsite-multicol-tr,
-  .wsite-background-44 .wsite-multicol-tr,
-  .wsite-background-51 .wsite-multicol-tr,
-  .udawalawe-wildlife .wsite-multicol-tr,
-  .wilpattu-wildlife .wsite-multicol-tr,
-  .minneriya-wildlife .wsite-multicol-tr,
-  .kumana-wildlife .wsite-multicol-tr,
-  .udawalawe-wildlife .wsite-multicol-tr:has(> .wsite-multicol-col:nth-child(2):last-child),
-  .wilpattu-wildlife .wsite-multicol-tr:has(> .wsite-multicol-col:nth-child(2):last-child),
-  .minneriya-wildlife .wsite-multicol-tr:has(> .wsite-multicol-col:nth-child(2):last-child),
-  .kumana-wildlife .wsite-multicol-tr:has(> .wsite-multicol-col:nth-child(2):last-child),
-  .udawalawe-info .wsite-multicol-tr,
-  .wilpattu-info .wsite-multicol-tr,
-  .minneriya-info .wsite-multicol-tr,
-  .kumana-info .wsite-multicol-tr {
-    grid-template-columns: 1fr;
-  }
+.wsite-background-51 .container {
+  max-width: 880px;
+}
 
-  .wsite-background-20 .wsite-multicol-col,
-  .wsite-background-37 .wsite-multicol-col,
-  .wsite-background-44 .wsite-multicol-col,
-  .wsite-background-51 .wsite-multicol-col,
-  .udawalawe-wildlife .wsite-multicol-col,
-  .wilpattu-wildlife .wsite-multicol-col,
-  .minneriya-wildlife .wsite-multicol-col,
-  .kumana-wildlife .wsite-multicol-col,
-  .udawalawe-info .wsite-multicol-col,
-  .wilpattu-info .wsite-multicol-col,
-  .minneriya-info .wsite-multicol-col,
-  .kumana-info .wsite-multicol-col,
-  .udawalawe-port-card {
-    padding: 22px 18px !important;
-  }
+.wsite-background-52 {
+  background-color: var(--bg-deep-forest) !important;
 }

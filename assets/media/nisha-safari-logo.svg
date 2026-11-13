@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" width="320" height="80" fill="none">
+  <defs>
+    <linearGradient id="nishaGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fcd34d" />
+      <stop offset="50%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <filter id="subtleGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.45" />
+    </filter>
+  </defs>
+  <g filter="url(#subtleGlow)">
+    <!-- Safari Compass / Sun Emblem -->
+    <g transform="translate(14, 16)">
+      <circle cx="24" cy="24" r="22" stroke="url(#nishaGold)" stroke-width="2.5" fill="none" opacity="0.9" />
+      <!-- Stylized Elephant & Sun silhouette -->
+      <path d="M14 34c0-7 5-13 12-13 4 0 7 2 9 5 2-1 5-1 7 1 2 2 2 5 1 8-1 2-3 4-6 4H18c-2 0-4-2-4-5z" fill="url(#nishaGold)" />
+      <circle cx="34" cy="18" r="3.5" fill="#fcd34d" />
+      <path d="M24 6v4M24 38v4M6 24h4M38 24h4" stroke="url(#nishaGold)" stroke-width="2" stroke-linecap="round" />
+    </g>
+    <!-- Brand Name Typography -->
+    <text x="68" y="38" font-family="'Plus Jakarta Sans', system-ui, -apple-system, sans-serif" font-size="25" font-weight="900" letter-spacing="2.5" fill="#FFFFFF">NISHA</text>
+    <text x="170" y="38" font-family="'Plus Jakarta Sans', system-ui, -apple-system, sans-serif" font-size="25" font-weight="900" letter-spacing="2.5" fill="url(#nishaGold)">SAFARI</text>
+    <text x="70" y="54" font-family="'Plus Jakarta Sans', system-ui, -apple-system, sans-serif" font-size="9" font-weight="700" letter-spacing="3.2" fill="#E5E7EB" text-transform="uppercase">SRI LANKA JEEP TOURS · EST. 2002</text>
+  </g>
+</svg>

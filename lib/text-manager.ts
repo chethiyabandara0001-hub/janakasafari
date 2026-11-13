@@ -27,6 +27,8 @@ export interface SiteTextSlot {
     | 'TD'
     | 'CUSTOM';
   sectionContext: string;
+  sectionName: string;
+  subSectionName?: string;
   content: string;
   defaultContent: string;
   isDeleted: boolean;
@@ -87,6 +89,21 @@ function decodeHtmlEntities(str: string): string {
     .trim();
 }
 
+export function splitTextSectionContext(ctx: string): {
+  sectionName: string;
+  subSectionName?: string;
+} {
+  const clean = (ctx || 'Page Content').trim();
+  const sepIdx = clean.indexOf(' · ');
+  if (sepIdx !== -1) {
+    return {
+      sectionName: clean.slice(0, sepIdx).trim(),
+      subSectionName: clean.slice(sepIdx + 3).trim() || undefined,
+    };
+  }
+  return { sectionName: clean };
+}
+
 export function makeTextSlotId(page: string, textIndex: number): string {
   const safePage = page.replace(/[^a-zA-Z0-9_-]/g, '_');
   return `${safePage}__text_${textIndex}`;
@@ -101,12 +118,113 @@ interface ParsedTextMatch {
   textIndex: number;
   tagName: SiteTextSlot['tagName'];
   sectionContext: string;
+  sectionName: string;
+  subSectionName?: string;
   content: string;
+}
+
+function detectTextLocation(
+  targetRegion: string,
+  matchIndex: number,
+  rawTag: string,
+  cleanText: string,
+  state: { sectionName: string; subSectionName?: string; inCrossBridge: boolean }
+): { sectionContext: string; sectionName: string; subSectionName?: string } {
+  const before = targetRegion.slice(Math.max(0, matchIndex - 2200), matchIndex);
+
+  if (before.includes('hero-cross-bridge-wrap') && !before.includes('<div class="main-wrap"')) {
+    state.inCrossBridge = true;
+    state.sectionName = 'Hero Bottom Cross-Section';
+    if (before.includes('cross-sub-right') && !before.slice(before.lastIndexOf('cross-sub-right')).includes('</section>')) {
+      state.subSectionName = 'Happy Safari Explorers';
+    } else if (before.includes('cross-sub-center') && !before.slice(before.lastIndexOf('cross-sub-center')).includes('cross-sub-right')) {
+      state.subSectionName = 'TripAdvisor Winner';
+    } else {
+      state.subSectionName = 'Google Reviews';
+    }
+    return {
+      sectionContext: `${state.sectionName} · ${state.subSectionName}`,
+      sectionName: state.sectionName,
+      subSectionName: state.subSectionName,
+    };
+  }
+
+  if (state.inCrossBridge && (before.includes('class="main-wrap"') || before.includes('wsite-body-section'))) {
+    state.inCrossBridge = false;
+    state.subSectionName = undefined;
+  }
+
+  if (
+    before.includes('class="wsite-body-section') &&
+    before.lastIndexOf('class="wsite-body-section') > before.lastIndexOf('hero-cross-bridge-wrap')
+  ) {
+    // Check if we entered a new card / column inside a body section
+    const recentArticleIdx = before.lastIndexOf('<article');
+    const recentArticleCloseIdx = before.lastIndexOf('</article>');
+    if (recentArticleIdx > recentArticleCloseIdx) {
+      const cardSlice = targetRegion.slice(
+        Math.max(0, matchIndex - 2200) + recentArticleIdx,
+        Math.min(targetRegion.length, matchIndex + 700)
+      );
+      const cardStrong = cardSlice.match(/<(?:h3|h4|strong)\b[^>]*>([\s\S]*?)<\/(?:h3|h4|strong)>/i);
+      const cardTitle = cardStrong ? decodeHtmlEntities(cardStrong[1]) : '';
+      if (cardTitle && cardTitle.length < 70 && cardTitle !== state.sectionName) {
+        state.subSectionName = cardTitle;
+      }
+    }
+  }
+
+  if (rawTag === 'H1' || rawTag === 'H2') {
+    const isSmallEyebrow =
+      cleanText.length <= 30 &&
+      /^(OUR SAFARI EXPERIENCES|SAFARI PARKS|EXPLORE|TESTIMONIALS)$/i.test(cleanText);
+    if (!isSmallEyebrow) {
+      state.sectionName = cleanText.slice(0, 120);
+      state.subSectionName = undefined;
+    }
+  } else if (rawTag === 'H3' || rawTag === 'H4') {
+    state.subSectionName = cleanText.slice(0, 90);
+  } else {
+    // Detect sub-section from bold title in same card/column if needed
+    const lastSecOpen = Math.max(
+      before.lastIndexOf('class="wsite-section '),
+      before.lastIndexOf('class="wsite-body-section')
+    );
+    const recentCardOpen = Math.max(
+      before.lastIndexOf('<td class="wsite-multicol-col'),
+      before.lastIndexOf('<article ')
+    );
+    if (recentCardOpen > lastSecOpen && recentCardOpen !== -1) {
+      const cellSlice = before.slice(recentCardOpen);
+      const cellHeadingMatch = cellSlice.match(
+        /<(?:h3|h4|strong)\b[^>]*>([\s\S]*?)<\/(?:h3|h4|strong)>/i
+      );
+      const candidateSub = cellHeadingMatch ? decodeHtmlEntities(cellHeadingMatch[1]) : '';
+      if (
+        candidateSub &&
+        candidateSub.length >= 3 &&
+        candidateSub.length <= 70 &&
+        candidateSub !== state.sectionName
+      ) {
+        state.subSectionName = candidateSub;
+      }
+    }
+  }
+
+  const sectionContext = state.subSectionName
+    ? `${state.sectionName} · ${state.subSectionName}`
+    : state.sectionName;
+  return {
+    sectionContext,
+    sectionName: state.sectionName,
+    subSectionName: state.subSectionName,
+  };
 }
 
 /**
  * Extracts editable text elements from a page's <main> and hero banner in deterministic order.
- * Matches headings (h1-h4), paragraphs (p), blockquotes, list items (li), and CTA button labels (.wsite-button-inner).
+ * Matches headings (h1-h4), paragraphs (p), leaf div.paragraph, blockquotes, list items (li),
+ * button labels (.wsite-button-inner), hero kicker, and Hero Cross-Section stats/titles/captions.
  */
 export function parsePageTextSlots(html: string): ParsedTextMatch[] {
   const results: ParsedTextMatch[] = [];
@@ -114,15 +232,23 @@ export function parsePageTextSlots(html: string): ParsedTextMatch[] {
   const targetRegion = mainMatch ? mainMatch[1] : html;
 
   const regex =
-    /<(h1|h2|h3|h4|p|blockquote|li)\b[^>]*>([\s\S]*?)<\/\1>|<span\b[^>]*class="[^"]*wsite-button-inner[^"]*"[^>]*>([\s\S]*?)<\/span>/gi;
+    /<(h1|h2|h3|h4|p|blockquote|li)\b[^>]*>([\s\S]*?)<\/\1>|<span\b[^>]*class="[^"]*\bwsite-button-inner\b[^"]*"[^>]*>([\s\S]*?)<\/span>|<(div|span)\b[^>]*class="[^"]*\b(?:paragraph|hero-editorial-kicker|cross-score|cross-metric|cross-title|cross-caption)\b[^"]*"[^>]*>([\s\S]*?)<\/\4>/gi;
 
-  let currentSection = 'Hero Banner';
+  const locState = {
+    sectionName: 'Hero Banner',
+    subSectionName: undefined as string | undefined,
+    inCrossBridge: false,
+  };
   let textIndex = 0;
   let match: RegExpExecArray | null;
 
   while ((match = regex.exec(targetRegion)) !== null) {
-    const rawTag = match[1] ? match[1].toUpperCase() : 'SPAN';
-    const innerHtml = match[1] ? match[2] : match[3];
+    const rawTag = match[1]
+      ? match[1].toUpperCase()
+      : match[3] !== undefined
+      ? 'SPAN'
+      : (match[4] || 'DIV').toUpperCase();
+    const innerHtml = match[1] ? match[2] : match[3] !== undefined ? match[3] : match[5];
     if (/<(p|div|ul|ol|table|h1|h2|h3|h4)\b/i.test(innerHtml)) {
       continue;
     }
@@ -132,20 +258,20 @@ export function parsePageTextSlots(html: string): ParsedTextMatch[] {
       continue;
     }
 
-    if (rawTag === 'H1' || rawTag === 'H2') {
-      currentSection = cleanText.slice(0, 120);
-    }
-
     const tagName = (
-      ['H1', 'H2', 'H3', 'H4', 'P', 'SPAN', 'LI', 'BLOCKQUOTE'].includes(rawTag)
+      ['H1', 'H2', 'H3', 'H4', 'P', 'SPAN', 'LI', 'DIV', 'BLOCKQUOTE'].includes(rawTag)
         ? rawTag
-        : 'P'
+        : 'DIV'
     ) as SiteTextSlot['tagName'];
+
+    const loc = detectTextLocation(targetRegion, match.index, rawTag, cleanText, locState);
 
     results.push({
       textIndex: textIndex++,
       tagName,
-      sectionContext: currentSection,
+      sectionContext: loc.sectionContext,
+      sectionName: loc.sectionName,
+      subSectionName: loc.subSectionName,
       content: cleanText,
     });
   }
@@ -225,13 +351,17 @@ export async function getAllSiteTexts(): Promise<{
     for (const item of parsedDefaults) {
       const textId = makeTextSlotId(page.file, item.textIndex);
       const override = cmsState.textOverrides[textId];
+      const effectiveContext = override?.sectionContext || item.sectionContext;
+      const splitCtx = splitTextSectionContext(effectiveContext);
       textSlots.push({
         textId,
         page: page.file,
         pageTitle: page.title,
         textIndex: item.textIndex,
         tagName: item.tagName,
-        sectionContext: override?.sectionContext || item.sectionContext,
+        sectionContext: effectiveContext,
+        sectionName: override?.sectionContext ? splitCtx.sectionName : item.sectionName,
+        subSectionName: override?.sectionContext ? splitCtx.subSectionName : item.subSectionName,
         content: override !== undefined ? override.content : item.content,
         defaultContent: item.content,
         isDeleted: Boolean(override?.isDeleted),
@@ -246,13 +376,17 @@ export async function getAllSiteTexts(): Promise<{
   for (const [key, val] of Object.entries(cmsState.textOverrides)) {
     if (val.isCustomAdded) {
       const pageMeta = SITE_PAGES.find((p) => p.file === val.page);
+      const ctx = val.sectionContext || 'Custom Section Text';
+      const splitCtx = splitTextSectionContext(ctx);
       customTexts.push({
         textId: key,
         page: val.page,
         pageTitle: pageMeta ? pageMeta.title : val.page,
         textIndex: -1,
         tagName: val.tagName || 'CUSTOM',
-        sectionContext: val.sectionContext || 'Custom Section Text',
+        sectionContext: ctx,
+        sectionName: splitCtx.sectionName,
+        subSectionName: splitCtx.subSectionName,
         content: val.content,
         defaultContent: '',
         isDeleted: Boolean(val.isDeleted),

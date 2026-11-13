@@ -157,9 +157,11 @@ header.dusk-header {
   box-shadow: none !important;
 }
 
-/* Inner Pages Without a Hero Banner (gallery.html, reviews.html) */
+/* Inner Pages Without a Full-Bleed Dark Hero Banner (gallery, reviews, contact) */
 body.no-header-page .dusk-header,
-body.no-header-page header.dusk-header {
+body.no-header-page header.dusk-header,
+body.janaka-contact .dusk-header,
+body.janaka-contact header.dusk-header {
   position: sticky !important;
   top: 0 !important;
   background: #012f23 !important;
@@ -169,13 +171,16 @@ body.no-header-page header.dusk-header {
   -webkit-backdrop-filter: blur(10px) !important;
 }
 
-body.no-header-page .dusk-header .nav-wrap {
+body.no-header-page .dusk-header .nav-wrap,
+body.janaka-contact .dusk-header .nav-wrap {
   background: #012f23 !important;
   background-color: #012f23 !important;
 }
 
 body.no-header-page .site-canvas,
-body.no-header-page .main-wrap {
+body.no-header-page .main-wrap,
+body.janaka-contact .site-canvas,
+body.janaka-contact .main-wrap {
   padding-top: 20px !important;
   min-height: 75vh;
 }
@@ -1549,22 +1554,77 @@ hr.styled-hr {
   margin: 16px 0;
 }
 
-/* Image Gallery — Rounded Safari Frames */
+/* Image Gallery — Modern CSS Grid Overriding Legacy Weebly Floats & Negative Crop Offsets */
+.imageGallery {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)) !important;
+  gap: 18px !important;
+  line-height: normal !important;
+}
+
+.imageGallery.is-gallery-empty {
+  display: block !important;
+}
+
+.imageGallery.is-gallery-empty::before {
+  content: "New safari photographs can be uploaded directly from the Admin Panel and synced via Cloudflare R2.";
+  display: block;
+  padding: 28px 24px;
+  background: #ffffff;
+  border: 1px dashed #d5cfc2;
+  border-radius: 14px;
+  color: #5c5954;
+  font-size: 14.5px;
+  line-height: 1.6;
+  text-align: center;
+}
+
 .imageGallery::after {
-  content: "";
-  display: table;
-  clear: both;
+  display: none !important;
+}
+
+.imageGallery > span {
+  display: none !important;
+}
+
+.imageGallery > div[id*="-imageContainer"] {
+  float: none !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+.imageGallery > div[id*="-imageContainer"] > div[id*="-insideImageContainer"] {
+  margin: 0 !important;
 }
 
 .imageGallery .galleryImageHolder {
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  padding: 0 !important;
+  aspect-ratio: 4 / 3;
   border-radius: 14px;
   overflow: hidden;
   border: 2px solid #e4dccb;
-  background: #ffffff;
+  background: #14221b;
   box-shadow: 0 8px 24px rgba(24, 56, 43, 0.08);
 }
 
+.imageGallery .galleryInnerImageHolder,
+.imageGallery .galleryInnerImageHolder a {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
 .imageGallery .galleryImage {
+  position: static !important;
+  width: 100% !important;
+  height: 100% !important;
+  top: auto !important;
+  left: auto !important;
+  object-fit: cover !important;
+  display: block !important;
   transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -1572,12 +1632,10 @@ hr.styled-hr {
   transform: scale(1.04);
 }
 
-@media screen and (max-width: 767px) {
-  .imageGallery > div {
-    width: 50% !important;
-  }
-  .imageGallery > div.fullwidth-mobile {
-    width: 100% !important;
+@media screen and (max-width: 560px) {
+  .imageGallery {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
   }
 }
 

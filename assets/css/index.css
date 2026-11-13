@@ -212,14 +212,27 @@ body.header-page #wsite-content .wsite-background-1 .home-safari-card > .paragra
 }
 
 @media screen and (min-width: 768px) and (max-width: 1023px) {
-  .janaka-benefits .benefits-grid > .wsite-multicol-table-wrap > .wsite-multicol-table > .wsite-multicol-tbody > .wsite-multicol-tr {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .janaka-benefits .benefits-grid > .wsite-multicol-table-wrap > .wsite-multicol-table > .wsite-multicol-tbody > .wsite-multicol-tr,
+  .janaka-benefits .benefits-grid table > tbody > tr {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 18px !important;
   }
 }
 
 @media screen and (max-width: 767px) {
-  .janaka-benefits .benefits-grid > .wsite-multicol-table-wrap > .wsite-multicol-table > .wsite-multicol-tbody > .wsite-multicol-tr {
-    grid-template-columns: 1fr;
+  .janaka-benefits .benefits-grid > .wsite-multicol-table-wrap > .wsite-multicol-table > .wsite-multicol-tbody > .wsite-multicol-tr,
+  .janaka-benefits .benefits-grid table > tbody > tr {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+    width: 100% !important;
+    margin-top: 20px !important;
+  }
+
+  .janaka-benefits .benefit-column {
+    width: 100% !important;
+    padding: 24px 18px !important;
   }
 }
 
@@ -863,8 +876,8 @@ body.header-page #wsite-content .wsite-background-84 .wsite-multicol-col > .para
     display: grid !important;
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     align-items: stretch !important;
-    gap: 4px !important;
-    padding: 14px 8px !important;
+    gap: 8px !important;
+    padding: 16px 12px !important;
   }
 }
 
@@ -872,8 +885,13 @@ body.header-page #wsite-content .wsite-background-84 .wsite-multicol-col > .para
   div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > section:nth-of-type(1) > div:nth-of-type(1),
   .hero-cross-bridge-card {
     position: relative !important;
-    top: -4px !important;
-    margin-top: -7% !important;
+    top: -6px !important;
+    margin-top: -8% !important;
     margin-bottom: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    width: calc(100% - 20px) !important;
+    padding: 18px 16px !important;
+    gap: 12px !important;
   }
 }

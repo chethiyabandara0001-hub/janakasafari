@@ -40,28 +40,108 @@ function stripTags(html) {
     .trim();
 }
 
-function findSectionContext(htmlBefore, isHeaderLogo, isFooterLogo) {
+function splitSectionContext(sectionContext) {
+  const clean = (sectionContext || 'Page Content').trim();
+  if (clean === 'Header Navigation Logo') {
+    return { sectionName: 'Site Header', subSectionName: 'Navigation Brand Logo' };
+  }
+  if (clean === 'Footer Brand Logo') {
+    return { sectionName: 'Site Footer', subSectionName: 'Footer Brand Logo' };
+  }
+  const heroMatch = clean.match(/^Hero Banner\s*\(([\s\S]+)\)$/i);
+  if (heroMatch) {
+    return { sectionName: 'Hero Banner', subSectionName: heroMatch[1].trim() };
+  }
+  const sepIdx = clean.indexOf(' · ');
+  if (sepIdx !== -1) {
+    return {
+      sectionName: clean.slice(0, sepIdx).trim(),
+      subSectionName: clean.slice(sepIdx + 3).trim() || undefined,
+    };
+  }
+  return { sectionName: clean };
+}
+
+function findSectionContext(html, startIndex, isHeaderLogo, isFooterLogo, imgTag) {
   if (isHeaderLogo) return 'Header Navigation Logo';
   if (isFooterLogo) return 'Footer Brand Logo';
 
-  const h2Matches = [...htmlBefore.matchAll(/<h2[^>]*>([\s\S]*?)<\/h2>/gi)];
-  const lastH2 = h2Matches.length > 0 ? stripTags(h2Matches[h2Matches.length - 1][1]) : '';
+  const htmlBefore = html.slice(0, startIndex);
 
-  const strongMatches = [...htmlBefore.matchAll(/<strong[^>]*>([\s\S]*?)<\/strong>/gi)];
+  if (imgTag) {
+    if (imgTag.includes('cross-top-google')) return 'Hero Bottom Cross-Section · Google Reviews Badge';
+    if (imgTag.includes('cross-top-tripadvisor')) return 'Hero Bottom Cross-Section · TripAdvisor Winner Badge';
+    if (imgTag.includes('cross-top-traveler')) return 'Hero Bottom Cross-Section · Happy Safari Explorers Badge';
+    if (imgTag.includes('cross-top-img')) return 'Hero Bottom Cross-Section · Trust Badge';
+  }
+  if (
+    htmlBefore.includes('hero-cross-bridge-wrap') &&
+    !htmlBefore.slice(htmlBefore.lastIndexOf('hero-cross-bridge-wrap')).includes('</section>')
+  ) {
+    return 'Hero Bottom Cross-Section · Trust Badge';
+  }
+
+  const secStart = Math.max(
+    htmlBefore.lastIndexOf('class="wsite-body-section'),
+    htmlBefore.lastIndexOf('class="wsite-header-section')
+  );
+  const nextSec = html.indexOf('class="wsite-body-section', startIndex);
+  const secEnd = nextSec !== -1 ? nextSec : Math.min(html.length, startIndex + 5000);
+  const sectionSlice = secStart !== -1 ? html.slice(secStart, secEnd) : htmlBefore;
+  const beforeInSection = secStart !== -1 ? html.slice(secStart, startIndex) : htmlBefore;
+
+  const h2Before = [...beforeInSection.matchAll(/<h2[^>]*>([\s\S]*?)<\/h2>/gi)]
+    .map((m) => stripTags(m[1]))
+    .filter((t) => t && !/^(OUR SAFARI EXPERIENCES|SAFARI PARKS|EXPLORE)$/i.test(t));
+  const h2InSec =
+    h2Before.length > 0
+      ? h2Before[h2Before.length - 1]
+      : [...sectionSlice.matchAll(/<h2[^>]*>([\s\S]*?)<\/h2>/gi)]
+          .map((m) => stripTags(m[1]))
+          .find((t) => t && !/^(OUR SAFARI EXPERIENCES|SAFARI PARKS|EXPLORE)$/i.test(t)) || '';
+
+  let cardSub = '';
+  const articleOpen = beforeInSection.lastIndexOf('<article');
+  const articleClose = beforeInSection.lastIndexOf('</article>');
+  if (articleOpen !== -1 && articleOpen > articleClose) {
+    const articleEnd = html.indexOf('</article>', startIndex);
+    const articleSlice = html.slice(
+      (secStart !== -1 ? secStart : 0) + articleOpen,
+      articleEnd !== -1 ? articleEnd : startIndex + 700
+    );
+    const cardStrong = articleSlice.match(/<(?:h3|h4|strong)\b[^>]*>([\s\S]*?)<\/(?:h3|h4|strong)>/i);
+    if (cardStrong) cardSub = stripTags(cardStrong[1]);
+  }
+
+  if (!cardSub) {
+    const colOpen = beforeInSection.lastIndexOf('wsite-multicol-col');
+    const colClose = beforeInSection.lastIndexOf('</td>');
+    if (colOpen !== -1 && colOpen > colClose) {
+      const colSlice = html.slice(
+        (secStart !== -1 ? secStart : 0) + colOpen,
+        Math.min(html.length, startIndex + 900)
+      );
+      const colStrong = colSlice.match(/<(?:h3|h4|strong)\b[^>]*>([\s\S]*?)<\/(?:h3|h4|strong)>/i);
+      if (colStrong) cardSub = stripTags(colStrong[1]);
+    }
+  }
+
+  if (htmlBefore.slice(-300).includes('janaka-payment')) {
+    const altM = imgTag?.match(/\balt="([^"]*)"/i);
+    cardSub = altM?.[1] ? `Payment Badge (${altM[1]})` : 'Payment Badge';
+  }
+
+  const strongBefore = [...beforeInSection.matchAll(/<strong[^>]*>([\s\S]*?)<\/strong>/gi)];
   const lastStrong =
-    strongMatches.length > 0 ? stripTags(strongMatches[strongMatches.length - 1][1]) : '';
+    strongBefore.length > 0 ? stripTags(strongBefore[strongBefore.length - 1][1]) : '';
 
-  if (imgTag && (imgTag.includes('cross-top-img') || imgTag.includes('cross-top-'))) {
-    return 'Hero Cross-Section Awards & Trust Badges';
-  }
-  if (htmlBefore.includes('hero-cross-bridge-wrap') && !htmlBefore.includes('</section>')) {
-    return 'Hero Cross-Section Awards & Trust Badges';
-  }
+  const parentHeading = h2InSec || lastStrong || 'Page Content';
+  const subHeading = cardSub || (lastStrong && lastStrong !== parentHeading ? lastStrong : '');
 
-  if (lastH2 && lastStrong && lastH2 !== lastStrong && lastStrong.length < 60) {
-    return `${lastH2} · ${lastStrong}`;
+  if (parentHeading && subHeading && parentHeading !== subHeading && subHeading.length < 70) {
+    return `${parentHeading} · ${subHeading}`;
   }
-  return lastH2 || lastStrong || 'Page Content';
+  return parentHeading;
 }
 
 function parsePageSlots(html) {
@@ -123,7 +203,7 @@ function parsePageSlots(html) {
 
       const kind =
         isHeaderLogo || isFooterLogo || isCrossBadge ? 'logo' : lightboxHref ? 'gallery-img' : 'img';
-      const sectionContext = findSectionContext(htmlBefore, isHeaderLogo, isFooterLogo, imgTag);
+      const sectionContext = findSectionContext(html, startIndex, isHeaderLogo, isFooterLogo, imgTag);
 
       results.push({
         slotIndex: slotIndex++,
@@ -143,15 +223,21 @@ function parsePageTextSlots(html) {
   const mainMatch = html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i);
   const targetRegion = mainMatch ? mainMatch[1] : html;
   const regex =
-    /<(h1|h2|h3|h4|p|blockquote|li)\b[^>]*>([\s\S]*?)<\/\1>|<span\b[^>]*class="[^"]*wsite-button-inner[^"]*"[^>]*>([\s\S]*?)<\/span>/gi;
+    /<(h1|h2|h3|h4|p|blockquote|li)\b[^>]*>([\s\S]*?)<\/\1>|<span\b[^>]*class="[^"]*\bwsite-button-inner\b[^"]*"[^>]*>([\s\S]*?)<\/span>|<(div|span)\b[^>]*class="[^"]*\b(?:paragraph|hero-editorial-kicker|cross-score|cross-metric|cross-title|cross-caption)\b[^"]*"[^>]*>([\s\S]*?)<\/\4>/gi;
 
-  let currentSection = 'Hero Banner';
+  let sectionName = 'Hero Banner';
+  let subSectionName;
+  let inCrossBridge = false;
   let textIndex = 0;
   let match;
 
   while ((match = regex.exec(targetRegion)) !== null) {
-    const rawTag = match[1] ? match[1].toUpperCase() : 'SPAN';
-    const innerHtml = match[1] ? match[2] : match[3];
+    const rawTag = match[1]
+      ? match[1].toUpperCase()
+      : match[3] !== undefined
+      ? 'SPAN'
+      : (match[4] || 'DIV').toUpperCase();
+    const innerHtml = match[1] ? match[2] : match[3] !== undefined ? match[3] : match[5];
     if (/<(p|div|ul|ol|table|h1|h2|h3|h4)\b/i.test(innerHtml)) {
       continue;
     }
@@ -159,17 +245,65 @@ function parsePageTextSlots(html) {
     if (!cleanText || cleanText.length < 2) {
       continue;
     }
-    if (rawTag === 'H1' || rawTag === 'H2') {
-      currentSection = cleanText.slice(0, 120);
-    }
-    const tagName = ['H1', 'H2', 'H3', 'H4', 'P', 'SPAN', 'LI', 'BLOCKQUOTE'].includes(rawTag)
-      ? rawTag
-      : 'P';
 
+    const before = targetRegion.slice(Math.max(0, match.index - 2200), match.index);
+    if (before.includes('hero-cross-bridge-wrap') && !before.includes('<div class="main-wrap"')) {
+      inCrossBridge = true;
+      sectionName = 'Hero Bottom Cross-Section';
+      if (before.includes('cross-sub-right') && !before.slice(before.lastIndexOf('cross-sub-right')).includes('</section>')) {
+        subSectionName = 'Happy Safari Explorers';
+      } else if (before.includes('cross-sub-center') && !before.slice(before.lastIndexOf('cross-sub-center')).includes('cross-sub-right')) {
+        subSectionName = 'TripAdvisor Winner';
+      } else {
+        subSectionName = 'Google Reviews';
+      }
+    } else {
+      if (inCrossBridge && (before.includes('class="main-wrap"') || before.includes('wsite-body-section'))) {
+        inCrossBridge = false;
+        subSectionName = undefined;
+      }
+      if (rawTag === 'H1' || rawTag === 'H2') {
+        const isSmallEyebrow =
+          cleanText.length <= 30 &&
+          /^(OUR SAFARI EXPERIENCES|SAFARI PARKS|EXPLORE|TESTIMONIALS)$/i.test(cleanText);
+        if (!isSmallEyebrow) {
+          sectionName = cleanText.slice(0, 120);
+          subSectionName = undefined;
+        }
+      } else if (rawTag === 'H3' || rawTag === 'H4') {
+        subSectionName = cleanText.slice(0, 90);
+      } else {
+        const lastSecOpen = Math.max(
+          before.lastIndexOf('class="wsite-section '),
+          before.lastIndexOf('class="wsite-body-section')
+        );
+        const recentCardOpen = Math.max(
+          before.lastIndexOf('<td class="wsite-multicol-col'),
+          before.lastIndexOf('<article ')
+        );
+        if (recentCardOpen > lastSecOpen && recentCardOpen !== -1) {
+          const cellHeadingMatch = before
+            .slice(recentCardOpen)
+            .match(/<(?:h3|h4|strong)\b[^>]*>([\s\S]*?)<\/(?:h3|h4|strong)>/i);
+          const candidateSub = cellHeadingMatch ? stripTags(cellHeadingMatch[1]) : '';
+          if (candidateSub && candidateSub.length >= 3 && candidateSub.length <= 70 && candidateSub !== sectionName) {
+            subSectionName = candidateSub;
+          }
+        }
+      }
+    }
+
+    const tagName = ['H1', 'H2', 'H3', 'H4', 'P', 'SPAN', 'LI', 'DIV', 'BLOCKQUOTE'].includes(rawTag)
+      ? rawTag
+      : 'DIV';
+
+    const sectionContext = subSectionName ? `${sectionName} · ${subSectionName}` : sectionName;
     results.push({
       textIndex: textIndex++,
       tagName,
-      sectionContext: currentSection,
+      sectionContext,
+      sectionName,
+      subSectionName,
       content: cleanText,
     });
   }
@@ -296,6 +430,7 @@ async function buildInventories() {
         : cleanFile;
       const sharedCount = effectiveSrc ? slotCountBySrc.get(effectiveSrc.split('?')[0]) || 1 : 1;
 
+      const splitCtx = splitSectionContext(m.sectionContext);
       enrichedSlots.push({
         id: firestoreSlotId,
         slotId: firestoreSlotId,
@@ -306,6 +441,8 @@ async function buildInventories() {
         type: mappedType,
         label: override?.label || m.alt || m.sectionContext || `Slot #${m.slotIndex + 1}`,
         sectionContext: m.sectionContext,
+        sectionName: splitCtx.sectionName,
+        subSectionName: splitCtx.subSectionName,
         src: effectiveSrc,
         lightboxHref: isEmptyOrDeleted ? '' : override?.lightboxHref || effectiveSrc,
         r2Key: isEmptyOrDeleted ? undefined : override?.r2Key,
@@ -405,13 +542,17 @@ async function buildInventories() {
     for (const item of parsedDefaults) {
       const textId = makeTextSlotId(page.file, item.textIndex);
       const override = cmsState.textOverrides[textId];
+      const effectiveCtx = override?.sectionContext || item.sectionContext;
+      const splitCtx = splitSectionContext(effectiveCtx);
       textSlots.push({
         textId,
         page: page.file,
         pageTitle: page.title,
         textIndex: item.textIndex,
         tagName: item.tagName,
-        sectionContext: override?.sectionContext || item.sectionContext,
+        sectionContext: effectiveCtx,
+        sectionName: override?.sectionContext ? splitCtx.sectionName : item.sectionName,
+        subSectionName: override?.sectionContext ? splitCtx.subSectionName : item.subSectionName,
         content: override !== undefined ? override.content : item.content,
         defaultContent: item.content,
         isDeleted: Boolean(override?.isDeleted),
@@ -1134,6 +1275,55 @@ const worker = {
                 isDeleted: false,
                 updatedAt: new Date().toISOString(),
               };
+            } else if (action === 'sync-to-site-r2') {
+              let synced = 0;
+              let failed = 0;
+              const errors = [];
+              if (r2Bucket) {
+                for (const item of IMAGES_INVENTORY.r2Objects || []) {
+                  if (DELETED_R2_KEYS.has(item.r2Key)) continue;
+                  try {
+                    const existing = await r2Bucket.head(item.r2Key);
+                    if (!existing) {
+                      const assetRes = await env.ASSETS.fetch(new Request(new URL('/assets/r2-bucket/' + item.r2Key, url.origin)));
+                      if (assetRes.ok) {
+                        const buf = await assetRes.arrayBuffer();
+                        await r2Bucket.put(item.r2Key, buf, {
+                          httpMetadata: { contentType: item.mimeType || guessMimeType(item.r2Key) },
+                          customMetadata: {
+                            alt: String(item.alt || ''),
+                            title: String(item.title || item.filename || item.r2Key),
+                            page: String(item.page || ''),
+                          },
+                        });
+                      }
+                    }
+                    synced++;
+                  } catch (e) {
+                    failed++;
+                    errors.push(item.r2Key + ': ' + (e && e.message ? e.message : String(e)));
+                  }
+                }
+              }
+              const r2Objects = await listLiveR2Objects(env);
+              return new Response(
+                JSON.stringify({
+                  ok: true,
+                  syncReport: {
+                    r2Total: (IMAGES_INVENTORY.r2Objects || []).length,
+                    r2Pushed: synced,
+                    r2Failed: failed,
+                    htmlSlotsUpdated: 0,
+                    pagesUpdated: [],
+                    authMode: r2Bucket ? 'worker-binding' : 'static-fallback',
+                    cdnBaseUrl: cdnBase,
+                    errors,
+                  },
+                  ...IMAGES_INVENTORY,
+                  r2Objects,
+                }),
+                { status: 200, headers: JSON_HEADERS }
+              );
             }
           } catch (e) {}
         }

@@ -224,8 +224,8 @@ a {
 }
 
 body.janaka-contact .hamburger {
-  border-color: var(--border-subtle);
-  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #FFFFFF;
 }
 
 .hamburger:hover {
@@ -233,7 +233,7 @@ body.janaka-contact .hamburger {
 }
 
 body.janaka-contact .hamburger:hover {
-  background: var(--bg-elevated);
+  background: rgba(255, 255, 255, 0.18);
 }
 
 /* Desktop Navigation (Hidden on Mobile/Tablet < 961px) */
@@ -270,7 +270,7 @@ body.janaka-contact .hamburger:hover {
 }
 
 body.janaka-contact .desktop-nav .wsite-menu-item {
-  color: var(--text-primary);
+  color: #FFFFFF;
   text-shadow: none;
 }
 

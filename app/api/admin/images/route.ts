@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import path from 'node:path';
 import {
   getAllSiteImages,
+  splitSectionContext,
   updatePageSlotImage,
   replaceGlobalAssetFile,
   resetImageOrSlot,
@@ -13,6 +14,9 @@ import {
 } from '@/lib/section-seed-data';
 import {
   DEFAULT_R2_BUCKET_NAME,
+  buildR2CdnUrl,
+  getR2ConfigStatus,
+  syncAllObjectsToRemoteR2,
   listR2Objects,
   putR2Object,
   putR2ObjectFromDataUrl,
@@ -45,6 +49,9 @@ async function buildEnrichedImageInventory() {
     const seedMeta = seedMetaMap.get(firestoreSlotId);
     const mappedType: 'hero-bg' | 'img' | 'lightbox-img' | 'logo' =
       s.kind === 'gallery-img' ? 'lightbox-img' : s.kind;
+    const isHeroCrossSection = s.sectionContext.startsWith('Hero Bottom Cross-Section');
+    const usableSeedMeta =
+      !isHeroCrossSection && seedMeta && seedMeta.type === mappedType ? seedMeta : undefined;
     const rawSrcCandidate =
       override && !override.isDeleted ? override.src : s.src;
     const isSlotEmpty =
@@ -56,12 +63,18 @@ async function buildEnrichedImageInventory() {
     const effectiveAlt =
       override?.alt !== undefined
         ? override.alt
-        : seedMeta?.alt || s.alt;
+        : s.alt || usableSeedMeta?.alt || '';
     const cleanFile = (effectiveSrc || '').split('?')[0].replace(/^\/+/, '');
     const assetFilename = cleanFile ? path.basename(cleanFile) : '';
     const effectiveR2Key = isDeleted
       ? undefined
       : override?.r2Key || extractR2KeyFromCdnUrl(effectiveSrc) || undefined;
+    const resolvedContext = isHeroCrossSection
+      ? s.sectionContext
+      : override?.sectionContext && override.sectionContext !== 'Updated Slot'
+      ? override.sectionContext
+      : s.sectionContext || usableSeedMeta?.sectionContext || 'Page Content';
+    const splitCtx = splitSectionContext(resolvedContext);
 
     return {
       ...s,
@@ -69,15 +82,15 @@ async function buildEnrichedImageInventory() {
       slotId: firestoreSlotId,
       type: mappedType,
       label:
-        override?.label ||
-        seedMeta?.label ||
+        (override?.label && !/^Slot #\d+$/i.test(override.label) ? override.label : '') ||
         s.alt ||
+        usableSeedMeta?.label ||
+        s.subSectionName ||
         s.sectionContext ||
         `Slot #${s.slotIndex + 1}`,
-      sectionContext:
-        override?.sectionContext ||
-        seedMeta?.sectionContext ||
-        s.sectionContext,
+      sectionContext: resolvedContext,
+      sectionName: splitCtx.sectionName,
+      subSectionName: splitCtx.subSectionName,
       src: effectiveSrc,
       lightboxHref: isDeleted
         ? ''
@@ -223,10 +236,25 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const slotType = (existingOverride?.type || 'img') as 'hero-bg' | 'img' | 'lightbox-img' | 'logo';
-      const slotLabel = altText || existingOverride?.label || `Slot #${slotIndex + 1}`;
-      const slotContext = existingOverride?.sectionContext || 'Updated Slot';
-      const slotAlt = altText || existingOverride?.alt || '';
+      const liveSite = await getAllSiteImages();
+      const liveSlot = liveSite.slots.find((s) => s.page === page && s.slotIndex === slotIndex);
+      const slotType = (
+        liveSlot
+          ? liveSlot.kind === 'gallery-img'
+            ? 'lightbox-img'
+            : liveSlot.kind
+          : existingOverride?.type || 'img'
+      ) as 'hero-bg' | 'img' | 'lightbox-img' | 'logo';
+      const slotLabel =
+        altText ||
+        (liveSlot?.alt || liveSlot?.subSectionName) ||
+        existingOverride?.label ||
+        `Slot #${slotIndex + 1}`;
+      const slotContext =
+        liveSlot?.sectionContext ||
+        (existingOverride?.sectionContext !== 'Updated Slot' ? existingOverride?.sectionContext : '') ||
+        'Page Content';
+      const slotAlt = altText || liveSlot?.alt || existingOverride?.alt || '';
 
       cmsState.imageOverrides[slotId] = {
         slotId,
@@ -480,6 +508,127 @@ export async function POST(req: NextRequest) {
 
       const data = await buildEnrichedImageInventory();
       return NextResponse.json({ ok: true, updatedSrc, cdnUrl: updatedSrc, r2Key, ...data });
+    }
+
+    if (body.action === 'sync-to-site-r2') {
+      const cmsState = await getCmsState();
+      const r2Status = getR2ConfigStatus();
+      const r2Sync = await syncAllObjectsToRemoteR2();
+
+      let htmlSlotsUpdated = 0;
+      const updatedPagesSet = new Set<string>();
+      const firestoreTasks: Promise<unknown>[] = [];
+
+      // 1. Ensure all active slot overrides point to valid R2 CDN URLs and write into HTML pages
+      for (const [slotId, ov] of Object.entries(cmsState.imageOverrides)) {
+        if (!ov || ov.isDeleted || !ov.src || ov.src.includes('empty-slot.svg') || ov.src === '/deleted') {
+          continue;
+        }
+        let resolvedSrc = ov.src;
+        let resolvedKey: string | undefined =
+          ov.r2Key || extractR2KeyFromCdnUrl(resolvedSrc) || undefined;
+
+        if (resolvedSrc.startsWith('data:')) {
+          const migrated = await putR2ObjectFromDataUrl({
+            dataUrl: resolvedSrc,
+            filenameHint: slotId,
+            alt: ov.alt,
+            title: ov.label || slotId,
+            page: ov.page,
+          });
+          resolvedSrc = migrated.cdnUrl;
+          resolvedKey = migrated.r2Key;
+        } else if (resolvedKey && r2Status.cdnBaseUrl && !r2Status.cdnBaseUrl.startsWith('/api/r2/file')) {
+          resolvedSrc = `${buildR2CdnUrl(resolvedKey)}?v=${Date.now()}`;
+        }
+
+        cmsState.imageOverrides[slotId] = {
+          ...ov,
+          src: resolvedSrc,
+          lightboxHref: resolvedSrc,
+          r2Key: resolvedKey,
+          isDeleted: false,
+          updatedAt: new Date().toISOString(),
+        };
+
+        try {
+          await updatePageSlotImage({
+            page: ov.page,
+            slotIndex: ov.slotIndex,
+            externalUrl: resolvedSrc,
+            altText: ov.alt,
+            scope: 'slot',
+            updateLightbox: true,
+          });
+          htmlSlotsUpdated++;
+          updatedPagesSet.add(ov.page);
+        } catch {
+          // ignore if slot index is missing on page
+        }
+
+        firestoreTasks.push(
+          saveSiteImageInFirestore({
+            slotId: ov.slotId,
+            page: ov.page,
+            slotIndex: ov.slotIndex,
+            type: ov.type,
+            label: ov.label,
+            sectionContext: ov.sectionContext,
+            src: resolvedSrc,
+            lightboxHref: resolvedSrc,
+            r2Key: resolvedKey,
+            alt: ov.alt,
+          }).catch(() => {})
+        );
+      }
+
+      // 2. Also normalize any active section gallery items to use active CDN URL
+      cmsState.sectionGalleryItems = await Promise.all(
+        cmsState.sectionGalleryItems.map(async (item) => {
+          if (!item || !item.src || item.src === '/deleted') return item;
+          let resolvedSrc = item.src;
+          let resolvedKey: string | undefined =
+            item.r2Key || extractR2KeyFromCdnUrl(resolvedSrc) || undefined;
+          if (resolvedSrc.startsWith('data:')) {
+            const migrated = await putR2ObjectFromDataUrl({
+              dataUrl: resolvedSrc,
+              filenameHint: item.itemId,
+              alt: item.alt || item.title,
+              title: item.title,
+              page: item.page,
+            });
+            resolvedSrc = migrated.cdnUrl;
+            resolvedKey = migrated.r2Key;
+          } else if (resolvedKey && r2Status.cdnBaseUrl && !r2Status.cdnBaseUrl.startsWith('/api/r2/file')) {
+            resolvedSrc = buildR2CdnUrl(resolvedKey);
+          }
+          return {
+            ...item,
+            src: resolvedSrc,
+            r2Key: resolvedKey,
+          };
+        })
+      );
+
+      await saveCmsState(cmsState);
+      await Promise.allSettled(firestoreTasks);
+
+      const data = await buildEnrichedImageInventory();
+      return NextResponse.json({
+        ok: true,
+        syncReport: {
+          r2Total: r2Sync.total,
+          r2Pushed: r2Sync.pushed,
+          r2Failed: r2Sync.failed,
+          htmlSlotsUpdated,
+          pagesUpdated: Array.from(updatedPagesSet),
+          authMode: r2Sync.authMode,
+          cdnBaseUrl: r2Status.cdnBaseUrl,
+          warning: r2Status.warning,
+          errors: r2Sync.errors,
+        },
+        ...data,
+      });
     }
 
     return NextResponse.json({ error: 'Unsupported action' }, { status: 400 });

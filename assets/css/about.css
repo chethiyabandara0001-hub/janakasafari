@@ -1,179 +1,114 @@
-/* Sri Lanka Yala Safaris — About Page */
-body.header-page #wsite-content .about-intro {
-  background: #faf5ec !important;
-}
+/* ==========================================================================
+   ABOUT.CSS — About Page Intro, Journey Timeline & Explore Sections
+   Mobile-First Responsive Architecture
+   ========================================================================== */
 
-body.header-page #wsite-content .about-intro h2,
-body.header-page #wsite-content .about-intro h2 * {
-  color: #18382b !important;
-}
-
-body.header-page #wsite-content .about-intro .paragraph {
-  min-height: 0 !important;
-  margin-bottom: 18px !important;
-  color: #2c352d !important;
-  font-size: 15.5px !important;
-  line-height: 1.8 !important;
-}
-
-.about-intro .wsite-multicol-table-wrap {
-  margin: 0 !important;
+.about-intro {
+  background-color: var(--bg-primary) !important;
 }
 
 .about-intro .wsite-multicol-table,
 .about-intro .wsite-multicol-tbody {
-  display: block;
-  width: 100%;
+  display: block !important;
+  width: 100% !important;
 }
 
 .about-intro .wsite-multicol-tr {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 42px;
-  align-items: center;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 24px !important;
+  align-items: center !important;
 }
 
 .about-intro .wsite-multicol-col {
-  width: auto !important;
+  width: 100% !important;
   padding: 0 !important;
 }
 
 .about-intro .wsite-image img {
-  display: block;
-  width: 100% !important;
-  border-radius: 14px;
-  border: 2px solid #dfd3bd;
-  box-shadow: 0 12px 28px rgba(24, 56, 43, 0.12);
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-card);
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
 }
 
-/* Our Journey — Light Tropical Sage Section with Black Heading & Chronology Cards */
-body.header-page #wsite-content .about-journey {
-  background-color: #e8f0e2 !important;
-  background-image: none !important;
+@media screen and (min-width: 861px) {
+  .about-intro .wsite-multicol-tr {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 48px !important;
+  }
 }
 
-body.header-page #wsite-content .about-journey h2:not(.journey-year),
-body.header-page #wsite-content .about-journey h2:not(.journey-year) * {
-  color: #000000 !important;
-  margin-bottom: 32px !important;
-}
-
-.about-journey .wsite-multicol-table-wrap {
-  margin: 0 !important;
-  overflow: visible;
+/* Journey Timeline Cards — Mobile-First (1 -> 3 cols) */
+.about-journey {
+  background-color: var(--bg-elevated) !important;
+  border-top: 1px solid var(--border-hairline);
+  border-bottom: 1px solid var(--border-hairline);
 }
 
 .about-journey .wsite-multicol-table,
 .about-journey .wsite-multicol-tbody {
-  display: block;
-  width: 100%;
+  display: block !important;
+  width: 100% !important;
 }
 
 .about-journey .wsite-multicol-tr {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
-  align-items: stretch;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 18px !important;
+  margin-top: 24px;
 }
 
 .about-journey .wsite-multicol-col {
-  display: flex !important;
-  flex-direction: column;
-  width: auto !important;
-  min-width: 0;
-  padding: 36px 30px !important;
-  box-sizing: border-box;
-  background: #ffffff;
-  border: 1px solid rgba(24, 56, 43, 0.12);
-  border-top: 5px solid #f5a623;
-  border-radius: 16px;
-  box-shadow: 0 12px 32px rgba(24, 56, 43, 0.1);
-  text-align: left;
+  width: 100% !important;
+  padding: 26px 20px !important;
+  background: #FFFFFF !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-subtle);
 }
 
-body.header-page #wsite-content .about-journey .wsite-multicol-col .paragraph {
-  min-height: 0 !important;
-  margin: 0 0 14px !important;
-  color: #2c352d !important;
-  font-size: 15px !important;
-  line-height: 1.75 !important;
-  text-align: left !important;
+.journey-year {
+  font-family: var(--font-display) !important;
+  font-size: 2.75rem !important;
+  margin-bottom: 10px !important;
 }
 
-/* Year labels — Vibrant Terracotta & Forest Green */
-body.header-page #wsite-content .about-journey .wsite-multicol-col .journey-year,
-body.header-page #wsite-content .about-journey .wsite-multicol-col .journey-year * {
-  margin: 0 0 20px !important;
-  padding-bottom: 14px;
-  color: #b85d19 !important;
-  font-family: Georgia, "Times New Roman", serif !important;
-  font-size: 44px !important;
-  font-weight: 700 !important;
-  letter-spacing: -0.02em;
-  line-height: 1.1 !important;
+.journey-year font {
+  color: var(--accent-primary) !important;
 }
 
-body.header-page #wsite-content .about-journey .wsite-multicol-col .journey-year {
-  border-bottom: 2px solid #e4d8c3;
-}
-
-.about-journey .wsite-multicol-col > .wsite-spacer {
-  display: none !important;
-}
-
-/* Explore with Us */
-body.header-page #wsite-content .about-explore {
-  background: #edf1e7 !important;
-}
-
-body.header-page #wsite-content .about-explore h2,
-body.header-page #wsite-content .about-explore h2 * {
-  color: #18382b !important;
-}
-
-body.header-page #wsite-content .about-explore .paragraph {
-  min-height: 0 !important;
-  color: #2c352d !important;
-  font-size: 15.5px !important;
-  line-height: 1.75 !important;
-}
-
-@media screen and (max-width: 920px) {
+@media screen and (min-width: 768px) {
   .about-journey .wsite-multicol-tr {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media screen and (max-width: 767px) {
-  .about-intro .wsite-multicol-tr,
-  .about-journey .wsite-multicol-tr {
-    grid-template-columns: 1fr;
-    gap: 24px;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 24px !important;
+    margin-top: 28px;
   }
 
   .about-journey .wsite-multicol-col {
-    padding: 24px 18px !important;
+    padding: 36px 28px !important;
+  }
+
+  .journey-year {
+    font-size: 3rem !important;
   }
 }
 
-.about-explore .wsite-image img {
-  display: block;
-  width: 100% !important;
-  max-width: 100% !important;
-  height: auto !important;
-  border-radius: 12px;
-  border: 2px solid #c6d8be;
-  box-shadow: 0 12px 28px rgba(24, 56, 43, 0.1);
+/* Explore With Us Section */
+.about-explore {
+  background-color: var(--bg-primary) !important;
 }
 
-.banner-wrap .banner p,
-.banner-wrap .banner .paragraph {
-  display: block;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  margin-top: 16px !important;
-  margin-bottom: 0 !important;
-  padding-left: 0 !important;
-  text-align: left !important;
-  line-height: 1.65 !important;
+.about-explore .wsite-image {
+  max-width: 980px;
+  margin: 24px auto 0 !important;
+}
+
+.about-explore .wsite-image img {
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-card);
+}
+
+.wsite-background-64 {
+  background-color: var(--bg-deep-forest) !important;
 }

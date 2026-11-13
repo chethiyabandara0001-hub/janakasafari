@@ -3,12 +3,10 @@
    Mobile-First Responsive Architecture
    ========================================================================== */
 
-/* Reset inline padding:0 30px wrapper around review widgets on mobile */
-@media screen and (max-width: 767px) {
-  .wcustomhtml > div[style*="padding"] {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-  }
+/* Reset legacy inline padding:0 30px wrapper around review widgets */
+.wcustomhtml > div[style*="padding"] {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 
 /* 1. Reviews Carousel Widget (.reviews-widget) — Mobile-First */
@@ -273,11 +271,11 @@
 }
 
 .review-prev {
-  left: -14px;
+  left: 8px;
 }
 
 .review-next {
-  right: -14px;
+  right: 8px;
 }
 
 .review-dots {

@@ -71,6 +71,16 @@
     padding: 32px;
     margin-top: 24px;
   }
+
+  .wsite-background-80 .wsite-multicol-tr.is-media-empty,
+  .wsite-background-81 .wsite-multicol-tr.is-media-empty {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.wsite-background-80 .wsite-multicol-col.is-media-empty,
+.wsite-background-81 .wsite-multicol-col.is-media-empty {
+  display: none !important;
 }
 
 /* Share Your Safari Experience 2-Button Row (.wsite-background-82) */

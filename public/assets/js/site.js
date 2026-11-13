@@ -110,10 +110,21 @@
       anchor.addEventListener("click", (e) => {
         e.preventDefault();
         const groupKey = anchor.getAttribute("data-lightbox") || "single";
-        const anchors =
+        const isVisibleLightboxAnchor = (a) => {
+          const img = a.querySelector("img");
+          const href = a.getAttribute("href") || "";
+          if (!href || href.includes("empty-slot.svg") || href === "/deleted") return false;
+          if (img && (img.style.display === "none" || !img.getAttribute("src") || (img.getAttribute("src") || "").includes("empty-slot.svg"))) {
+            return false;
+          }
+          return true;
+        };
+        const rawAnchors =
           groupKey === "single"
             ? [anchor]
             : Array.from(document.querySelectorAll(`a[data-lightbox="${groupKey}"]`));
+        const anchors = rawAnchors.filter(isVisibleLightboxAnchor);
+        if (!anchors.length) return;
         const group = anchors.map((a) => {
           const img = a.querySelector("img");
           return {
@@ -354,7 +365,9 @@
   function bindEditableTextSlots() {
     const mainEl = document.querySelector("main") || document.body;
     const candidates = Array.from(
-      mainEl.querySelectorAll("h1, h2, h3, h4, p, blockquote, li, span.wsite-button-inner")
+      mainEl.querySelectorAll(
+        "h1, h2, h3, h4, p, blockquote, li, span.wsite-button-inner, div.paragraph, span.paragraph, div.hero-editorial-kicker, span.hero-editorial-kicker, div.cross-score, span.cross-score, div.cross-metric, span.cross-metric, div.cross-title, span.cross-title, div.cross-caption, span.cross-caption"
+      )
     ).filter((el) => {
       if (el.closest("dialog") || el.closest(".firebase-section-showcase") || el.closest(".firebase-custom-texts-wrap")) {
         return false;
@@ -749,6 +762,14 @@
               heroSlotDeleted = true;
               primaryHeroBannerSrc = "";
               entry.element.style.backgroundImage = "none";
+            } else if (entry.element.classList.contains("janaka-brand-logo")) {
+              entry.element.style.display = "";
+              if (!entry.element.getAttribute("src") || (entry.element.getAttribute("src") || "").includes("empty-slot.svg")) {
+                entry.element.src = "/assets/media/nisha-safari-logo.svg";
+              }
+            } else if (entry.element.classList.contains("cross-top-img")) {
+              // Keep built-in trust badge icons visible unless replaced by R2 icon
+              entry.element.style.display = "";
             } else {
               entry.element.removeAttribute("src");
               entry.element.style.display = "none";
@@ -776,10 +797,7 @@
             entry.element.style.backgroundSize = "cover";
             entry.element.style.backgroundPosition = "center center";
           } else {
-            if (
-              entry.element.closest(".hero-cross-bridge-wrap") ||
-              entry.element.id === "CDSWIDCOELOGO"
-            ) {
+            if (entry.element.id === "CDSWIDCOELOGO") {
               return;
             }
             entry.element.style.display = "";
@@ -789,6 +807,10 @@
               entry.element.closest(".wsite-image");
             if (holder) {
               holder.style.display = "";
+            }
+            const wrapContainer = entry.element.closest('[id*="-imageContainer"]');
+            if (wrapContainer) {
+              wrapContainer.style.display = "";
             }
             entry.element.src = resolvedOvSrc;
             if (ov.alt) entry.element.alt = ov.alt;
@@ -932,6 +954,49 @@
         const existingShowcase = document.getElementById("firebase-section-gallery");
         if (existingShowcase) existingShowcase.remove();
       }
+
+      // 5. Collapse empty image gallery slots & empty left/right media columns (e.g., reviews/gallery pages)
+      document.querySelectorAll(".imageGallery").forEach((galleryEl) => {
+        const containers = Array.from(galleryEl.querySelectorAll('[id*="-imageContainer"]'));
+        let visibleCount = 0;
+        containers.forEach((box) => {
+          const img = box.querySelector("img.galleryImage");
+          const srcVal = (img && img.getAttribute("src")) || "";
+          const hidden = !img || img.style.display === "none" || !srcVal || srcVal.includes("empty-slot.svg");
+          if (hidden) {
+            box.style.display = "none";
+          } else {
+            box.style.display = "";
+            visibleCount++;
+          }
+        });
+        galleryEl.classList.toggle("is-gallery-empty", visibleCount === 0);
+      });
+
+      document.querySelectorAll(".wsite-multicol-tr").forEach((row) => {
+        const cols = Array.from(row.children).filter((c) => c.classList && c.classList.contains("wsite-multicol-col"));
+        if (cols.length < 2) return;
+        let hiddenMediaCols = 0;
+        cols.forEach((col) => {
+          const imgs = Array.from(col.querySelectorAll("img"));
+          const hasVisibleImg = imgs.some((img) => {
+            const s = img.getAttribute("src") || "";
+            return img.style.display !== "none" && s && !s.includes("empty-slot.svg");
+          });
+          const hasButtonOrHeading = Boolean(col.querySelector(".wsite-button, h2, h3, h4, form"));
+          const substantialParas = Array.from(col.querySelectorAll(".paragraph")).filter((p) => {
+            const isTinyCaption = Boolean(p.querySelector('font[size="1"]'));
+            return !isTinyCaption && (p.textContent || "").trim().length > 0;
+          });
+          if (imgs.length > 0 && !hasVisibleImg && !hasButtonOrHeading && substantialParas.length === 0) {
+            col.classList.add("is-media-empty");
+            hiddenMediaCols++;
+          } else {
+            col.classList.remove("is-media-empty");
+          }
+        });
+        row.classList.toggle("is-media-empty", hiddenMediaCols > 0 && hiddenMediaCols < cols.length);
+      });
     } catch (err) {
       console.error("Failed to hydrate Firebase CMS state:", err);
     }
