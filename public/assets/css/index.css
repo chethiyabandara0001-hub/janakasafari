@@ -3,26 +3,33 @@ body.header-page #wsite-content .wsite-background-1 {
   background: #faf5ec !important;
 }
 
-/* 6 National Parks Grid — Warm Sand & Emerald Cards with Golden Accents */
+/* 6 National Parks / Taxi Service Grid — 3-Column Gallery View */
+div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > div:nth-of-type(2) > div#wsite-content:nth-of-type(1) > div:nth-of-type(4) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) .home-safari-grid,
 .wsite-background-1 .home-safari-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   gap: 24px;
   width: 100%;
+  max-width: 100%;
   margin-top: 24px;
+  box-sizing: border-box;
+  align-items: stretch;
 }
 
 .wsite-background-1 .home-safari-card {
   position: relative;
   display: flex;
   flex-direction: column;
-  min-width: 0;
-  padding: 26px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0 !important;
+  padding: 24px;
   background: #ffffff;
   border: 1px solid #e2dac9;
   border-top: 4px solid #18382b;
   border-radius: 18px;
   overflow: hidden;
+  box-sizing: border-box;
   box-shadow: 0 12px 30px rgba(24, 56, 43, 0.08);
   transition: border-color 0.22s ease, box-shadow 0.22s ease;
 }
@@ -36,25 +43,48 @@ body.header-page #wsite-content .wsite-background-1 {
   box-shadow: 0 18px 38px rgba(24, 56, 43, 0.14);
 }
 
+.wsite-background-1 .home-safari-card > div:first-child {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
 .wsite-background-1 .home-safari-card .wsite-image {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 100% !important;
+  max-width: 100% !important;
+  aspect-ratio: 16 / 10;
+  height: 220px;
   margin: 0 0 20px !important;
-  padding: 0 !important;
+  padding: 6px !important;
   border-radius: 12px;
-  overflow: hidden;
+  overflow: hidden !important;
   border: 1px solid #e6dfd1;
+  background: #f5f0e4;
+  box-sizing: border-box;
 }
 
 .wsite-background-1 .home-safari-card .wsite-image a {
-  display: block;
-  overflow: hidden;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
 }
 
 .wsite-background-1 .home-safari-card .wsite-image img {
-  display: block;
+  display: block !important;
   width: 100% !important;
+  height: 100% !important;
   max-width: 100% !important;
-  height: 220px !important;
-  object-fit: cover;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  object-position: center !important;
 }
 
 body.header-page #wsite-content .wsite-background-1 .home-safari-card > .paragraph {
@@ -106,16 +136,35 @@ body.header-page #wsite-content .wsite-background-1 .home-safari-card > .paragra
 
 @media screen and (max-width: 979px) {
   .wsite-background-1 .home-safari-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 16px;
+  }
+  .wsite-background-1 .home-safari-card {
+    padding: 18px 14px;
+  }
+  .wsite-background-1 .home-safari-card .wsite-image {
+    height: 170px;
   }
 }
 
 @media screen and (max-width: 680px) {
   .wsite-background-1 .home-safari-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 10px;
   }
   .wsite-background-1 .home-safari-card {
-    padding: 22px 18px;
+    padding: 12px 10px;
+  }
+  .wsite-background-1 .home-safari-card .wsite-image {
+    height: 120px;
+    margin-bottom: 12px !important;
+  }
+  body.header-page #wsite-content .wsite-background-1 .home-safari-card > .home-safari-title {
+    font-size: 16px !important;
+  }
+  body.header-page #wsite-content .wsite-background-1 .home-safari-card > .home-safari-description {
+    font-size: 12.5px !important;
+    margin-bottom: 12px !important;
   }
 }
 
@@ -694,6 +743,17 @@ body.header-page #wsite-content .wsite-background-1 .home-safari-card > .paragra
   padding: 0 !important;
 }
 
+.home-why-choose .why-row > .wsite-multicol-col:first-child {
+  display: flex !important;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.home-why-choose .why-row > .wsite-multicol-col:first-child .wsite-image {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 .home-why-choose .why-row > .wsite-multicol-col > .wsite-spacer {
   display: none !important;
 }
@@ -720,6 +780,8 @@ body #wsite-content .home-why-choose .why-row > .wsite-multicol-col > .paragraph
   width: 100% !important;
   max-width: 520px !important;
   height: auto !important;
+  max-height: 320px;
+  object-fit: cover;
   margin: 0 auto;
   border-radius: 18px;
   border: 3px solid #f5a623;

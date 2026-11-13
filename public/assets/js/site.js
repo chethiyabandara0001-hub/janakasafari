@@ -346,7 +346,11 @@
     });
 
     candidates.forEach((el) => {
-      const idx = slotCounter++;
+      const explicitAttr = el.getAttribute("data-slot-index");
+      const idx =
+        explicitAttr !== null && explicitAttr !== "" && !Number.isNaN(Number(explicitAttr))
+          ? Number(explicitAttr)
+          : slotCounter++;
       const slotId = `${safePagePrefix}__slot_${idx}`;
       el.setAttribute("data-admin-slot", String(idx));
       el.setAttribute("data-admin-slot-id", slotId);

@@ -194,7 +194,8 @@ function collectRegionCandidates(regionHtml: string, isFooterRegion: boolean): R
   return candidates;
 }
 
-const EYEBROW_RE = /^(OUR SAFARI EXPERIENCES|SAFARI PARKS|EXPLORE|TESTIMONIALS|FOR CRUISE VISITORS)$/i;
+const EYEBROW_RE =
+  /^(OUR (?:SAFARI|TAXI SERVICE) EXPERIENCES|SAFARI PARKS|TAXI DESTINATIONS|EXPLORE|TESTIMONIALS|FOR CRUISE VISITORS)$/i;
 
 interface BodySectionRange {
   start: number;

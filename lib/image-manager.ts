@@ -120,23 +120,33 @@ function findSectionContext(
   }
 
   const secStart = Math.max(
-    htmlBefore.lastIndexOf('class="wsite-body-section'),
-    htmlBefore.lastIndexOf('class="wsite-header-section')
+    htmlBefore.lastIndexOf('wsite-body-section'),
+    htmlBefore.lastIndexOf('wsite-header-section')
   );
-  const nextSec = html.indexOf('class="wsite-body-section', startIndex);
+  const nextSec = html.indexOf('wsite-body-section', startIndex);
   const secEnd = nextSec !== -1 ? nextSec : Math.min(html.length, startIndex + 5000);
   const sectionSlice = secStart !== -1 ? html.slice(secStart, secEnd) : htmlBefore;
   const beforeInSection = secStart !== -1 ? html.slice(secStart, startIndex) : htmlBefore;
 
   const h2Before = [...beforeInSection.matchAll(/<h2[^>]*>([\s\S]*?)<\/h2>/gi)]
     .map((m) => stripTags(m[1]))
-    .filter((t) => t && !/^(OUR SAFARI EXPERIENCES|SAFARI PARKS|EXPLORE)$/i.test(t));
+    .filter(
+      (t) =>
+        t &&
+        !/^(OUR (?:SAFARI|TAXI SERVICE) EXPERIENCES|SAFARI PARKS|TAXI DESTINATIONS|EXPLORE)$/i.test(t)
+    );
   const h2InSec =
     h2Before.length > 0
       ? h2Before[h2Before.length - 1]
       : [...sectionSlice.matchAll(/<h2[^>]*>([\s\S]*?)<\/h2>/gi)]
           .map((m) => stripTags(m[1]))
-          .find((t) => t && !/^(OUR SAFARI EXPERIENCES|SAFARI PARKS|EXPLORE)$/i.test(t)) || '';
+          .find(
+            (t) =>
+              t &&
+              !/^(OUR (?:SAFARI|TAXI SERVICE) EXPERIENCES|SAFARI PARKS|TAXI DESTINATIONS|EXPLORE)$/i.test(
+                t
+              )
+          ) || '';
 
   const articleOpen = beforeInSection.lastIndexOf('<article');
   const articleClose = beforeInSection.lastIndexOf('</article>');
@@ -155,12 +165,20 @@ function findSectionContext(
     const colOpen = beforeInSection.lastIndexOf('wsite-multicol-col');
     const colClose = beforeInSection.lastIndexOf('</td>');
     if (colOpen !== -1 && colOpen > colClose) {
+      const colEnd = html.indexOf('</td>', startIndex);
       const colSlice = html.slice(
         (secStart !== -1 ? secStart : 0) + colOpen,
-        Math.min(html.length, startIndex + 900)
+        colEnd !== -1 ? colEnd : Math.min(html.length, startIndex + 900)
       );
       const colStrong = colSlice.match(/<(?:h3|h4|strong)\b[^>]*>([\s\S]*?)<\/(?:h3|h4|strong)>/i);
       if (colStrong) cardSub = stripTags(colStrong[1]);
+    }
+  }
+
+  if (sectionSlice.includes('home-why-choose')) {
+    const altM = imgTag?.match(/\balt="([^"]*)"/i);
+    if (altM?.[1]) {
+      cardSub = altM[1].trim();
     }
   }
 
@@ -257,9 +275,11 @@ export function parsePageSlots(html: string): RawMatch[] {
           : 'img';
 
       const sectionContext = findSectionContext(html, startIndex, isHeaderLogo, isFooterLogo, imgTag);
+      const explicitIdxMatch = imgTag.match(/\bdata-slot-index="(\d+)"/i);
+      const resolvedSlotIndex = explicitIdxMatch ? Number(explicitIdxMatch[1]) : slotIndex++;
 
       results.push({
-        slotIndex: slotIndex++,
+        slotIndex: resolvedSlotIndex,
         kind,
         sectionContext,
         src: isEmptySlotSrc(src) ? '' : src,
