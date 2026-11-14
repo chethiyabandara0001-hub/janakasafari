@@ -656,6 +656,16 @@
       return;
     }
 
+    // Preserve destination package price span ([data-package-price-id]) if a generic page text override targets its container
+    const packagePriceSpan = el.querySelector("[data-package-price-id]");
+    if (packagePriceSpan) {
+      const leadingPriceMatch = textVal.trim().match(/^([^\s]+)(?:\s+(\/?\s*per\s*person|\/\s*person.*))?$/i);
+      if (leadingPriceMatch && leadingPriceMatch[1]) {
+        packagePriceSpan.textContent = leadingPriceMatch[1].trim();
+      }
+      return;
+    }
+
     // Preserve inner <strong> / <font> wrapper when updating single-line titles or highlighted card headings
     const innerStrong = el.querySelector("strong");
     if (innerStrong && innerStrong.textContent.trim() === el.textContent.trim()) {
@@ -1085,11 +1095,18 @@
       // 2. Apply text overrides & deletions for this page directly from Firestore
       const activeCustomTexts = [];
       const globalFooterMap = new Map();
+      const packagePriceMap = new Map();
       fbSiteTexts.forEach((ft) => {
         if (!ft || !ft.textId) return;
         if (ft.page === "global_footer" || String(ft.textId).startsWith("global_footer__")) {
           if (!ft.isDeleted && ft.content !== undefined) {
             globalFooterMap.set(ft.textId, String(ft.content));
+          }
+          return;
+        }
+        if (ft.page === "package_prices" || String(ft.textId).startsWith("pkg_price__")) {
+          if (!ft.isDeleted && ft.content !== undefined) {
+            packagePriceMap.set(ft.textId, String(ft.content));
           }
           return;
         }
@@ -1186,6 +1203,19 @@
         if (copyrightPara && globalFooterMap.has("global_footer__copyright")) {
           applySafeTextContent(copyrightPara, globalFooterMap.get("global_footer__copyright"));
         }
+      }
+
+      // 2c. Apply Destination Package Price Overrides from Firestore
+      if (packagePriceMap.size > 0) {
+        document.querySelectorAll("[data-package-price-id]").forEach((priceEl) => {
+          const priceId = priceEl.getAttribute("data-package-price-id");
+          if (priceId && packagePriceMap.has(priceId)) {
+            const overridePrice = packagePriceMap.get(priceId);
+            if (overridePrice !== undefined && overridePrice !== "") {
+              priceEl.textContent = overridePrice;
+            }
+          }
+        });
       }
 
       // 3. Render Custom Added Text Blocks for this page

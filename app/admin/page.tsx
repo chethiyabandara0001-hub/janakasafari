@@ -19,6 +19,7 @@ import {
   RefreshCw,
   RotateCcw,
   Search,
+  Tag,
   Trash2,
   Type,
   Upload,
@@ -53,6 +54,11 @@ import {
   FooterEditorPanel,
   type FooterFieldDefinition,
 } from '@/components/admin/FooterEditorPanel';
+import {
+  PACKAGE_PRICE_DEFINITIONS,
+  PackagePricesPanel,
+  type PackagePriceDefinition,
+} from '@/components/admin/PackagePricesPanel';
 import { R2BucketPanel } from '@/components/admin/R2BucketPanel';
 import { SyncSettingsPanel } from '@/components/admin/SyncSettingsPanel';
 import {
@@ -146,6 +152,7 @@ export default function AdminStudioPage() {
   const [uploadingTargetId, setUploadingTargetId] = useState<string | null>(null);
   const [savingTextId, setSavingTextId] = useState<string | null>(null);
   const [savingFooterKey, setSavingFooterKey] = useState<string | null>(null);
+  const [savingPriceKey, setSavingPriceKey] = useState<string | null>(null);
   const [resettingPage, setResettingPage] = useState<boolean>(false);
   const [resettingAll, setResettingAll] = useState<boolean>(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -866,6 +873,137 @@ export default function AdminStudioPage() {
       showNotice(err instanceof Error ? err.message : 'Failed to reset footer text', 'error');
     } finally {
       setSavingFooterKey(null);
+    }
+  };
+
+  // Destination Package Prices & Modified Keys
+  const { priceValues, modifiedPriceKeys } = useMemo(() => {
+    const values: Record<string, string> = {};
+    const modified = new Set<string>();
+
+    for (const pkg of PACKAGE_PRICE_DEFINITIONS) {
+      const priceDoc = firestoreTextDocs[pkg.priceId];
+      if (priceDoc && !priceDoc.isDeleted && typeof priceDoc.content === 'string') {
+        values[pkg.priceId] = priceDoc.content;
+        if (priceDoc.content !== pkg.defaultValue) {
+          modified.add(pkg.priceId);
+        }
+      } else {
+        values[pkg.priceId] = pkg.defaultValue;
+      }
+    }
+
+    return { priceValues: values, modifiedPriceKeys: modified };
+  }, [firestoreTextDocs]);
+
+  const handleSavePackagePrice = async (pkg: PackagePriceDefinition, newValue: string) => {
+    setSavingPriceKey(pkg.priceId);
+    try {
+      const payload = {
+        textId: pkg.priceId,
+        page: 'package_prices',
+        textIndex: 0,
+        tagName: 'SPAN' as const,
+        sectionContext: `${pkg.destinationName} · ${pkg.packageTitle}`,
+        content: newValue,
+        isDeleted: false,
+        isCustomAdded: false,
+      };
+      await saveSiteTextInFirestore(payload);
+      setFirestoreTextDocs((prev) => ({
+        ...prev,
+        [payload.textId]: {
+          ...payload,
+          updatedAt: new Date().toISOString(),
+        },
+      }));
+      showNotice(`Updated "${pkg.destinationName} — ${pkg.packageTitle}" price to ${newValue}.`);
+    } catch (err) {
+      showNotice(err instanceof Error ? err.message : 'Failed to save package price', 'error');
+    } finally {
+      setSavingPriceKey(null);
+    }
+  };
+
+  const handleRestorePackagePrice = async (pkg: PackagePriceDefinition) => {
+    setSavingPriceKey(pkg.priceId);
+    try {
+      await deleteSiteTextInFirestore(pkg.priceId);
+      setFirestoreTextDocs((prev) => {
+        const next = { ...prev };
+        delete next[pkg.priceId];
+        return next;
+      });
+      showNotice(`Restored default price (${pkg.defaultValue}) for "${pkg.destinationName} — ${pkg.packageTitle}".`);
+    } catch (err) {
+      showNotice(err instanceof Error ? err.message : 'Failed to restore package price', 'error');
+    } finally {
+      setSavingPriceKey(null);
+    }
+  };
+
+  const handleSaveAllPackagePrices = async (drafts: Record<string, string>) => {
+    setSavingPriceKey('all');
+    try {
+      let savedCount = 0;
+      const nextDocs: Record<string, Partial<SiteTextSlot> & { updatedAt?: unknown }> = {};
+
+      for (const pkg of PACKAGE_PRICE_DEFINITIONS) {
+        const val = (drafts[pkg.priceId] ?? priceValues[pkg.priceId] ?? pkg.defaultValue).trim();
+        const currentSaved = priceValues[pkg.priceId] ?? pkg.defaultValue;
+        if (val !== currentSaved || (val !== pkg.defaultValue && !firestoreTextDocs[pkg.priceId])) {
+          const payload = {
+            textId: pkg.priceId,
+            page: 'package_prices',
+            textIndex: 0,
+            tagName: 'SPAN' as const,
+            sectionContext: `${pkg.destinationName} · ${pkg.packageTitle}`,
+            content: val,
+            isDeleted: false,
+            isCustomAdded: false,
+          };
+          await saveSiteTextInFirestore(payload);
+          nextDocs[payload.textId] = {
+            ...payload,
+            updatedAt: new Date().toISOString(),
+          };
+          savedCount++;
+        }
+      }
+
+      if (savedCount > 0) {
+        setFirestoreTextDocs((prev) => ({ ...prev, ...nextDocs }));
+        showNotice(`Saved ${savedCount} package price change(s) to Firestore.`);
+      } else {
+        showNotice('All package prices are already up to date.');
+      }
+    } catch (err) {
+      showNotice(err instanceof Error ? err.message : 'Failed to save package prices', 'error');
+    } finally {
+      setSavingPriceKey(null);
+    }
+  };
+
+  const handleResetAllPackagePrices = async () => {
+    setSavingPriceKey('reset-all');
+    try {
+      for (const pkg of PACKAGE_PRICE_DEFINITIONS) {
+        if (firestoreTextDocs[pkg.priceId]) {
+          await deleteSiteTextInFirestore(pkg.priceId);
+        }
+      }
+      setFirestoreTextDocs((prev) => {
+        const next = { ...prev };
+        for (const pkg of PACKAGE_PRICE_DEFINITIONS) {
+          delete next[pkg.priceId];
+        }
+        return next;
+      });
+      showNotice('Restored all destination package prices to their default values.');
+    } catch (err) {
+      showNotice(err instanceof Error ? err.message : 'Failed to reset package prices', 'error');
+    } finally {
+      setSavingPriceKey(null);
     }
   };
 
@@ -1869,6 +2007,13 @@ export default function AdminStudioPage() {
               { id: 'pages', label: 'Pages & Sections' },
               { id: 'texts', label: 'Site Texts Editor' },
               {
+                id: 'prices',
+                label:
+                  modifiedPriceKeys.size > 0
+                    ? `Package Prices (${modifiedPriceKeys.size})`
+                    : 'Package Prices',
+              },
+              {
                 id: 'footer',
                 label:
                   modifiedFooterKeys.size > 0
@@ -1947,6 +2092,13 @@ export default function AdminStudioPage() {
           [
             { id: 'pages', label: 'Pages & Sections' },
             { id: 'texts', label: 'Site Texts' },
+            {
+              id: 'prices',
+              label:
+                modifiedPriceKeys.size > 0
+                  ? `Prices (${modifiedPriceKeys.size})`
+                  : 'Package Prices',
+            },
             {
               id: 'footer',
               label:
@@ -2174,6 +2326,16 @@ export default function AdminStudioPage() {
               <RefreshCw className="w-5 h-5 animate-spin text-amber-500" />
               <span>Loading all pages, section trees, and Cloudflare R2 objects...</span>
             </div>
+          ) : activeTab === 'prices' ? (
+            <PackagePricesPanel
+              priceValues={priceValues}
+              modifiedKeys={modifiedPriceKeys}
+              savingKey={savingPriceKey}
+              onSavePrice={handleSavePackagePrice}
+              onRestorePrice={handleRestorePackagePrice}
+              onSaveAllPrices={handleSaveAllPackagePrices}
+              onResetAllPrices={handleResetAllPackagePrices}
+            />
           ) : activeTab === 'footer' ? (
             <FooterEditorPanel
               footerValues={footerValues}
@@ -2257,6 +2419,15 @@ export default function AdminStudioPage() {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('prices')}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 transition-colors"
+                    >
+                      <Tag className="w-3.5 h-3.5" />
+                      <span>Edit Package Prices</span>
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => setActiveTab('footer')}
