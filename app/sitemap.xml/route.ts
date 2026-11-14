@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
     <loc>${escapeXml(loc)}</loc>
     <lastmod>${lastMod}</lastmod>
     <changefreq>${cfg.changeFrequency}</changefreq>
-    <priority>${cfg.priority.toFixed(1)}</priority>
+    <priority>${cfg.priority}</priority>
   </url>`);
   }
 
