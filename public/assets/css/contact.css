@@ -227,3 +227,32 @@ body.janaka-contact .contact-cards .paragraph font[size="5"] strong {
   font-weight: 400 !important;
   color: var(--text-primary) !important;
 }
+
+body.janaka-contact .contact-cards .paragraph a,
+body.janaka-contact .contact-cards .contact-inline-link {
+  color: #18382b !important;
+  font-weight: 700;
+  text-decoration: underline !important;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: rgba(24, 56, 43, 0.45) !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
+}
+
+body.janaka-contact .contact-cards .paragraph a:hover,
+body.janaka-contact .contact-cards .contact-inline-link:hover {
+  color: #00aa6c !important;
+  text-decoration-color: #00aa6c !important;
+}
+
+body.janaka-contact .contact-cards .contact-whatsapp-link {
+  color: #116b44 !important;
+  text-decoration-color: rgba(17, 107, 68, 0.55) !important;
+}
+
+body.janaka-contact .contact-cards .contact-whatsapp-link:hover {
+  color: #00aa6c !important;
+  text-decoration-color: #00aa6c !important;
+}

@@ -48,6 +48,11 @@ import {
 import { doc, getDocFromServer } from 'firebase/firestore';
 import { AdminLoginCard } from '@/components/admin/AdminLoginCard';
 import { EnquiriesPanel } from '@/components/admin/EnquiriesPanel';
+import {
+  FOOTER_FIELD_DEFINITIONS,
+  FooterEditorPanel,
+  type FooterFieldDefinition,
+} from '@/components/admin/FooterEditorPanel';
 import { R2BucketPanel } from '@/components/admin/R2BucketPanel';
 import { SyncSettingsPanel } from '@/components/admin/SyncSettingsPanel';
 import {
@@ -87,6 +92,10 @@ function getTextRoleLabel(txt: SiteTextSlot): string {
     default:
       return 'Body Copy';
   }
+}
+
+function createCmsItemId(prefix: string, suffix?: string | number): string {
+  return suffix !== undefined ? `${prefix}_${Date.now()}_${suffix}` : `${prefix}_${Date.now()}`;
 }
 
 export default function AdminStudioPage() {
@@ -136,6 +145,7 @@ export default function AdminStudioPage() {
   // Action & Feedback State
   const [uploadingTargetId, setUploadingTargetId] = useState<string | null>(null);
   const [savingTextId, setSavingTextId] = useState<string | null>(null);
+  const [savingFooterKey, setSavingFooterKey] = useState<string | null>(null);
   const [resettingPage, setResettingPage] = useState<boolean>(false);
   const [resettingAll, setResettingAll] = useState<boolean>(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -157,9 +167,16 @@ export default function AdminStudioPage() {
   const [customTextValue, setCustomTextValue] = useState<string>('');
   const [addingCustomText, setAddingCustomText] = useState<boolean>(false);
 
-  // Unified R2 Picker Modal for image slots and Hero Slideshow
+  // Unified R2 Picker Modal for image slots, Hero Slideshow, and Gallery Sections
   const [r2PickerTarget, setR2PickerTarget] = useState<
-    { mode: 'slot'; slot: ImageSlot } | { mode: 'hero-slide' } | null
+    | { mode: 'slot'; slot: ImageSlot }
+    | { mode: 'hero-slide' }
+    | {
+        mode: 'gallery-section';
+        sectionKey: 'gallery_wildlife' | 'gallery_guests';
+        sectionTitle: string;
+      }
+    | null
   >(null);
   const [r2PickerSearch, setR2PickerSearch] = useState<string>('');
   const [r2PickerBusyKey, setR2PickerBusyKey] = useState<string | null>(null);
@@ -522,6 +539,38 @@ export default function AdminStudioPage() {
     [firestoreSectionDocs, selectedPage]
   );
 
+  const galleryWildlifeItems = useMemo(
+    () =>
+      firestoreSectionDocs
+        .filter(
+          (item) =>
+            item &&
+            item.page === 'gallery.html' &&
+            (item.sectionKey === 'gallery_wildlife' || item.sectionKey === 'wildlife_landscapes') &&
+            item.src &&
+            item.src !== '/deleted' &&
+            !item.src.startsWith('data:')
+        )
+        .sort((a, b) => (a.order || 0) - (b.order || 0)),
+    [firestoreSectionDocs]
+  );
+
+  const galleryGuestItems = useMemo(
+    () =>
+      firestoreSectionDocs
+        .filter(
+          (item) =>
+            item &&
+            item.page === 'gallery.html' &&
+            (item.sectionKey === 'gallery_guests' || item.sectionKey === 'guest_moments') &&
+            item.src &&
+            item.src !== '/deleted' &&
+            !item.src.startsWith('data:')
+        )
+        .sort((a, b) => (a.order || 0) - (b.order || 0)),
+    [firestoreSectionDocs]
+  );
+
   const isR2KeyStillUsedInFirestore = useCallback(
     (r2Key: string, exclude?: { slotId?: string; itemId?: string }) => {
       if (!r2Key) return false;
@@ -689,14 +738,148 @@ export default function AdminStudioPage() {
     return Array.from(names);
   }, [parentSections]);
 
+  // Global Footer Values & Modified Keys
+  const { footerValues, modifiedFooterKeys } = useMemo(() => {
+    const values: Record<string, string> = {};
+    const modified = new Set<string>();
+
+    for (const field of FOOTER_FIELD_DEFINITIONS) {
+      const globalDoc = firestoreTextDocs[field.textId];
+      if (globalDoc && !globalDoc.isDeleted && typeof globalDoc.content === 'string') {
+        values[field.textId] = globalDoc.content;
+        if (globalDoc.content !== field.defaultValue) {
+          modified.add(field.textId);
+        }
+      } else {
+        values[field.textId] = field.defaultValue;
+      }
+    }
+
+    return { footerValues: values, modifiedFooterKeys: modified };
+  }, [firestoreTextDocs]);
+
+  const handleSaveFooterField = async (field: FooterFieldDefinition, newValue: string) => {
+    setSavingFooterKey(field.textId);
+    try {
+      const payload = {
+        textId: field.textId,
+        page: 'global_footer',
+        textIndex: 0,
+        tagName: field.tagName,
+        sectionContext: `Site Footer · ${field.label}`,
+        content: newValue,
+        isDeleted: false,
+        isCustomAdded: false,
+      };
+      await saveSiteTextInFirestore(payload);
+      setFirestoreTextDocs((prev) => ({
+        ...prev,
+        [payload.textId]: {
+          ...payload,
+          updatedAt: new Date().toISOString(),
+        },
+      }));
+      showNotice(`Updated footer "${field.label}" across all 12 website pages.`);
+    } catch (err) {
+      showNotice(err instanceof Error ? err.message : 'Failed to save footer text', 'error');
+    } finally {
+      setSavingFooterKey(null);
+    }
+  };
+
+  const handleRestoreFooterField = async (field: FooterFieldDefinition) => {
+    setSavingFooterKey(field.textId);
+    try {
+      await deleteSiteTextInFirestore(field.textId);
+      setFirestoreTextDocs((prev) => {
+        const next = { ...prev };
+        delete next[field.textId];
+        return next;
+      });
+      showNotice(`Restored default footer text for "${field.label}".`);
+    } catch (err) {
+      showNotice(err instanceof Error ? err.message : 'Failed to restore footer text', 'error');
+    } finally {
+      setSavingFooterKey(null);
+    }
+  };
+
+  const handleSaveAllFooterFields = async (drafts: Record<string, string>) => {
+    setSavingFooterKey('all');
+    try {
+      let savedCount = 0;
+      const nextDocs: Record<string, Partial<SiteTextSlot> & { updatedAt?: unknown }> = {};
+
+      for (const field of FOOTER_FIELD_DEFINITIONS) {
+        const val = (drafts[field.textId] ?? footerValues[field.textId] ?? field.defaultValue).trim();
+        const currentSaved = footerValues[field.textId] ?? field.defaultValue;
+        if (val !== currentSaved || (val !== field.defaultValue && !firestoreTextDocs[field.textId])) {
+          const payload = {
+            textId: field.textId,
+            page: 'global_footer',
+            textIndex: 0,
+            tagName: field.tagName,
+            sectionContext: `Site Footer · ${field.label}`,
+            content: val,
+            isDeleted: false,
+            isCustomAdded: false,
+          };
+          await saveSiteTextInFirestore(payload);
+          nextDocs[payload.textId] = {
+            ...payload,
+            updatedAt: new Date().toISOString(),
+          };
+          savedCount++;
+        }
+      }
+
+      if (savedCount > 0) {
+        setFirestoreTextDocs((prev) => ({ ...prev, ...nextDocs }));
+        showNotice(`Saved ${savedCount} footer text change(s) across all 12 website pages.`);
+      } else {
+        showNotice('All footer text fields are already up to date.');
+      }
+    } catch (err) {
+      showNotice(err instanceof Error ? err.message : 'Failed to save footer changes', 'error');
+    } finally {
+      setSavingFooterKey(null);
+    }
+  };
+
+  const handleResetAllFooterFields = async () => {
+    setSavingFooterKey('reset-all');
+    try {
+      for (const field of FOOTER_FIELD_DEFINITIONS) {
+        if (firestoreTextDocs[field.textId]) {
+          await deleteSiteTextInFirestore(field.textId);
+        }
+      }
+      setFirestoreTextDocs((prev) => {
+        const next = { ...prev };
+        for (const field of FOOTER_FIELD_DEFINITIONS) {
+          delete next[field.textId];
+        }
+        return next;
+      });
+      showNotice('Restored all footer text fields to their default values.');
+    } catch (err) {
+      showNotice(err instanceof Error ? err.message : 'Failed to reset footer text', 'error');
+    } finally {
+      setSavingFooterKey(null);
+    }
+  };
+
   // --- Image Slot Actions (R2 -> CDN URL -> Firestore) ---
   const handleDirectSlotFileSelected = async (
     targetSlot: ImageSlot,
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const file = e.target.files?.[0];
+    const files = e.target.files ? Array.from(e.target.files) : [];
     e.target.value = '';
-    if (!file) return;
+    if (files.length === 0) return;
+
+    const firstFile = files[0];
+    const extraFiles = files.slice(1);
 
     setUploadingTargetId(targetSlot.slotId);
     try {
@@ -704,7 +887,7 @@ export default function AdminStudioPage() {
       const canDeletePrev =
         prevKey && !isR2KeyStillUsedInFirestore(prevKey, { slotId: targetSlot.slotId });
 
-      const r2Uploaded = await uploadImageToR2Bucket(file, {
+      const r2Uploaded = await uploadImageToR2Bucket(firstFile, {
         replaceKey: canDeletePrev ? prevKey : undefined,
         alt: targetSlot.alt || targetSlot.label,
         title: targetSlot.label,
@@ -724,8 +907,46 @@ export default function AdminStudioPage() {
         alt: targetSlot.alt || targetSlot.label,
       });
 
+      // If multiple files were selected on gallery.html, append extra files as unlimited gallery items
+      if (extraFiles.length > 0 && targetSlot.page === 'gallery.html') {
+        const isGuestsSection = targetSlot.sectionContext.toLowerCase().includes('guest');
+        const sectionKey = isGuestsSection ? 'gallery_guests' : 'gallery_wildlife';
+        const sectionTitle = isGuestsSection
+          ? 'Our Guests & Safari Trip Moments'
+          : 'Wildlife & Landscapes';
+        const existingList = isGuestsSection ? galleryGuestItems : galleryWildlifeItems;
+        let currentOrder = existingList.reduce((max, s) => Math.max(max, s.order || 0), 0) + 1;
+
+        for (const extraFile of extraFiles) {
+          const cleanTitle = extraFile.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ');
+          const extraUploaded = await uploadImageToR2Bucket(extraFile, {
+            alt: `${sectionTitle} — ${cleanTitle}`,
+            title: `${sectionTitle} Photo #${currentOrder}`,
+            page: 'gallery.html',
+          });
+          const newGalleryItem: SeedSectionGalleryItem = {
+            itemId: createCmsItemId(sectionKey, currentOrder),
+            page: 'gallery.html',
+            sectionKey,
+            sectionTitle,
+            title: `${sectionTitle} Photo #${currentOrder}`,
+            caption: cleanTitle,
+            src: extraUploaded.cdnUrl,
+            r2Key: extraUploaded.r2Key,
+            alt: `${sectionTitle} — ${cleanTitle}`,
+            order: currentOrder,
+          };
+          await saveSectionGalleryItemInFirestore(newGalleryItem);
+          currentOrder++;
+        }
+      }
+
       setCacheBuster((prev) => prev + 1);
-      showNotice(`Uploaded "${targetSlot.label}" to Cloudflare R2 and saved to Firestore.`);
+      showNotice(
+        extraFiles.length > 0 && targetSlot.page === 'gallery.html'
+          ? `Uploaded ${files.length} photos to Cloudflare R2 and added to ${targetSlot.sectionContext}.`
+          : `Uploaded "${targetSlot.label}" to Cloudflare R2 and saved to Firestore.`
+      );
       await fetchR2Status();
     } catch (err) {
       showNotice(err instanceof Error ? err.message : 'Image upload failed', 'error');
@@ -840,7 +1061,10 @@ export default function AdminStudioPage() {
         });
 
         const newSlide: SeedSectionGalleryItem = {
-          itemId: `hero_slide_${selectedPage.replace('.html', '').replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}_${currentOrder}`,
+          itemId: createCmsItemId(
+            `hero_slide_${selectedPage.replace('.html', '').replace(/[^a-zA-Z0-9]/g, '_')}`,
+            currentOrder
+          ),
           page: selectedPage,
           sectionKey: 'hero_slideshow',
           sectionTitle: 'Hero Section Slideshow (4s)',
@@ -872,7 +1096,10 @@ export default function AdminStudioPage() {
     const nextOrder =
       pageHeroSlides.reduce((max, s) => Math.max(max, s.order || 0), 0) + 1;
     const newSlide: SeedSectionGalleryItem = {
-      itemId: `hero_slide_${selectedPage.replace('.html', '').replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}_${nextOrder}`,
+      itemId: createCmsItemId(
+        `hero_slide_${selectedPage.replace('.html', '').replace(/[^a-zA-Z0-9]/g, '_')}`,
+        nextOrder
+      ),
       page: selectedPage,
       sectionKey: 'hero_slideshow',
       sectionTitle: 'Hero Section Slideshow (4s)',
@@ -886,6 +1113,87 @@ export default function AdminStudioPage() {
     await saveSectionGalleryItemInFirestore(newSlide);
     setCacheBuster((prev) => prev + 1);
     showNotice(`Added "${obj.title || obj.r2Key}" to ${currentPageMeta.title} Hero Slideshow.`);
+  };
+
+  // --- Unlimited Gallery Section Actions (Wildlife & Landscapes / Our Guests Moments) ---
+  const handleAddGallerySectionFiles = async (
+    sectionKey: 'gallery_wildlife' | 'gallery_guests',
+    sectionTitle: string,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    e.target.value = '';
+    if (files.length === 0) return;
+
+    const targetUploadKey = `gallery-add-${sectionKey}`;
+    setUploadingTargetId(targetUploadKey);
+    try {
+      const existingList =
+        sectionKey === 'gallery_guests' ? galleryGuestItems : galleryWildlifeItems;
+      let currentOrder = existingList.reduce((max, s) => Math.max(max, s.order || 0), 0) + 1;
+
+      for (const file of files) {
+        const cleanTitle = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ');
+        const uploaded = await uploadImageToR2Bucket(file, {
+          alt: `${sectionTitle} — ${cleanTitle}`,
+          title: `${sectionTitle} Photo #${currentOrder}`,
+          page: 'gallery.html',
+        });
+
+        const newItem: SeedSectionGalleryItem = {
+          itemId: createCmsItemId(sectionKey, currentOrder),
+          page: 'gallery.html',
+          sectionKey,
+          sectionTitle,
+          title: `${sectionTitle} Photo #${currentOrder}`,
+          caption: cleanTitle,
+          src: uploaded.cdnUrl,
+          r2Key: uploaded.r2Key,
+          alt: `${sectionTitle} — ${cleanTitle}`,
+          order: currentOrder,
+        };
+
+        await saveSectionGalleryItemInFirestore(newItem);
+        currentOrder++;
+      }
+
+      setCacheBuster((prev) => prev + 1);
+      showNotice(
+        `Uploaded ${files.length} photo${files.length > 1 ? 's' : ''} to "${sectionTitle}" gallery.`
+      );
+      await fetchR2Status();
+    } catch (err) {
+      showNotice(err instanceof Error ? err.message : 'Failed to upload gallery photos', 'error');
+    } finally {
+      setUploadingTargetId(null);
+    }
+  };
+
+  const handleAssignR2ToGallerySection = async (
+    obj: R2ObjectRecord,
+    sectionKey: 'gallery_wildlife' | 'gallery_guests',
+    sectionTitle: string
+  ) => {
+    const existingList =
+      sectionKey === 'gallery_guests' ? galleryGuestItems : galleryWildlifeItems;
+    const nextOrder = existingList.reduce((max, s) => Math.max(max, s.order || 0), 0) + 1;
+
+    const newItem: SeedSectionGalleryItem = {
+      itemId: createCmsItemId(sectionKey, nextOrder),
+      page: 'gallery.html',
+      sectionKey,
+      sectionTitle,
+      title: obj.title || `${sectionTitle} Photo #${nextOrder}`,
+      caption: obj.alt || obj.title || sectionTitle,
+      src: obj.cdnUrl,
+      r2Key: obj.r2Key,
+      alt: obj.alt || obj.title || `${sectionTitle} Photo`,
+      order: nextOrder,
+    };
+
+    await saveSectionGalleryItemInFirestore(newItem);
+    setCacheBuster((prev) => prev + 1);
+    showNotice(`Added "${obj.title || obj.r2Key}" to "${sectionTitle}" gallery.`);
   };
 
   const handleReplaceSectionImageFile = async (
@@ -1551,7 +1859,7 @@ export default function AdminStudioPage() {
           </span>
         </div>
 
-        {/* Center: 5 Workspace Tabs */}
+        {/* Center: 6 Workspace Tabs */}
         <nav
           aria-label="CMS Workspace"
           className="hidden md:flex items-center gap-1 bg-[#090d0b] p-1 rounded-md border border-emerald-950/80"
@@ -1560,6 +1868,13 @@ export default function AdminStudioPage() {
             [
               { id: 'pages', label: 'Pages & Sections' },
               { id: 'texts', label: 'Site Texts Editor' },
+              {
+                id: 'footer',
+                label:
+                  modifiedFooterKeys.size > 0
+                    ? `Footer Text (${modifiedFooterKeys.size})`
+                    : 'Footer Text Editor',
+              },
               {
                 id: 'enquiries',
                 label:
@@ -1632,6 +1947,13 @@ export default function AdminStudioPage() {
           [
             { id: 'pages', label: 'Pages & Sections' },
             { id: 'texts', label: 'Site Texts' },
+            {
+              id: 'footer',
+              label:
+                modifiedFooterKeys.size > 0
+                  ? `Footer (${modifiedFooterKeys.size})`
+                  : 'Footer Text',
+            },
             {
               id: 'enquiries',
               label:
@@ -1852,6 +2174,16 @@ export default function AdminStudioPage() {
               <RefreshCw className="w-5 h-5 animate-spin text-amber-500" />
               <span>Loading all pages, section trees, and Cloudflare R2 objects...</span>
             </div>
+          ) : activeTab === 'footer' ? (
+            <FooterEditorPanel
+              footerValues={footerValues}
+              modifiedKeys={modifiedFooterKeys}
+              savingKey={savingFooterKey}
+              onSaveField={handleSaveFooterField}
+              onRestoreField={handleRestoreFooterField}
+              onSaveAllFields={handleSaveAllFooterFields}
+              onResetAllFooterFields={handleResetAllFooterFields}
+            />
           ) : activeTab === 'enquiries' ? (
             <EnquiriesPanel
               enquiries={mergedEnquiries}
@@ -1925,6 +2257,15 @@ export default function AdminStudioPage() {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('footer')}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 transition-colors"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>Edit Footer Text (All Pages)</span>
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => {
@@ -2296,6 +2637,189 @@ export default function AdminStudioPage() {
                               </div>
                             )}
 
+                            {/* Unlimited Gallery Upload Manager for Wildlife & Landscapes and Our Guests Moments on gallery.html */}
+                            {selectedPage === 'gallery.html' &&
+                              activeTab !== 'texts' &&
+                              contentFilter !== 'text' &&
+                              (sec.sectionName.toLowerCase().includes('wildlife') ||
+                                sec.sectionName.toLowerCase().includes('guest')) && (() => {
+                                const isGuestsSec = sec.sectionName.toLowerCase().includes('guest');
+                                const galleryKey: 'gallery_wildlife' | 'gallery_guests' = isGuestsSec
+                                  ? 'gallery_guests'
+                                  : 'gallery_wildlife';
+                                const galleryTitle = isGuestsSec
+                                  ? 'Our Guests & Safari Trip Moments'
+                                  : 'Wildlife & Landscapes';
+                                const dynamicPhotos = isGuestsSec
+                                  ? galleryGuestItems
+                                  : galleryWildlifeItems;
+                                const uploadBtnKey = `gallery-add-${galleryKey}`;
+
+                                return (
+                                  <div className="bg-[#090d0b] border border-emerald-500/35 rounded-lg p-4 space-y-4">
+                                    <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
+                                      <div className="space-y-0.5">
+                                        <div className="flex items-center gap-2">
+                                          <h3 className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
+                                            Unlimited Gallery Photos — {galleryTitle}
+                                          </h3>
+                                          <span className="px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 font-mono text-[10px] text-emerald-300">
+                                            +{dynamicPhotos.length} extra photo
+                                            {dynamicPhotos.length === 1 ? '' : 's'}
+                                          </span>
+                                        </div>
+                                        <p className="text-[11px] text-slate-400">
+                                          Upload as many photos as you want to {galleryTitle}. Select
+                                          multiple files at once or pick existing photos from your R2
+                                          bucket — there is no limit on gallery uploads.
+                                        </p>
+                                      </div>
+
+                                      <div className="flex items-center gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setR2PickerTarget({
+                                              mode: 'gallery-section',
+                                              sectionKey: galleryKey,
+                                              sectionTitle: galleryTitle,
+                                            });
+                                            setR2PickerSearch('');
+                                          }}
+                                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-[#101714] hover:bg-slate-800 text-slate-200 border border-slate-800 transition-colors"
+                                        >
+                                          <FolderOpen className="w-3.5 h-3.5 text-amber-400" />
+                                          <span>Pick from R2</span>
+                                        </button>
+
+                                        <label
+                                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-amber-500 hover:bg-amber-400 text-slate-950 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                                            uploadingTargetId === uploadBtnKey
+                                              ? 'opacity-50 pointer-events-none'
+                                              : ''
+                                          }`}
+                                        >
+                                          <input
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            onChange={(e) =>
+                                              handleAddGallerySectionFiles(
+                                                galleryKey,
+                                                galleryTitle,
+                                                e
+                                              )
+                                            }
+                                            className="hidden"
+                                          />
+                                          {uploadingTargetId === uploadBtnKey ? (
+                                            <>
+                                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                              <span>Uploading...</span>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <Plus className="w-3.5 h-3.5" />
+                                              <span>Upload Unlimited Photos</span>
+                                            </>
+                                          )}
+                                        </label>
+                                      </div>
+                                    </div>
+
+                                    {dynamicPhotos.length === 0 ? (
+                                      <div className="text-xs text-slate-400 py-1">
+                                        Click <strong className="text-amber-400">Upload Unlimited Photos</strong> above to add any number of new photos to {galleryTitle}, or use the individual slot cards below.
+                                      </div>
+                                    ) : (
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                                        {dynamicPhotos.map((item, idx) => (
+                                          <article
+                                            key={item.itemId}
+                                            className="bg-[#101714] border border-slate-800 rounded-lg overflow-hidden flex flex-col justify-between"
+                                          >
+                                            <div>
+                                              <div className="h-40 bg-slate-900 border-b border-slate-800 overflow-hidden">
+                                                <img
+                                                  src={resolveImageUrl(item.src, cacheBuster)}
+                                                  alt={item.alt || item.title}
+                                                  referrerPolicy="no-referrer"
+                                                  className="w-full h-full object-cover"
+                                                  loading="lazy"
+                                                />
+                                              </div>
+                                              <div className="p-3 space-y-1">
+                                                <div className="text-[11px] font-mono text-emerald-400">
+                                                  Gallery Photo #{idx + 1}
+                                                </div>
+                                                <div className="text-xs font-semibold text-slate-100 truncate">
+                                                  {item.title}
+                                                </div>
+                                                <div
+                                                  className="text-[10px] font-mono text-slate-500 truncate"
+                                                  title={item.src}
+                                                >
+                                                  {item.r2Key || item.src}
+                                                </div>
+                                              </div>
+                                            </div>
+
+                                            <div className="px-3 pb-3 flex items-center gap-1.5">
+                                              <label
+                                                className={`flex-1 inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium bg-[#090d0b] hover:bg-amber-500 text-slate-200 hover:text-slate-950 border border-slate-800 hover:border-amber-500 transition-colors cursor-pointer ${
+                                                  uploadingTargetId === item.itemId
+                                                    ? 'opacity-50 pointer-events-none'
+                                                    : ''
+                                                }`}
+                                              >
+                                                <input
+                                                  type="file"
+                                                  accept="image/*"
+                                                  onChange={(e) =>
+                                                    handleReplaceSectionImageFile(item, e)
+                                                  }
+                                                  className="hidden"
+                                                />
+                                                <Upload className="w-3.5 h-3.5" />
+                                                <span>
+                                                  {uploadingTargetId === item.itemId
+                                                    ? 'Uploading...'
+                                                    : 'Replace'}
+                                                </span>
+                                              </label>
+
+                                              {confirmDeleteHeroSlideId === item.itemId ? (
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    setConfirmDeleteHeroSlideId(null);
+                                                    void handleDeleteSectionImage(item);
+                                                  }}
+                                                  className="px-2.5 py-1.5 rounded-md text-[11px] font-semibold bg-red-600 hover:bg-red-500 text-white"
+                                                >
+                                                  Confirm
+                                                </button>
+                                              ) : (
+                                                <button
+                                                  type="button"
+                                                  onClick={() =>
+                                                    setConfirmDeleteHeroSlideId(item.itemId)
+                                                  }
+                                                  className="p-1.5 rounded-md bg-[#090d0b] hover:bg-red-950/70 text-slate-400 hover:text-red-300 border border-slate-800 transition-colors"
+                                                  title="Delete gallery photo from Firestore & R2"
+                                                >
+                                                  <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                              )}
+                                            </div>
+                                          </article>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
+
                             {sec.subSections.map((sub) => (
                               <div
                                 key={sub.id}
@@ -2328,6 +2852,7 @@ export default function AdminStudioPage() {
                                               <input
                                                 type="file"
                                                 accept="image/*"
+                                                multiple={slot.page === 'gallery.html'}
                                                 onChange={(e) =>
                                                   handleDirectSlotFileSelected(slot, e)
                                                 }
@@ -2446,6 +2971,7 @@ export default function AdminStudioPage() {
                                               <input
                                                 type="file"
                                                 accept="image/*"
+                                                multiple={slot.page === 'gallery.html'}
                                                 onChange={(e) =>
                                                   handleDirectSlotFileSelected(slot, e)
                                                 }
@@ -2722,6 +3248,8 @@ export default function AdminStudioPage() {
                 <p className="text-xs text-slate-400 mt-0.5">
                   {r2PickerTarget.mode === 'slot'
                     ? `Target: ${r2PickerTarget.slot.page} · Slot #${r2PickerTarget.slot.slotIndex + 1} (${r2PickerTarget.slot.label})`
+                    : r2PickerTarget.mode === 'gallery-section'
+                    ? `Target: Gallery · ${r2PickerTarget.sectionTitle} (Unlimited Photos)`
                     : `Target: ${currentPageMeta.title} · Hero Slideshow (4s)`}
                 </p>
               </div>
@@ -2763,6 +3291,12 @@ export default function AdminStudioPage() {
                         try {
                           if (r2PickerTarget.mode === 'slot') {
                             await handleAssignR2ToSlot(obj, r2PickerTarget.slot);
+                          } else if (r2PickerTarget.mode === 'gallery-section') {
+                            await handleAssignR2ToGallerySection(
+                              obj,
+                              r2PickerTarget.sectionKey,
+                              r2PickerTarget.sectionTitle
+                            );
                           } else {
                             await handleAssignR2ToHeroSlide(obj);
                           }

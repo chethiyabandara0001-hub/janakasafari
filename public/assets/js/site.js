@@ -106,36 +106,36 @@
       }
     }
 
-    document.querySelectorAll("a[data-lightbox]").forEach((anchor) => {
-      anchor.addEventListener("click", (e) => {
-        e.preventDefault();
-        const groupKey = anchor.getAttribute("data-lightbox") || "single";
-        const isVisibleLightboxAnchor = (a) => {
-          const img = a.querySelector("img");
-          const href = a.getAttribute("href") || "";
-          if (isEmptySlotUrl(href)) return false;
-          if (img && (img.style.display === "none" || isEmptySlotUrl(img.getAttribute("src")))) {
-            return false;
-          }
-          return true;
+    document.addEventListener("click", (e) => {
+      const anchor = e.target instanceof Element ? e.target.closest("a[data-lightbox]") : null;
+      if (!anchor) return;
+      e.preventDefault();
+      const groupKey = anchor.getAttribute("data-lightbox") || "single";
+      const isVisibleLightboxAnchor = (a) => {
+        const img = a.querySelector("img");
+        const href = a.getAttribute("href") || "";
+        if (isEmptySlotUrl(href)) return false;
+        if (img && (img.style.display === "none" || isEmptySlotUrl(img.getAttribute("src")))) {
+          return false;
+        }
+        return true;
+      };
+      const rawAnchors =
+        groupKey === "single"
+          ? [anchor]
+          : Array.from(document.querySelectorAll(`a[data-lightbox="${groupKey}"]`));
+      const anchors = rawAnchors.filter(isVisibleLightboxAnchor);
+      if (!anchors.length) return;
+      const group = anchors.map((a) => {
+        const img = a.querySelector("img");
+        return {
+          href: a.getAttribute("href") || (img ? img.src : ""),
+          thumb: img ? img.getAttribute("src") || img.src : a.getAttribute("href") || "",
+          alt: (img && img.alt) || a.getAttribute("aria-label") || "Safari photo",
         };
-        const rawAnchors =
-          groupKey === "single"
-            ? [anchor]
-            : Array.from(document.querySelectorAll(`a[data-lightbox="${groupKey}"]`));
-        const anchors = rawAnchors.filter(isVisibleLightboxAnchor);
-        if (!anchors.length) return;
-        const group = anchors.map((a) => {
-          const img = a.querySelector("img");
-          return {
-            href: a.getAttribute("href") || (img ? img.src : ""),
-            thumb: img ? img.getAttribute("src") || img.src : a.getAttribute("href") || "",
-            alt: (img && img.alt) || a.getAttribute("aria-label") || "Safari photo",
-          };
-        });
-        const idx = Math.max(0, anchors.indexOf(anchor));
-        openGroup(group, idx);
       });
+      const idx = Math.max(0, anchors.indexOf(anchor));
+      openGroup(group, idx);
     });
 
     if (prevBtn) {
@@ -336,7 +336,7 @@
       const lines = [
         "Hello Nisha,",
         "",
-        "I would like to enquire about a taxi service / tour:",
+        "I would like to enquire about a safari trip / tour:",
         `Name: ${firstName} ${lastName}`.trim(),
         `Email: ${email}`,
         whatsapp ? `WhatsApp: ${whatsapp}` : null,
@@ -356,14 +356,14 @@
 
       if (msgPre) msgPre.textContent = fullMessage;
       const subject = encodeURIComponent(
-        `Taxi Service Enquiry - ${park || "Sri Lanka"} (${firstName} ${lastName})`
+        `Safari Trip Enquiry - ${park || "Sri Lanka"} (${firstName} ${lastName})`
       );
       const encodedBody = encodeURIComponent(fullMessage);
       if (emailBtn) {
-        emailBtn.href = `mailto:safarinisha@gmail.com?subject=${subject}&body=${encodedBody}`;
+        emailBtn.href = `mailto:nishasafari@gmail.com?subject=${subject}&body=${encodedBody}`;
       }
       if (waBtn) {
-        waBtn.href = `https://wa.me/94717390327?text=${encodedBody}`;
+        waBtn.href = `https://wa.me/94788729414?text=${encodedBody}`;
       }
       enquiryForm.reset();
       if (typeof enquiryDialog.showModal === "function") {
@@ -496,21 +496,96 @@
 
   function applySafeTextContent(el, newContent) {
     const textVal = String(newContent ?? "");
+
+    // Contact page Telephone + WhatsApp block: always keep clickable tel: and wa.me links (no WeChat)
+    const telWaMatch = textVal.match(
+      /Telephone[\s:]*([+\d\s()-]+?)\s+WhatsApp(?:\s*(?:&|and)\s*WeChat)?[\s:]*([+\d\s()-]+)/i
+    );
+    if (el.classList.contains("contact-phone-whatsapp") || telWaMatch) {
+      let rawTel = telWaMatch ? telWaMatch[1].trim() : "+94 78 872 9414";
+      let rawWa = telWaMatch ? telWaMatch[2].trim() : "+94 788729414";
+      if (/71\s*739\s*0327/.test(rawTel)) rawTel = "+94 78 872 9414";
+      if (/71\s*739\s*0327|78\s*872\s*9414/.test(rawWa)) rawWa = "+94 788729414";
+      const telDigits = rawTel.replace(/[^+\d]/g, "") || "+94788729414";
+      const waDigits = rawWa.replace(/\D/g, "") || "94788729414";
+
+      el.innerHTML = "";
+      const wrapper = document.createElement("font");
+      wrapper.setAttribute("color", "#18382b");
+      wrapper.appendChild(document.createTextNode("Telephone"));
+      wrapper.appendChild(document.createElement("br"));
+
+      const strongTel = document.createElement("strong");
+      const aTel = document.createElement("a");
+      aTel.className = "contact-inline-link";
+      aTel.href = `tel:${telDigits}`;
+      aTel.textContent = rawTel;
+      strongTel.appendChild(aTel);
+      wrapper.appendChild(strongTel);
+      wrapper.appendChild(document.createElement("br"));
+
+      wrapper.appendChild(document.createTextNode("WhatsApp"));
+      wrapper.appendChild(document.createElement("br"));
+
+      const strongWa = document.createElement("strong");
+      const aWa = document.createElement("a");
+      aWa.className = "contact-inline-link contact-whatsapp-link";
+      aWa.href = `https://wa.me/${waDigits}`;
+      aWa.target = "_blank";
+      aWa.rel = "noopener noreferrer";
+      aWa.textContent = rawWa;
+      strongWa.appendChild(aWa);
+      wrapper.appendChild(strongWa);
+
+      el.appendChild(wrapper);
+      return;
+    }
+
+    // Contact page Email block: always keep clickable mailto: link
+    const contactEmailMatch = textVal.match(/^Email[\s:]+([^\s@]+@[^\s@]+\.[^\s@]+)$/i);
+    if (el.classList.contains("contact-email") && (contactEmailMatch || textVal.includes("@"))) {
+      let emailDisplay = contactEmailMatch
+        ? contactEmailMatch[1].trim()
+        : textVal.replace(/^Email[\s:]*/i, "").trim();
+      if (/^safarinisha@gmail\.com$/i.test(emailDisplay)) {
+        emailDisplay = "nishasafari@gmail.com";
+      }
+      const emailHref = emailDisplay.replace(/\s+/g, "");
+      el.innerHTML = "";
+      const wrapper = document.createElement("font");
+      wrapper.setAttribute("color", "#18382b");
+      wrapper.appendChild(document.createTextNode("Email"));
+      wrapper.appendChild(document.createElement("br"));
+      const strongEm = document.createElement("strong");
+      const aEm = document.createElement("a");
+      aEm.className = "contact-inline-link";
+      aEm.href = `mailto:${emailHref}`;
+      aEm.textContent = emailDisplay;
+      strongEm.appendChild(aEm);
+      wrapper.appendChild(strongEm);
+      el.appendChild(wrapper);
+      return;
+    }
+
     const iconEl = el.querySelector(".footer-contact-icon");
     if (iconEl) {
       const linkEl = el.querySelector("a");
       if (linkEl && !textVal.includes("\n")) {
         const isTelLink = linkEl.getAttribute("href")?.startsWith("tel:");
-        const resolvedText =
+        const isMailLink = linkEl.getAttribute("href")?.startsWith("mailto:");
+        let resolvedText =
           isTelLink && /71\s*739\s*0327/.test(textVal)
             ? "+94 78 872 9414"
             : textVal;
+        if (isMailLink && /safarinisha@gmail\.com/i.test(resolvedText)) {
+          resolvedText = "nishasafari@gmail.com";
+        }
         linkEl.textContent = resolvedText;
         if (isTelLink) {
           const digits = resolvedText.replace(/[^+\d]/g, "");
           if (digits) linkEl.setAttribute("href", `tel:${digits}`);
-        } else if (linkEl.getAttribute("href")?.startsWith("mailto:") && resolvedText.includes("@")) {
-          linkEl.setAttribute("href", `mailto:${resolvedText.trim()}`);
+        } else if (isMailLink && resolvedText.includes("@")) {
+          linkEl.setAttribute("href", `mailto:${resolvedText.trim().replace(/\s+/g, "")}`);
         }
         return;
       }
@@ -535,12 +610,61 @@
       return;
     }
 
+    // Home page "Why Choose Us" numbered feature paragraphs (01. - 04.): always highlight the numbered title
+    const whyChooseMatch = textVal
+      .trim()
+      .match(
+        /^(01\.\s*Experience You Can Trust|02\.\s*Experienced Local Team|03\.\s*Thoughtfully Planned\s+safari\s+trips|04\.\s*Respect for Wildlife\s*(?:&|and)\s*Nature|0[1-4]\.\s*[^\n-]+?)(?:\s*[-–—:]\s*|\s*\n+\s*|\s+)(.*)$/is
+      );
+    if (whyChooseMatch && (el.closest(".home-why-choose") || /^0[1-4]\./.test(textVal.trim()))) {
+      const titlePart = whyChooseMatch[1].trim();
+      const bodyPart = whyChooseMatch[2].trim();
+      const existingFont = el.querySelector(":scope > font");
+      const targetRoot = existingFont || el;
+      targetRoot.innerHTML = "";
+      const s = document.createElement("strong");
+      s.className = "why-choose-item-title";
+      s.textContent = titlePart;
+      targetRoot.appendChild(s);
+      if (bodyPart) {
+        targetRoot.appendChild(document.createElement("br"));
+        bodyPart.split("\n").forEach((line, i) => {
+          const cleanLine = line.trim();
+          if (!cleanLine) return;
+          if (i > 0) targetRoot.appendChild(document.createElement("br"));
+          targetRoot.appendChild(document.createTextNode(cleanLine));
+        });
+      }
+      return;
+    }
+
     if (textVal.includes("\n")) {
-      el.innerHTML = "";
+      const existingFont = el.querySelector(":scope > font");
+      const targetRoot = existingFont && existingFont.textContent.trim() === el.textContent.trim() ? existingFont : el;
+      const hadLeadingStrong = Boolean(targetRoot.querySelector(":scope > strong"));
+      targetRoot.innerHTML = "";
       textVal.split("\n").forEach((line, i) => {
-        if (i > 0) el.appendChild(document.createElement("br"));
-        el.appendChild(document.createTextNode(line));
+        if (i > 0) targetRoot.appendChild(document.createElement("br"));
+        if (i === 0 && hadLeadingStrong) {
+          const s = document.createElement("strong");
+          s.textContent = line;
+          targetRoot.appendChild(s);
+        } else {
+          targetRoot.appendChild(document.createTextNode(line));
+        }
       });
+      return;
+    }
+
+    // Preserve inner <strong> / <font> wrapper when updating single-line titles or highlighted card headings
+    const innerStrong = el.querySelector("strong");
+    if (innerStrong && innerStrong.textContent.trim() === el.textContent.trim()) {
+      innerStrong.textContent = textVal.replace(/\bsafari trip\b/gi, "Safari");
+      return;
+    }
+    const innerFont = el.querySelector("font");
+    if (innerFont && innerFont.textContent.trim() === el.textContent.trim()) {
+      innerFont.textContent = textVal;
       return;
     }
 
@@ -812,6 +936,13 @@
         const entry = slotElementMap.get(ov.slotId);
         if (!entry) return;
 
+        if (entry.element.closest("#TA_selfserveprop542")) {
+          entry.element.style.display = "none";
+          const parentAnchor = entry.element.closest("a");
+          if (parentAnchor) parentAnchor.style.display = "none";
+          return;
+        }
+
         if (ov.isDeleted || isEmptySlotUrl(ov.src)) {
           if (entry.type === "hero-bg") {
             heroSlotDeleted = true;
@@ -849,8 +980,7 @@
             entry.element.closest(".galleryImageHolder") ||
             entry.element.closest("a[data-lightbox]") ||
             entry.element.closest(".wsite-image") ||
-            entry.element.closest(".home-review-award") ||
-            entry.element.closest(".home-review-summary");
+            entry.element.closest(".home-review-award");
           if (holder) {
             holder.style.display = "";
             holder.style.visibility = "visible";
@@ -866,6 +996,63 @@
           if (parentAnchor) parentAnchor.href = normalizeSlideSrc(ov.lightboxHref || ov.src);
         }
       });
+
+      // 1a. Global Brand Logo Fallback: Ensure top-left header logo and footer logo show on EVERY page
+      const globalLogoDoc =
+        fbSiteImages.find(
+          (ov) =>
+            ov &&
+            ov.slotId === "index_html__slot_0" &&
+            !ov.isDeleted &&
+            !isEmptySlotUrl(ov.src)
+        ) ||
+        fbSiteImages.find(
+          (ov) =>
+            ov &&
+            (ov.type === "logo" || String(ov.slotId || "").endsWith("__slot_0")) &&
+            !ov.isDeleted &&
+            !isEmptySlotUrl(ov.src)
+        );
+      const resolvedGlobalLogoSrc = globalLogoDoc ? normalizeSlideSrc(globalLogoDoc.src) : "";
+
+      document.querySelectorAll("img.janaka-brand-logo").forEach((logoImg) => {
+        const currentSrc = logoImg.getAttribute("src") || "";
+        const isCurrentlyEmpty = logoImg.style.display === "none" || isEmptySlotUrl(currentSrc);
+        if (isCurrentlyEmpty && resolvedGlobalLogoSrc) {
+          logoImg.src = resolvedGlobalLogoSrc;
+          logoImg.alt = (globalLogoDoc && globalLogoDoc.alt) || "Nisha Safari";
+          logoImg.style.display = "";
+          logoImg.style.visibility = "visible";
+          logoImg.style.opacity = "1";
+          const holder = logoImg.closest(".wsite-image") || logoImg.closest(".wsite-logo");
+          if (holder) {
+            holder.style.display = "";
+            holder.style.visibility = "visible";
+            holder.style.opacity = "1";
+          }
+        }
+      });
+
+      // If no brand logo image is available at all, provide a clean text wordmark badge in the top-left header
+      const headerLogoAnchor = document.querySelector(".dusk-header .logo a");
+      const headerLogoImg = headerLogoAnchor ? headerLogoAnchor.querySelector("img.janaka-brand-logo") : null;
+      if (headerLogoAnchor && headerLogoImg) {
+        const hasVisibleLogoImg =
+          headerLogoImg.style.display !== "none" && !isEmptySlotUrl(headerLogoImg.getAttribute("src") || "");
+        let fallbackBadge = headerLogoAnchor.querySelector(".brand-logo-fallback-text");
+        if (!hasVisibleLogoImg) {
+          if (!fallbackBadge) {
+            fallbackBadge = document.createElement("span");
+            fallbackBadge.className = "brand-logo-fallback-text";
+            fallbackBadge.textContent = "NISHA SAFARI";
+            fallbackBadge.style.cssText =
+              "display:inline-flex;align-items:center;font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:1.25rem;letter-spacing:0.06em;color:#18382b;text-decoration:none;padding:6px 0;white-space:nowrap;";
+            headerLogoAnchor.appendChild(fallbackBadge);
+          }
+        } else if (fallbackBadge) {
+          fallbackBadge.remove();
+        }
+      }
 
       // 1b. Build & start 4-Second Hero Section Multi-Image Slideshow for this page
       const pageHeroSlides = fbSectionItems
@@ -897,8 +1084,16 @@
 
       // 2. Apply text overrides & deletions for this page directly from Firestore
       const activeCustomTexts = [];
+      const globalFooterMap = new Map();
       fbSiteTexts.forEach((ft) => {
-        if (!ft || !ft.textId || ft.page !== currentPageFile) return;
+        if (!ft || !ft.textId) return;
+        if (ft.page === "global_footer" || String(ft.textId).startsWith("global_footer__")) {
+          if (!ft.isDeleted && ft.content !== undefined) {
+            globalFooterMap.set(ft.textId, String(ft.content));
+          }
+          return;
+        }
+        if (ft.page !== currentPageFile) return;
         const isLegacySeed =
           !ft.isCustomAdded &&
           ft.updatedAt &&
@@ -922,6 +1117,76 @@
           }
         }
       });
+
+      // 2b. Apply Global Footer Text Overrides across all 12 pages
+      const footerEl = document.querySelector("footer.footer-wrap");
+      if (footerEl && globalFooterMap.size > 0) {
+        const footerCols = footerEl.querySelectorAll(".wsite-multicol-col");
+        if (footerCols.length >= 3) {
+          const col0Paras = footerCols[0].querySelectorAll(".paragraph");
+          if (col0Paras[0] && globalFooterMap.has("global_footer__brand_tagline")) {
+            applySafeTextContent(col0Paras[0], globalFooterMap.get("global_footer__brand_tagline"));
+          }
+          if (col0Paras[1] && globalFooterMap.has("global_footer__brand_desc")) {
+            applySafeTextContent(col0Paras[1], globalFooterMap.get("global_footer__brand_desc"));
+          }
+
+          const col1Paras = footerCols[1].querySelectorAll(".paragraph");
+          if (col1Paras[0] && globalFooterMap.has("global_footer__explore_heading")) {
+            const strongEl = col1Paras[0].querySelector("strong") || col1Paras[0];
+            strongEl.textContent = globalFooterMap.get("global_footer__explore_heading");
+          }
+          if (col1Paras[1]) {
+            const navKeyByHref = {
+              "index.html": "global_footer__nav_home",
+              "about.html": "global_footer__nav_about",
+              "contact.html": "global_footer__nav_contact",
+              "yala-safari.html": "global_footer__nav_yala",
+              "udawalawe-safari.html": "global_footer__nav_udawalawe",
+              "bundala-birding-safari.html": "global_footer__nav_bundala",
+              "wilpattu-safari.html": "global_footer__nav_wilpattu",
+              "minneriya-safari.html": "global_footer__nav_minneriya",
+              "kumana-birding-safari.html": "global_footer__nav_kumana",
+            };
+            col1Paras[1].querySelectorAll("a").forEach((aEl) => {
+              const href = (aEl.getAttribute("href") || "").trim();
+              const key = navKeyByHref[href];
+              if (key && globalFooterMap.has(key)) {
+                aEl.textContent = String(globalFooterMap.get(key)).replace(
+                  /\bsafari trip\b/gi,
+                  "Safari"
+                );
+              }
+            });
+          }
+
+          const col2Paras = footerCols[2].querySelectorAll(".paragraph");
+          if (col2Paras[0] && globalFooterMap.has("global_footer__contact_heading")) {
+            const fontEl = col2Paras[0].querySelector("font") || col2Paras[0].querySelector("strong") || col2Paras[0];
+            fontEl.textContent = globalFooterMap.get("global_footer__contact_heading");
+          }
+          const contactRows = footerCols[2].querySelectorAll(".footer-contact-row");
+          if (contactRows[0] && globalFooterMap.has("global_footer__phone")) {
+            applySafeTextContent(contactRows[0], globalFooterMap.get("global_footer__phone"));
+          }
+          if (contactRows[1] && globalFooterMap.has("global_footer__email")) {
+            applySafeTextContent(contactRows[1], globalFooterMap.get("global_footer__email"));
+          }
+          if (contactRows[2] && globalFooterMap.has("global_footer__address")) {
+            applySafeTextContent(contactRows[2], globalFooterMap.get("global_footer__address"));
+          }
+          const ctaBtnSpan = footerCols[2].querySelector(".wsite-button-inner");
+          if (ctaBtnSpan && globalFooterMap.has("global_footer__cta_button")) {
+            ctaBtnSpan.textContent = globalFooterMap.get("global_footer__cta_button");
+          }
+        }
+
+        const directFooterParas = footerEl.querySelectorAll(".wsite-footer > .paragraph");
+        const copyrightPara = directFooterParas[directFooterParas.length - 1];
+        if (copyrightPara && globalFooterMap.has("global_footer__copyright")) {
+          applySafeTextContent(copyrightPara, globalFooterMap.get("global_footer__copyright"));
+        }
+      }
 
       // 3. Render Custom Added Text Blocks for this page
       let customTextWrap = document.getElementById("firebase-custom-texts");
@@ -954,9 +1219,92 @@
       const existingShowcase = document.getElementById("firebase-section-gallery");
       if (existingShowcase) existingShowcase.remove();
 
+      // 4b. Render Unlimited Gallery Photos on gallery.html for Wildlife & Landscapes and Our Guests Moments
+      const wildlifeGalleryEl = document.getElementById("340121572187558640-gallery");
+      const guestsGalleryEl = document.getElementById("628952471135022421-gallery");
+
+      function renderDynamicGalleryItems(galleryContainer, sectionKeys, lightboxGroup) {
+        if (!galleryContainer) return;
+        galleryContainer.querySelectorAll(".dynamic-cms-gallery-item").forEach((el) => el.remove());
+        const matchingItems = fbSectionItems
+          .filter(
+            (item) =>
+              item &&
+              item.page === "gallery.html" &&
+              sectionKeys.includes(item.sectionKey) &&
+              !isEmptySlotUrl(item.src)
+          )
+          .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+        const clearSpan = galleryContainer.querySelector(":scope > span[style*='clear']");
+        matchingItems.forEach((item, idx) => {
+          const resolvedSrc = normalizeSlideSrc(item.src);
+          if (!resolvedSrc) return;
+          const altText = item.alt || item.title || "Nisha Safari Sri Lanka Gallery Photo";
+
+          const outerDiv = document.createElement("div");
+          outerDiv.id = `${galleryContainer.id}-dynamicContainer${idx}`;
+          outerDiv.className = "fullwidth-mobile dynamic-cms-gallery-item";
+          outerDiv.style.cssText = "float:left;width:33.28%;margin:0;";
+
+          const insideDiv = document.createElement("div");
+          insideDiv.style.cssText = "position:relative;margin:5px;";
+
+          const holderDiv = document.createElement("div");
+          holderDiv.className = "galleryImageHolder";
+          holderDiv.style.cssText = "position:relative;width:100%;padding:0 0 75%;overflow:hidden;";
+
+          const innerHolderDiv = document.createElement("div");
+          innerHolderDiv.className = "galleryInnerImageHolder";
+
+          const linkEl = document.createElement("a");
+          linkEl.setAttribute("aria-label", `Enlarge photo: ${altText}`);
+          linkEl.setAttribute("data-lightbox", lightboxGroup);
+          linkEl.href = resolvedSrc;
+
+          const imgEl = document.createElement("img");
+          imgEl.loading = "lazy";
+          imgEl.decoding = "async";
+          imgEl.src = resolvedSrc;
+          imgEl.className = "galleryImage";
+          imgEl.alt = altText;
+          imgEl.style.cssText =
+            "position:absolute;border:0;width:100%;height:100%;object-fit:cover;top:0%;left:0%;display:block;";
+
+          linkEl.appendChild(imgEl);
+          innerHolderDiv.appendChild(linkEl);
+          holderDiv.appendChild(innerHolderDiv);
+          insideDiv.appendChild(holderDiv);
+          outerDiv.appendChild(insideDiv);
+
+          if (clearSpan) {
+            galleryContainer.insertBefore(outerDiv, clearSpan);
+          } else {
+            galleryContainer.appendChild(outerDiv);
+          }
+        });
+      }
+
+      if (wildlifeGalleryEl) {
+        renderDynamicGalleryItems(
+          wildlifeGalleryEl,
+          ["gallery_wildlife", "wildlife_landscapes"],
+          "gallery340121572187558640"
+        );
+      }
+      if (guestsGalleryEl) {
+        renderDynamicGalleryItems(
+          guestsGalleryEl,
+          ["gallery_guests", "guest_moments"],
+          "gallery628952471135022421"
+        );
+      }
+
       // 5. Collapse empty image gallery slots & empty left/right media columns
       document.querySelectorAll(".imageGallery").forEach((galleryEl) => {
-        const containers = Array.from(galleryEl.querySelectorAll('[id*="-imageContainer"]'));
+        const containers = Array.from(
+          galleryEl.querySelectorAll('[id*="-imageContainer"], .dynamic-cms-gallery-item')
+        );
         let visibleCount = 0;
         containers.forEach((box) => {
           const img = box.querySelector("img.galleryImage");
@@ -973,7 +1321,9 @@
       });
 
       document.querySelectorAll(".wsite-multicol-tr").forEach((row) => {
-        const cols = Array.from(row.children).filter((c) => c.classList && c.classList.contains("wsite-multicol-col"));
+        const cols = Array.from(row.children).filter(
+          (c) => c.classList && c.classList.contains("wsite-multicol-col")
+        );
         if (cols.length < 2) return;
         let hiddenMediaCols = 0;
         cols.forEach((col) => {
@@ -984,8 +1334,16 @@
           });
           const hasButtonOrHeading = Boolean(col.querySelector(".wsite-button, h2, h3, h4, form"));
           const substantialParas = Array.from(col.querySelectorAll(".paragraph")).filter((p) => {
-            const isTinyCaption = Boolean(p.querySelector('font[size="1"]'));
-            return !isTinyCaption && (p.textContent || "").trim().length > 0;
+            const txt = (p.textContent || "").trim();
+            if (!txt) return false;
+            const isSmallCaptionFont = Boolean(
+              p.querySelector('font[size="1"], font[size="2"]')
+            );
+            const isKnownMediaCaption =
+              /^(Illustrative map|Mr\.\s*(?:Nisha|Janaka)\s+with\s+guests|Photo shared by a guest|Image shows the 14th edition)/i.test(
+                txt
+              );
+            return !isSmallCaptionFont && !isKnownMediaCaption;
           });
           if (imgs.length > 0 && !hasVisibleImg && !hasButtonOrHeading && substantialParas.length === 0) {
             col.classList.add("is-media-empty");

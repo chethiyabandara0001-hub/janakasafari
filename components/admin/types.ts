@@ -155,7 +155,7 @@ export interface EnquiryRecord {
   updatedAt?: unknown;
 }
 
-export type AdminTab = 'pages' | 'texts' | 'enquiries' | 'r2-bucket' | 'sync-settings';
+export type AdminTab = 'pages' | 'texts' | 'footer' | 'enquiries' | 'r2-bucket' | 'sync-settings';
 
 export function splitSectionLabel(ctx: string): {
   sectionName: string;

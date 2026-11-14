@@ -133,7 +133,7 @@ function findSectionContext(
     .filter(
       (t) =>
         t &&
-        !/^(OUR (?:SAFARI|TAXI SERVICE) EXPERIENCES|SAFARI PARKS|TAXI DESTINATIONS|EXPLORE)$/i.test(t)
+        !/^(OUR (?:SAFARI|TAXI SERVICE|SAFARI TRIP) EXPERIENCES|SAFARI PARKS|SAFARI DESTINATIONS|TAXI DESTINATIONS|EXPLORE)$/i.test(t)
     );
   const h2InSec =
     h2Before.length > 0
@@ -143,7 +143,7 @@ function findSectionContext(
           .find(
             (t) =>
               t &&
-              !/^(OUR (?:SAFARI|TAXI SERVICE) EXPERIENCES|SAFARI PARKS|TAXI DESTINATIONS|EXPLORE)$/i.test(
+              !/^(OUR (?:SAFARI|TAXI SERVICE|SAFARI TRIP) EXPERIENCES|SAFARI PARKS|SAFARI DESTINATIONS|TAXI DESTINATIONS|EXPLORE)$/i.test(
                 t
               )
           ) || '';

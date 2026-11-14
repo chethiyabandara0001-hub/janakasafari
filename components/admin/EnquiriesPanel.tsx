@@ -164,7 +164,7 @@ export function EnquiriesPanel({
             <div>
               <h1 className="text-base font-semibold text-white">Customer Enquiries</h1>
               <p className="text-xs text-slate-400">
-                View and manage all tour &amp; taxi service enquiries submitted by visitors on the Contact page.
+                View and manage all tour &amp; safari trip enquiries submitted by visitors on the Contact page.
               </p>
             </div>
           </div>
@@ -261,12 +261,12 @@ export function EnquiriesPanel({
             const isBusy = busyId === enq.enquiryId;
 
             const replySubject = encodeURIComponent(
-              `Re: Your Nisha Taxi Service Enquiry${enq.park ? ` - ${enq.park}` : ''}`
+              `Re: Your Nisha Safari Trip Enquiry${enq.park ? ` - ${enq.park}` : ''}`
             );
             const replyBody = encodeURIComponent(
-              `Hello ${enq.firstName || 'there'},\n\nThank you for contacting Nisha Taxi Service regarding your trip${
+              `Hello ${enq.firstName || 'there'},\n\nThank you for contacting Nisha Safari Trip regarding your trip${
                 enq.park ? ` to ${enq.park}` : ''
-              }${enq.safariDate ? ` on ${enq.safariDate}` : ''}.\n\nBest regards,\nNisha Taxi Service\nTelephone: +94 78 872 9414\nWhatsApp: +94 71 739 0327`
+              }${enq.safariDate ? ` on ${enq.safariDate}` : ''}.\n\nBest regards,\nNisha Safari Trip\nTelephone: +94 78 872 9414\nWhatsApp: +94 71 739 0327`
             );
 
             return (

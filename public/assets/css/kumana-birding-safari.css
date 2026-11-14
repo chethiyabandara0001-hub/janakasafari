@@ -1,244 +1,378 @@
 /* ==========================================================================
-   KUMANA-BIRDING-SAFARI.CSS — Kumana Packages, Wildlife, Map & Info
+   KUMANA-BIRDING-SAFARI.CSS — Kumana National Park Birding & Wildlife Guide
    Mobile-First Responsive Architecture
    ========================================================================== */
 
-/* 1. Kumana Packages (.wsite-background-54 & .wsite-background-88) — Mobile-First (1 -> 2 -> 3 cols) */
-.wsite-background-54,
-.wsite-background-88 {
-  background-color: var(--bg-primary) !important;
+.wsite-background-51 {
+  background-color: #faf5ec !important;
+}
+
+.wsite-background-52,
+.kumana-wildlife {
+  background-color: #13231b !important;
+  background-image: linear-gradient(180deg, #13231b 0%, #18382b 100%) !important;
+  color: #faf5ec !important;
+}
+
+.wsite-background-53 {
+  background-color: #faf5ec !important;
 }
 
 .wsite-background-54 {
-  padding-bottom: 24px !important;
+  background-color: #e8f0e2 !important;
+  border-top: 1px solid rgba(24, 56, 43, 0.1);
+  border-bottom: 1px solid rgba(24, 56, 43, 0.1);
 }
 
-.wsite-background-88 {
-  padding-top: 0 !important;
+.wsite-background-55,
+.kumana-info {
+  background-color: #faf5ec !important;
 }
 
+.wsite-background-56 {
+  background-color: #e8f0e2 !important;
+  border-top: 1px solid rgba(24, 56, 43, 0.1);
+}
+
+.wsite-background-57 {
+  background-color: #18382b !important;
+  background-image: linear-gradient(135deg, #18382b 0%, #0f261d 100%) !important;
+  color: #faf5ec !important;
+}
+
+.wsite-background-57 h2.wsite-content-title,
+.wsite-background-57 h2.wsite-content-title *,
+.wsite-background-57 .paragraph,
+.wsite-background-57 .paragraph * {
+  color: #faf5ec !important;
+}
+
+.wsite-multicol-col.is-media-empty {
+  display: none !important;
+}
+
+/* 1. Choose Your Kumana Safari Package Cards (.wsite-background-51) */
+.wsite-background-51 .wsite-multicol-table-wrap {
+  margin: 0 !important;
+}
+
+.wsite-background-51 .wsite-multicol-table,
+.wsite-background-51 .wsite-multicol-tbody {
+  display: block !important;
+  width: 100% !important;
+}
+
+.wsite-background-51 .wsite-multicol-tr {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 24px !important;
+  margin-top: 24px;
+  align-items: stretch !important;
+  max-width: 880px;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.wsite-background-51 .wsite-multicol-col {
+  width: 100% !important;
+  padding: 28px 24px !important;
+  background: #ffffff !important;
+  border: 1px solid #e2dac9 !important;
+  border-top: 4px solid #18382b !important;
+  border-radius: 18px !important;
+  box-shadow: 0 12px 28px rgba(24, 56, 43, 0.08);
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+}
+
+.wsite-background-51 .wsite-multicol-col:nth-child(even) {
+  border-top-color: #f5a623 !important;
+}
+
+.wsite-background-51 .wsite-multicol-col .paragraph {
+  color: #35453c !important;
+  text-align: left !important;
+  margin-bottom: 14px !important;
+}
+
+.wsite-background-51 .wsite-multicol-col > .paragraph:nth-of-type(2) {
+  min-height: 2.2em;
+}
+
+.wsite-background-51 .wsite-multicol-col > .paragraph:nth-of-type(3) {
+  flex: 1 1 auto !important;
+}
+
+.wsite-background-51 .wsite-multicol-col .paragraph strong font[size="4"],
+.wsite-background-51 .wsite-multicol-col .paragraph font[size="4"] strong {
+  color: #18382b !important;
+  font-family: var(--font-display) !important;
+  font-size: 1.35rem !important;
+  line-height: 1.25 !important;
+}
+
+.wsite-background-51 .wsite-multicol-col .paragraph strong font[size="6"],
+.wsite-background-51 .wsite-multicol-col .paragraph font[size="6"] strong {
+  color: #a85518 !important;
+  font-family: var(--font-display) !important;
+}
+
+.wsite-background-51 .wsite-multicol-col > div:last-child {
+  margin-top: auto !important;
+  padding-top: 12px !important;
+}
+
+.wsite-background-51 .wsite-button {
+  width: 100% !important;
+  text-align: center !important;
+}
+
+.wsite-background-51 .wsite-image {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.wsite-background-51 .wsite-image img {
+  border-radius: 12px !important;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  width: 100% !important;
+  margin-bottom: 14px;
+}
+
+@media screen and (min-width: 768px) {
+  .wsite-background-51 .wsite-multicol-tr {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 28px !important;
+  }
+}
+
+/* 2. Discover Kumana National Park — Dark Forest Section (.wsite-background-52 / .kumana-wildlife) */
+#wsite-content .kumana-wildlife h2.wsite-content-title,
+#wsite-content .kumana-wildlife h2.wsite-content-title *,
+#wsite-content .wsite-background-52 h2.wsite-content-title,
+#wsite-content .wsite-background-52 h2.wsite-content-title * {
+  color: #faf5ec !important;
+}
+
+#wsite-content .kumana-wildlife .wsite-section-elements > .paragraph,
+#wsite-content .kumana-wildlife .wsite-section-elements > .paragraph *,
+#wsite-content .wsite-background-52 .wsite-section-elements > .paragraph,
+#wsite-content .wsite-background-52 .wsite-section-elements > .paragraph * {
+  color: #dce5df !important;
+  max-width: 820px;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  text-align: center !important;
+}
+
+.kumana-wildlife .wsite-multicol-table-wrap,
+.wsite-background-52 .wsite-multicol-table-wrap {
+  margin: 0 !important;
+}
+
+.kumana-wildlife .wsite-multicol-table,
+.kumana-wildlife .wsite-multicol-tbody,
+.wsite-background-52 .wsite-multicol-table,
+.wsite-background-52 .wsite-multicol-tbody {
+  display: block !important;
+  width: 100% !important;
+}
+
+.kumana-wildlife .wsite-multicol-tr,
+.wsite-background-52 .wsite-multicol-tr {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 22px !important;
+  margin-top: 24px;
+  align-items: stretch !important;
+}
+
+.kumana-wildlife .wsite-multicol-col,
+.wsite-background-52 .wsite-multicol-col {
+  width: 100% !important;
+  padding: 24px 22px !important;
+  background: #faf5ec !important;
+  border: 1px solid rgba(245, 166, 35, 0.45) !important;
+  border-top: 4px solid #f5a623 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+#wsite-content .kumana-wildlife .wsite-multicol-col .paragraph,
+#wsite-content .kumana-wildlife .wsite-multicol-col .paragraph font,
+#wsite-content .wsite-background-52 .wsite-multicol-col .paragraph,
+#wsite-content .wsite-background-52 .wsite-multicol-col .paragraph font {
+  color: #35453c !important;
+  text-align: left !important;
+  margin-bottom: 8px !important;
+}
+
+#wsite-content .kumana-wildlife .wsite-multicol-col .kumana-card-title,
+#wsite-content .kumana-wildlife .wsite-multicol-col .kumana-card-title *,
+#wsite-content .kumana-wildlife .wsite-multicol-col .paragraph strong,
+#wsite-content .kumana-wildlife .wsite-multicol-col .paragraph strong *,
+#wsite-content .wsite-background-52 .wsite-multicol-col .kumana-card-title,
+#wsite-content .wsite-background-52 .wsite-multicol-col .kumana-card-title * {
+  color: #18382b !important;
+  font-family: var(--font-display) !important;
+  font-size: 1.3rem !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+}
+
+.kumana-wildlife .wsite-image,
+.wsite-background-52 .wsite-image {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.kumana-wildlife .wsite-image img,
+.wsite-background-52 .wsite-image img {
+  border-radius: 12px !important;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  width: 100% !important;
+  margin-bottom: 12px;
+}
+
+@media screen and (min-width: 768px) {
+  .kumana-wildlife .wsite-multicol-tr,
+  .wsite-background-52 .wsite-multicol-tr {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+    gap: 24px !important;
+  }
+}
+
+/* 3. Location Map (.wsite-background-53) & Safari Experience (.wsite-background-54) */
+.wsite-background-53 .wsite-multicol-table-wrap,
+.wsite-background-54 .wsite-multicol-table-wrap {
+  margin: 0 !important;
+}
+
+.wsite-background-53 .wsite-multicol-table,
+.wsite-background-53 .wsite-multicol-tbody,
 .wsite-background-54 .wsite-multicol-table,
 .wsite-background-54 .wsite-multicol-tbody {
   display: block !important;
   width: 100% !important;
 }
 
+.wsite-background-53 .wsite-multicol-tr,
 .wsite-background-54 .wsite-multicol-tr {
   display: grid !important;
   grid-template-columns: 1fr !important;
-  gap: 20px !important;
+  gap: 28px !important;
+  align-items: center !important;
   margin-top: 24px;
 }
 
+.wsite-background-53 .wsite-multicol-col,
 .wsite-background-54 .wsite-multicol-col {
   width: 100% !important;
-  padding: 22px 18px !important;
-  background: #FFFFFF !important;
-  border: 1px solid var(--border-subtle) !important;
-  border-radius: var(--radius-lg) !important;
-  box-shadow: var(--shadow-subtle);
-  display: flex !important;
-  flex-direction: column;
+  padding: 0 !important;
 }
 
-.wsite-background-54 .wsite-multicol-col .wsite-image {
-  margin: -22px -18px 18px -18px !important;
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
-  overflow: hidden;
-  aspect-ratio: 16 / 10;
+.wsite-background-53 .wsite-multicol-tr.is-media-empty,
+.wsite-background-54 .wsite-multicol-tr.is-media-empty {
+  grid-template-columns: 1fr !important;
+  max-width: 820px;
+  margin-left: auto !important;
+  margin-right: auto !important;
 }
 
-.wsite-background-54 .wsite-multicol-col .wsite-image img {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover;
-  border-radius: 0 !important;
+.wsite-background-53 .wsite-multicol-tr.is-media-empty .wsite-multicol-col,
+.wsite-background-54 .wsite-multicol-tr.is-media-empty .wsite-multicol-col {
+  background: #ffffff;
+  border: 1px solid #e2dac9;
+  border-left: 4px solid #18382b;
+  border-radius: 16px;
+  padding: 28px 30px !important;
+  box-shadow: 0 8px 24px rgba(24, 56, 43, 0.06);
 }
 
-.wsite-background-54 .wsite-multicol-col > div:last-child {
-  margin-top: auto;
-  padding-top: 12px;
+.wsite-background-53 .wsite-image img,
+.wsite-background-54 .wsite-image img {
+  border-radius: 16px !important;
+  box-shadow: 0 10px 26px rgba(24, 56, 43, 0.1);
 }
 
-.wsite-background-54 .wsite-multicol-col .wsite-button {
-  width: 100%;
-}
-
-@media screen and (min-width: 768px) {
-  .wsite-background-54 .wsite-multicol-tr {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 24px !important;
-    margin-top: 28px;
-  }
-
-  .wsite-background-54 .wsite-multicol-col {
-    padding: 28px 24px !important;
-  }
-
-  .wsite-background-54 .wsite-multicol-col .wsite-image {
-    margin: -28px -24px 20px -24px !important;
+@media screen and (min-width: 861px) {
+  .wsite-background-53 .wsite-multicol-tr:not(.is-media-empty),
+  .wsite-background-54 .wsite-multicol-tr:not(.is-media-empty) {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 44px !important;
   }
 }
 
-@media screen and (min-width: 1024px) {
-  .wsite-background-54 .wsite-multicol-tr {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    gap: 28px !important;
-    margin-top: 32px;
-  }
+/* 4. Safari Information & Hotel Pickup 3-Column Grid (.kumana-info / .wsite-background-55) */
+.kumana-info .wsite-multicol-table-wrap,
+.wsite-background-55 .wsite-multicol-table-wrap {
+  margin: 0 !important;
 }
 
-/* 2. Discover Kumana Wildlife (.wsite-background-55) — Mobile-First */
-.wsite-background-55 {
-  background-color: var(--bg-dark-earth) !important;
-  color: var(--text-on-dark);
-}
-
-.wsite-background-55 h2.wsite-content-title,
-.wsite-background-55 h2.wsite-content-title font,
-.wsite-background-55 .paragraph,
-.wsite-background-55 .paragraph span,
-.wsite-background-55 .paragraph font {
-  color: #E6E3DC !important;
-}
-
-.wsite-background-55 .paragraph strong {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 400;
-  color: #FFFFFF !important;
-}
-
+.kumana-info .wsite-multicol-table,
+.kumana-info .wsite-multicol-tbody,
 .wsite-background-55 .wsite-multicol-table,
 .wsite-background-55 .wsite-multicol-tbody {
   display: block !important;
   width: 100% !important;
 }
 
+.kumana-info .wsite-multicol-tr,
 .wsite-background-55 .wsite-multicol-tr {
   display: grid !important;
   grid-template-columns: 1fr !important;
   gap: 20px !important;
-  margin-top: 20px;
+  margin-top: 24px;
+  align-items: stretch !important;
 }
 
+.kumana-info .wsite-multicol-col,
 .wsite-background-55 .wsite-multicol-col {
   width: 100% !important;
-  padding: 20px 18px !important;
-  background: rgba(255, 255, 255, 0.04) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-radius: var(--radius-md) !important;
+  padding: 26px 24px !important;
+  background: #ffffff !important;
+  border: 1px solid #e2dac9 !important;
+  border-top: 4px solid #18382b !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 22px rgba(24, 56, 43, 0.06);
 }
 
-.wsite-background-55 .wsite-image {
-  margin-bottom: 14px !important;
-  aspect-ratio: 16 / 10;
-  overflow: hidden;
-  border-radius: var(--radius-sm);
+.kumana-info .wsite-multicol-col:nth-child(2),
+.wsite-background-55 .wsite-multicol-col:nth-child(2) {
+  border-top-color: #f5a623 !important;
 }
 
-.wsite-background-55 .wsite-image img {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover;
-}
-
-@media screen and (min-width: 768px) {
-  .wsite-background-55 .wsite-multicol:first-of-type .wsite-multicol-tr {
-    grid-template-columns: 1.2fr 0.8fr !important;
-    gap: 24px !important;
-  }
-
-  .wsite-background-55 .wsite-multicol:last-of-type .wsite-multicol-tr {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    gap: 24px !important;
-  }
-
-  .wsite-background-55 .wsite-multicol-col {
-    padding: 24px !important;
-  }
-}
-
-/* 3. Location Map, Safari Experience, Info & FAQ (.wsite-background-56, 57, 58, 59, 60) — Mobile-First */
-.wsite-background-56,
-.wsite-background-58 {
-  background-color: var(--bg-primary) !important;
-}
-
-.wsite-background-57,
-.wsite-background-59 {
-  background-color: var(--bg-elevated) !important;
-  border-top: 1px solid var(--border-hairline);
-  border-bottom: 1px solid var(--border-hairline);
-}
-
-.wsite-background-56 .wsite-multicol-table,
-.wsite-background-56 .wsite-multicol-tbody,
-.wsite-background-57 .wsite-multicol-table,
-.wsite-background-57 .wsite-multicol-tbody,
-.wsite-background-58 .wsite-multicol-table,
-.wsite-background-58 .wsite-multicol-tbody {
-  display: block !important;
-  width: 100% !important;
-}
-
-.wsite-background-56 .wsite-multicol-tr,
-.wsite-background-57 .wsite-multicol-tr {
-  display: grid !important;
-  grid-template-columns: 1fr !important;
-  gap: 24px !important;
-  align-items: center !important;
-  margin-top: 20px;
-}
-
-.wsite-background-56 .wsite-multicol-col,
-.wsite-background-57 .wsite-multicol-col {
-  width: 100% !important;
-  padding: 0 !important;
-}
-
-.wsite-background-58 .wsite-multicol-tr {
-  display: grid !important;
-  grid-template-columns: 1fr !important;
-  gap: 20px !important;
-  margin-top: 24px;
-}
-
-.wsite-background-58 .wsite-multicol-col {
-  width: 100% !important;
-  padding: 22px 18px !important;
-  background: #FFFFFF !important;
-  border: 1px solid var(--border-subtle) !important;
-  border-radius: var(--radius-md) !important;
-  box-shadow: var(--shadow-subtle);
+.kumana-info-title,
+.kumana-info-title * {
+  font-family: var(--font-display) !important;
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  color: #18382b !important;
+  margin-bottom: 10px !important;
 }
 
 @media screen and (min-width: 768px) {
-  .wsite-background-56 .wsite-multicol-tr {
-    grid-template-columns: 1.2fr 0.8fr !important;
-    gap: 36px !important;
-  }
-
-  .wsite-background-57 .wsite-multicol-tr {
-    grid-template-columns: 1fr 1fr !important;
-    gap: 36px !important;
-  }
-
-  .wsite-background-58 .wsite-multicol-tr {
+  .kumana-info .wsite-multicol-tr,
+  .wsite-background-55 .wsite-multicol-tr {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     gap: 24px !important;
-    margin-top: 28px;
-  }
-
-  .wsite-background-58 .wsite-multicol-col {
-    padding: 28px 24px !important;
   }
 }
 
-.wsite-background-59 .container {
-  max-width: 880px;
-}
-
-.wsite-background-60 {
-  background-color: var(--bg-deep-forest) !important;
+/* 5. FAQ Section (.wsite-background-56) */
+.wsite-background-56 .wsite-section-elements > .paragraph {
+  max-width: 860px;
+  margin: 24px auto 0 !important;
+  background: #ffffff;
+  border: 1px solid #cedbc5;
+  border-radius: 18px;
+  padding: 32px 34px !important;
+  box-shadow: 0 10px 26px rgba(24, 56, 43, 0.06);
+  color: #35453c !important;
 }

@@ -1,236 +1,455 @@
 /* ==========================================================================
-   BUNDALA-BIRDING-SAFARI.CSS — Bundala Birding Packages, Wildlife & Info
+   BUNDALA-BIRDING-SAFARI.CSS — Bundala National Park Birding Safari & Guide
    Mobile-First Responsive Architecture
    ========================================================================== */
 
-/* 1. Bundala Safari Packages (.wsite-background-32 & .wsite-background-87) — Mobile-First */
-.wsite-background-32,
-.wsite-background-87 {
-  background-color: var(--bg-primary) !important;
+.wsite-background-29 {
+  background-color: #faf5ec !important;
+}
+
+.wsite-background-58,
+.wsite-background-59,
+.bundala-port {
+  background-color: #e8f0e2 !important;
+  border-top: 1px solid rgba(24, 56, 43, 0.1);
+  border-bottom: 1px solid rgba(24, 56, 43, 0.1);
+}
+
+.wsite-background-30,
+.bundala-wildlife {
+  background-color: #13231b !important;
+  background-image: linear-gradient(180deg, #13231b 0%, #18382b 100%) !important;
+  color: #faf5ec !important;
+}
+
+.wsite-background-31 {
+  background-color: #faf5ec !important;
 }
 
 .wsite-background-32 {
-  padding-bottom: 24px !important;
+  background-color: #e8f0e2 !important;
+  border-top: 1px solid rgba(24, 56, 43, 0.1);
+  border-bottom: 1px solid rgba(24, 56, 43, 0.1);
 }
 
-.wsite-background-87 {
-  padding-top: 0 !important;
+.wsite-background-33,
+.bundala-info {
+  background-color: #faf5ec !important;
 }
 
+.wsite-background-34 {
+  background-color: #e8f0e2 !important;
+  border-top: 1px solid rgba(24, 56, 43, 0.1);
+}
+
+.wsite-background-35,
+.wsite-background-36 {
+  background-color: #18382b !important;
+  background-image: linear-gradient(135deg, #18382b 0%, #0f261d 100%) !important;
+  color: #faf5ec !important;
+}
+
+.wsite-background-35 h2.wsite-content-title,
+.wsite-background-35 h2.wsite-content-title *,
+.wsite-background-35 .paragraph,
+.wsite-background-35 .paragraph *,
+.wsite-background-36 h2.wsite-content-title,
+.wsite-background-36 h2.wsite-content-title *,
+.wsite-background-36 .paragraph,
+.wsite-background-36 .paragraph * {
+  color: #faf5ec !important;
+}
+
+.wsite-multicol-col.is-media-empty {
+  display: none !important;
+}
+
+/* 1. Choose Your Bundala Birding Safari Package Cards (.wsite-background-29) */
+div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > div:nth-of-type(2) > div#wsite-content:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1),
+.wsite-background-29 .wsite-multicol-table-wrap {
+  margin: 0 !important;
+  width: 100% !important;
+}
+
+.wsite-background-29 .wsite-multicol-table,
+.wsite-background-29 .wsite-multicol-tbody {
+  display: block !important;
+  width: 100% !important;
+}
+
+.wsite-background-29 .wsite-multicol-tr {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 24px !important;
+  margin-top: 24px;
+  align-items: stretch !important;
+  max-width: 920px;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.wsite-background-29 .wsite-multicol-col {
+  width: 100% !important;
+  padding: 28px 24px !important;
+  background: #ffffff !important;
+  border: 1px solid #e2dac9 !important;
+  border-top: 4px solid #18382b !important;
+  border-radius: 18px !important;
+  box-shadow: 0 12px 28px rgba(24, 56, 43, 0.08);
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+}
+
+.wsite-background-29 .wsite-multicol-col:nth-child(even) {
+  border-top-color: #f5a623 !important;
+}
+
+.wsite-background-29 .wsite-multicol-col .paragraph {
+  color: #35453c !important;
+  text-align: left !important;
+  margin-bottom: 14px !important;
+}
+
+.wsite-background-29 .wsite-multicol-col > .paragraph:nth-of-type(2) {
+  min-height: 2.2em;
+}
+
+.wsite-background-29 .wsite-multicol-col > .paragraph:nth-of-type(3) {
+  flex: 1 1 auto !important;
+}
+
+.wsite-background-29 .wsite-multicol-col .paragraph strong font[size="4"],
+.wsite-background-29 .wsite-multicol-col .paragraph font[size="4"] strong {
+  color: #18382b !important;
+  font-family: var(--font-display) !important;
+  font-size: 1.35rem !important;
+  line-height: 1.25 !important;
+}
+
+.wsite-background-29 .wsite-multicol-col .paragraph strong font[size="6"],
+.wsite-background-29 .wsite-multicol-col .paragraph font[size="6"] strong {
+  color: #a85518 !important;
+  font-family: var(--font-display) !important;
+}
+
+.wsite-background-29 .wsite-multicol-col > div:last-child {
+  margin-top: auto !important;
+  padding-top: 12px !important;
+}
+
+.wsite-background-29 .wsite-button {
+  width: 100% !important;
+  text-align: center !important;
+}
+
+.wsite-background-29 .wsite-image {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.wsite-background-29 .wsite-image img {
+  border-radius: 12px !important;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  width: 100% !important;
+  margin-bottom: 14px;
+}
+
+@media screen and (min-width: 768px) {
+  .wsite-background-29 .wsite-multicol-tr {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 28px !important;
+  }
+}
+
+/* 2. Hambantota Port Shore Excursion Card (.bundala-port-card / .port-safari-card) */
+.bundala-port-card,
+.port-safari-card {
+  max-width: 860px;
+  margin: 24px auto 0 !important;
+  background: #ffffff;
+  border: 1px solid #cedbc5;
+  border-top: 4px solid #f5a623;
+  border-radius: 20px;
+  padding: 32px 34px;
+  box-shadow: 0 12px 30px rgba(24, 56, 43, 0.08);
+  text-align: left;
+}
+
+.bundala-port-card .port-title-text {
+  color: #18382b !important;
+  font-family: var(--font-display) !important;
+  font-size: 1.4rem !important;
+  line-height: 1.25 !important;
+}
+
+.bundala-port-card .wsite-multicol-table-wrap,
+.port-safari-card .wsite-multicol-table-wrap {
+  margin: 0 !important;
+}
+
+.bundala-port-card .wsite-multicol-table,
+.bundala-port-card .wsite-multicol-tbody,
+.port-safari-card .wsite-multicol-table,
+.port-safari-card .wsite-multicol-tbody {
+  display: block !important;
+  width: 100% !important;
+}
+
+.bundala-port-card .wsite-multicol-tr,
+.port-safari-card .wsite-multicol-tr {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 24px !important;
+  align-items: center !important;
+}
+
+.bundala-port-card .wsite-multicol-col,
+.port-safari-card .wsite-multicol-col {
+  width: 100% !important;
+  padding: 0 !important;
+}
+
+.bundala-port-card .wsite-image img,
+.port-safari-card .wsite-image img {
+  border-radius: 14px !important;
+  width: 100% !important;
+  object-fit: cover;
+}
+
+@media screen and (max-width: 767px) {
+  .bundala-port-card,
+  .port-safari-card {
+    padding: 24px 20px;
+  }
+}
+
+/* 3. Discover Bundala National Park — Dark Forest Section (.wsite-background-30 / .bundala-wildlife) */
+#wsite-content .bundala-wildlife h2.wsite-content-title,
+#wsite-content .bundala-wildlife h2.wsite-content-title *,
+#wsite-content .wsite-background-30 h2.wsite-content-title,
+#wsite-content .wsite-background-30 h2.wsite-content-title * {
+  color: #faf5ec !important;
+}
+
+#wsite-content .bundala-wildlife .wsite-section-elements > .paragraph,
+#wsite-content .bundala-wildlife .wsite-section-elements > .paragraph *,
+#wsite-content .wsite-background-30 .wsite-section-elements > .paragraph,
+#wsite-content .wsite-background-30 .wsite-section-elements > .paragraph * {
+  color: #dce5df !important;
+  max-width: 820px;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  text-align: center !important;
+}
+
+.bundala-wildlife .wsite-multicol-table-wrap,
+.wsite-background-30 .wsite-multicol-table-wrap {
+  margin: 0 !important;
+}
+
+.bundala-wildlife .wsite-multicol-table,
+.bundala-wildlife .wsite-multicol-tbody,
+.wsite-background-30 .wsite-multicol-table,
+.wsite-background-30 .wsite-multicol-tbody {
+  display: block !important;
+  width: 100% !important;
+}
+
+.bundala-wildlife .wsite-multicol-tr,
+.wsite-background-30 .wsite-multicol-tr {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 22px !important;
+  margin-top: 24px;
+  align-items: stretch !important;
+}
+
+.bundala-wildlife .wsite-multicol-col,
+.wsite-background-30 .wsite-multicol-col {
+  width: 100% !important;
+  padding: 24px 22px !important;
+  background: #faf5ec !important;
+  border: 1px solid rgba(245, 166, 35, 0.45) !important;
+  border-top: 4px solid #f5a623 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+#wsite-content .bundala-wildlife .wsite-multicol-col .paragraph,
+#wsite-content .bundala-wildlife .wsite-multicol-col .paragraph font,
+#wsite-content .wsite-background-30 .wsite-multicol-col .paragraph,
+#wsite-content .wsite-background-30 .wsite-multicol-col .paragraph font {
+  color: #35453c !important;
+  text-align: left !important;
+  margin-bottom: 8px !important;
+}
+
+#wsite-content .bundala-wildlife .wsite-multicol-col .bundala-card-title,
+#wsite-content .bundala-wildlife .wsite-multicol-col .bundala-card-title *,
+#wsite-content .bundala-wildlife .wsite-multicol-col .paragraph strong,
+#wsite-content .bundala-wildlife .wsite-multicol-col .paragraph strong *,
+#wsite-content .wsite-background-30 .wsite-multicol-col .bundala-card-title,
+#wsite-content .wsite-background-30 .wsite-multicol-col .bundala-card-title * {
+  color: #18382b !important;
+  font-family: var(--font-display) !important;
+  font-size: 1.3rem !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+}
+
+.bundala-wildlife .wsite-image,
+.wsite-background-30 .wsite-image {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.bundala-wildlife .wsite-image img,
+.wsite-background-30 .wsite-image img {
+  border-radius: 12px !important;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  width: 100% !important;
+  margin-bottom: 12px;
+}
+
+@media screen and (min-width: 768px) {
+  .bundala-wildlife .wsite-multicol-tr,
+  .wsite-background-30 .wsite-multicol-tr {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+    gap: 24px !important;
+  }
+}
+
+/* 4. Location Map (.wsite-background-31) & Birding Experience (.wsite-background-32) */
+.wsite-background-31 .wsite-multicol-table-wrap,
+.wsite-background-32 .wsite-multicol-table-wrap {
+  margin: 0 !important;
+}
+
+.wsite-background-31 .wsite-multicol-table,
+.wsite-background-31 .wsite-multicol-tbody,
 .wsite-background-32 .wsite-multicol-table,
 .wsite-background-32 .wsite-multicol-tbody {
   display: block !important;
   width: 100% !important;
 }
 
+.wsite-background-31 .wsite-multicol-tr,
 .wsite-background-32 .wsite-multicol-tr {
   display: grid !important;
   grid-template-columns: 1fr !important;
-  gap: 20px !important;
+  gap: 28px !important;
+  align-items: center !important;
   margin-top: 24px;
 }
 
+.wsite-background-31 .wsite-multicol-col,
 .wsite-background-32 .wsite-multicol-col {
   width: 100% !important;
-  padding: 22px 18px !important;
-  background: #FFFFFF !important;
-  border: 1px solid var(--border-subtle) !important;
-  border-radius: var(--radius-lg) !important;
-  box-shadow: var(--shadow-subtle);
-  display: flex !important;
-  flex-direction: column;
+  padding: 0 !important;
 }
 
-.wsite-background-32 .wsite-multicol-col .wsite-image {
-  margin: -22px -18px 18px -18px !important;
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
-  overflow: hidden;
-  aspect-ratio: 16 / 10;
+.wsite-background-31 .wsite-multicol-tr.is-media-empty,
+.wsite-background-32 .wsite-multicol-tr.is-media-empty {
+  grid-template-columns: 1fr !important;
+  max-width: 820px;
+  margin-left: auto !important;
+  margin-right: auto !important;
 }
 
-.wsite-background-32 .wsite-multicol-col .wsite-image img {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover;
-  border-radius: 0 !important;
+.wsite-background-31 .wsite-multicol-tr.is-media-empty .wsite-multicol-col,
+.wsite-background-32 .wsite-multicol-tr.is-media-empty .wsite-multicol-col {
+  background: #ffffff;
+  border: 1px solid #e2dac9;
+  border-left: 4px solid #18382b;
+  border-radius: 16px;
+  padding: 28px 30px !important;
+  box-shadow: 0 8px 24px rgba(24, 56, 43, 0.06);
 }
 
-.wsite-background-32 .wsite-multicol-col > div:last-child {
-  margin-top: auto;
-  padding-top: 12px;
+.wsite-background-31 .wsite-image img,
+.wsite-background-32 .wsite-image img {
+  border-radius: 16px !important;
+  box-shadow: 0 10px 26px rgba(24, 56, 43, 0.1);
 }
 
-.wsite-background-32 .wsite-multicol-col .wsite-button {
-  width: 100%;
-}
-
-@media screen and (min-width: 768px) {
-  .wsite-background-32 .wsite-multicol-tr {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 28px !important;
-    margin-top: 28px;
-  }
-
-  .wsite-background-32 .wsite-multicol-col {
-    padding: 28px 24px !important;
-  }
-
-  .wsite-background-32 .wsite-multicol-col .wsite-image {
-    margin: -28px -24px 20px -24px !important;
+@media screen and (min-width: 861px) {
+  .wsite-background-31 .wsite-multicol-tr:not(.is-media-empty),
+  .wsite-background-32 .wsite-multicol-tr:not(.is-media-empty) {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 44px !important;
   }
 }
 
-/* 2. Discover Bundala Birdlife (.wsite-background-33) — Mobile-First */
-.wsite-background-33 {
-  background-color: var(--bg-dark-earth) !important;
-  color: var(--text-on-dark);
+/* 5. Safari Information & Hotel Pickup 3-Column Grid (.bundala-info / .wsite-background-33) */
+.bundala-info .wsite-multicol-table-wrap,
+.wsite-background-33 .wsite-multicol-table-wrap {
+  margin: 0 !important;
 }
 
-.wsite-background-33 h2.wsite-content-title,
-.wsite-background-33 h2.wsite-content-title font,
-.wsite-background-33 .paragraph,
-.wsite-background-33 .paragraph span,
-.wsite-background-33 .paragraph font {
-  color: #E6E3DC !important;
-}
-
-.wsite-background-33 .paragraph strong {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 400;
-  color: #FFFFFF !important;
-}
-
+.bundala-info .wsite-multicol-table,
+.bundala-info .wsite-multicol-tbody,
 .wsite-background-33 .wsite-multicol-table,
 .wsite-background-33 .wsite-multicol-tbody {
   display: block !important;
   width: 100% !important;
 }
 
+.bundala-info .wsite-multicol-tr,
 .wsite-background-33 .wsite-multicol-tr {
   display: grid !important;
   grid-template-columns: 1fr !important;
   gap: 20px !important;
-  margin-top: 20px;
+  margin-top: 24px;
+  align-items: stretch !important;
 }
 
+.bundala-info .wsite-multicol-col,
 .wsite-background-33 .wsite-multicol-col {
   width: 100% !important;
-  padding: 20px 18px !important;
-  background: rgba(255, 255, 255, 0.04) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-radius: var(--radius-md) !important;
+  padding: 26px 24px !important;
+  background: #ffffff !important;
+  border: 1px solid #e2dac9 !important;
+  border-top: 4px solid #18382b !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 22px rgba(24, 56, 43, 0.06);
 }
 
-.wsite-background-33 .wsite-image {
-  margin-bottom: 14px !important;
-  aspect-ratio: 16 / 10;
-  overflow: hidden;
-  border-radius: var(--radius-sm);
+.bundala-info .wsite-multicol-col:nth-child(2),
+.wsite-background-33 .wsite-multicol-col:nth-child(2) {
+  border-top-color: #f5a623 !important;
 }
 
-.wsite-background-33 .wsite-image img {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover;
-}
-
-@media screen and (min-width: 768px) {
-  .wsite-background-33 .wsite-multicol:first-of-type .wsite-multicol-tr {
-    grid-template-columns: 1.2fr 0.8fr !important;
-    gap: 24px !important;
-  }
-
-  .wsite-background-33 .wsite-multicol:last-of-type .wsite-multicol-tr {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    gap: 24px !important;
-  }
-
-  .wsite-background-33 .wsite-multicol-col {
-    padding: 24px !important;
-  }
-}
-
-/* 3. Location Map, Safari Experience, Info & FAQ (.wsite-background-34, 35, 36, 37, 38) — Mobile-First */
-.wsite-background-34,
-.wsite-background-36 {
-  background-color: var(--bg-primary) !important;
-}
-
-.wsite-background-35,
-.wsite-background-37 {
-  background-color: var(--bg-elevated) !important;
-  border-top: 1px solid var(--border-hairline);
-  border-bottom: 1px solid var(--border-hairline);
-}
-
-.wsite-background-34 .wsite-multicol-table,
-.wsite-background-34 .wsite-multicol-tbody,
-.wsite-background-35 .wsite-multicol-table,
-.wsite-background-35 .wsite-multicol-tbody,
-.wsite-background-36 .wsite-multicol-table,
-.wsite-background-36 .wsite-multicol-tbody {
-  display: block !important;
-  width: 100% !important;
-}
-
-.wsite-background-34 .wsite-multicol-tr,
-.wsite-background-35 .wsite-multicol-tr {
-  display: grid !important;
-  grid-template-columns: 1fr !important;
-  gap: 24px !important;
-  align-items: center !important;
-  margin-top: 20px;
-}
-
-.wsite-background-34 .wsite-multicol-col,
-.wsite-background-35 .wsite-multicol-col {
-  width: 100% !important;
-  padding: 0 !important;
-}
-
-.wsite-background-36 .wsite-multicol-tr {
-  display: grid !important;
-  grid-template-columns: 1fr !important;
-  gap: 20px !important;
-  margin-top: 24px;
-}
-
-.wsite-background-36 .wsite-multicol-col {
-  width: 100% !important;
-  padding: 22px 18px !important;
-  background: #FFFFFF !important;
-  border: 1px solid var(--border-subtle) !important;
-  border-radius: var(--radius-md) !important;
-  box-shadow: var(--shadow-subtle);
+.bundala-info-title,
+.bundala-info-title * {
+  font-family: var(--font-display) !important;
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  color: #18382b !important;
+  margin-bottom: 10px !important;
 }
 
 @media screen and (min-width: 768px) {
-  .wsite-background-34 .wsite-multicol-tr {
-    grid-template-columns: 1.2fr 0.8fr !important;
-    gap: 36px !important;
-  }
-
-  .wsite-background-35 .wsite-multicol-tr {
-    grid-template-columns: 1fr 1fr !important;
-    gap: 36px !important;
-  }
-
-  .wsite-background-36 .wsite-multicol-tr {
+  .bundala-info .wsite-multicol-tr,
+  .wsite-background-33 .wsite-multicol-tr {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     gap: 24px !important;
-    margin-top: 28px;
-  }
-
-  .wsite-background-36 .wsite-multicol-col {
-    padding: 28px 24px !important;
   }
 }
 
-.wsite-background-37 .container {
-  max-width: 880px;
-}
-
-.wsite-background-38 {
-  background-color: var(--bg-deep-forest) !important;
+/* 6. FAQ Section (.wsite-background-34) */
+.wsite-background-34 .wsite-section-elements > .paragraph {
+  max-width: 860px;
+  margin: 24px auto 0 !important;
+  background: #ffffff;
+  border: 1px solid #cedbc5;
+  border-radius: 18px;
+  padding: 32px 34px !important;
+  box-shadow: 0 10px 26px rgba(24, 56, 43, 0.06);
+  color: #35453c !important;
 }

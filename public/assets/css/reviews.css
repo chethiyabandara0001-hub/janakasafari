@@ -83,12 +83,20 @@
   display: none !important;
 }
 
-/* Share Your Safari Experience 2-Button Row (.wsite-background-82) */
+/* Hide Google Reviews & GetYourGuide Reviews widgets on Reviews page */
+.reviews-google,
+#308011320598114276,
+.janaka-gyg,
+#176642481218737251 {
+  display: none !important;
+}
+
+/* Share Your Safari Experience Button Row (.wsite-background-82) */
 .wsite-background-82 .wsite-multicol-tr {
   display: grid !important;
   grid-template-columns: 1fr !important;
   gap: 14px !important;
-  max-width: 580px;
+  max-width: 360px;
   margin: 20px auto 0 !important;
 }
 
@@ -101,9 +109,3 @@
   width: 100% !important;
 }
 
-@media screen and (min-width: 560px) {
-  .wsite-background-82 .wsite-multicol-tr {
-    grid-template-columns: 1fr 1fr !important;
-    gap: 20px !important;
-  }
-}
