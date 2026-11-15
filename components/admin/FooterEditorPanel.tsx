@@ -30,7 +30,7 @@ export const FOOTER_FIELD_DEFINITIONS: FooterFieldDefinition[] = [
     columnGroup: 'Column 1 · Brand & Experience',
     label: 'Brand Experience Tagline',
     description: 'Appears directly under the footer logo (supports 2 lines).',
-    defaultValue: 'Safari trip experience since 2002.\nOur own business since 2006.',
+    defaultValue: 'Our own business since 2006.',
     multiline: true,
     tagName: 'DIV',
   },
@@ -183,7 +183,7 @@ export const FOOTER_FIELD_DEFINITIONS: FooterFieldDefinition[] = [
     columnGroup: 'Bottom Bar · Copyright',
     label: 'Copyright Notice',
     description: 'Bottom copyright line (the "• Admin Panel" link is preserved automatically).',
-    defaultValue: '© 2026 Nisha car safari trip Tours. All rights reserved.',
+    defaultValue: '© 2026 Nisha Safari. All rights reserved.',
     multiline: false,
     tagName: 'DIV',
   },
@@ -345,7 +345,7 @@ export function FooterEditorPanel({
               {/* Preview Col 1 */}
               <div className="space-y-2.5">
                 <div className="text-xs font-semibold uppercase tracking-wider text-amber-400/90">
-                  Nisha Safari Trips
+                  Nisha Safari
                 </div>
                 <p className="text-xs sm:text-sm whitespace-pre-line text-[#dce7e2] leading-relaxed">
                   {getEffectiveValue(FOOTER_FIELD_DEFINITIONS[0])}

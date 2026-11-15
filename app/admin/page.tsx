@@ -1050,7 +1050,7 @@ export default function AdminStudioPage() {
         const isGuestsSection = targetSlot.sectionContext.toLowerCase().includes('guest');
         const sectionKey = isGuestsSection ? 'gallery_guests' : 'gallery_wildlife';
         const sectionTitle = isGuestsSection
-          ? 'Our Guests & Safari Trip Moments'
+          ? 'Our Guests & Safari Moments'
           : 'Wildlife & Landscapes';
         const existingList = isGuestsSection ? galleryGuestItems : galleryWildlifeItems;
         let currentOrder = existingList.reduce((max, s) => Math.max(max, s.order || 0), 0) + 1;
@@ -1936,7 +1936,7 @@ export default function AdminStudioPage() {
       <div className="min-h-screen bg-[#090d0b] text-slate-100 flex items-center justify-center p-6">
         <div className="flex items-center gap-2.5 text-xs text-slate-400">
           <RefreshCw className="w-4 h-4 animate-spin text-amber-500" />
-          <span>Loading Nisha Travelling CMS...</span>
+          <span>Loading Nisha Safari CMS...</span>
         </div>
       </div>
     );
@@ -1980,7 +1980,7 @@ export default function AdminStudioPage() {
             <span className="w-7 h-7 rounded-md bg-amber-500 text-slate-950 flex items-center justify-center shrink-0">
               <Compass className="w-4 h-4" />
             </span>
-            <span>Nisha Travelling CMS</span>
+            <span>Nisha Safari CMS</span>
           </Link>
 
           <span className="hidden xl:flex items-center gap-1.5 text-xs text-slate-400 pl-3 border-l border-emerald-950/80 whitespace-nowrap">
@@ -2819,7 +2819,7 @@ export default function AdminStudioPage() {
                                   ? 'gallery_guests'
                                   : 'gallery_wildlife';
                                 const galleryTitle = isGuestsSec
-                                  ? 'Our Guests & Safari Trip Moments'
+                                  ? 'Our Guests & Safari Moments'
                                   : 'Wildlife & Landscapes';
                                 const dynamicPhotos = isGuestsSec
                                   ? galleryGuestItems

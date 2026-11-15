@@ -336,7 +336,7 @@
       const lines = [
         "Hello Nisha,",
         "",
-        "I would like to enquire about a safari trip / tour:",
+        "I would like to enquire about a safari / tour:",
         `Name: ${firstName} ${lastName}`.trim(),
         `Email: ${email}`,
         whatsapp ? `WhatsApp: ${whatsapp}` : null,
@@ -495,7 +495,13 @@
   }
 
   function applySafeTextContent(el, newContent) {
-    const textVal = String(newContent ?? "");
+    let textVal = String(newContent ?? "")
+      .replace(/\bNisha Safari Tours\b/gi, "Nisha Safari")
+      .replace(/\bWhy Choose Us for Your safari tours\?/gi, "Why Choose Us for Your Safaris?")
+      .replace(/Safari experience since 2002\.\s*(?:\n|<br\s*\/?>|\s)*/gi, "")
+      .replace(/\bSafari Experience Since 2002\b/gi, "Safari Experience Since 2006")
+      .replace(/\bSafari experience since 2002\b/gi, "Safari experience since 2006")
+      .replace(/\bsince 2002\b/gi, "since 2006");
 
     // Contact page Telephone + WhatsApp block: always keep clickable tel: and wa.me links (no WeChat)
     const telWaMatch = textVal.match(
@@ -614,7 +620,7 @@
     const whyChooseMatch = textVal
       .trim()
       .match(
-        /^(01\.\s*Experience You Can Trust|02\.\s*Experienced Local Team|03\.\s*Thoughtfully Planned\s+safari\s+trips|04\.\s*Respect for Wildlife\s*(?:&|and)\s*Nature|0[1-4]\.\s*[^\n-]+?)(?:\s*[-–—:]\s*|\s*\n+\s*|\s+)(.*)$/is
+        /^(01\.\s*Experience You Can Trust|02\.\s*Experienced Local Team|03\.\s*Thoughtfully Planned\s+(?:Safaris?|safari\s+trips?)|04\.\s*Respect for Wildlife\s*(?:&|and)\s*Nature|0[1-4]\.\s*[^\n-]+?)(?:\s*[-–—:]\s*|\s*\n+\s*|\s+)(.*)$/is
       );
     if (whyChooseMatch && (el.closest(".home-why-choose") || /^0[1-4]\./.test(textVal.trim()))) {
       const titlePart = whyChooseMatch[1].trim();
@@ -1081,13 +1087,13 @@
           combinedHeroSlides.push({
             src: s.src,
             r2Key: s.r2Key,
-            alt: s.alt || s.title || "Nisha Travelling Hero Slide",
+            alt: s.alt || s.title || "Nisha Safari Hero Slide",
           });
         });
       } else if (!heroSlotDeleted && primaryHeroBannerSrc && !isEmptySlotUrl(primaryHeroBannerSrc)) {
         combinedHeroSlides.push({
           src: primaryHeroBannerSrc,
-          alt: document.title || "Nisha Travelling Hero Banner",
+          alt: document.title || "Nisha Safari Hero Banner",
         });
       }
       initOrUpdateHeroSlideshow(combinedHeroSlides);
@@ -1233,7 +1239,7 @@
           const card = document.createElement("div");
           card.className = "firebase-custom-text-card";
           const h3 = document.createElement("h3");
-          h3.textContent = block.sectionContext || "Nisha Travelling Update";
+          h3.textContent = block.sectionContext || "Nisha Safari Update";
           const p = document.createElement("p");
           p.textContent = block.content || "";
           p.setAttribute("data-admin-text-slot", "custom");
@@ -2377,16 +2383,18 @@
         const heroParagraphs = gsap.utils.toArray(".banner .paragraph");
         const heroBtn = document.querySelector(".banner .wsite-button");
         const heroBg = document.querySelector(".banner-wrap .wsite-header-section");
-        const isHome = document.body.classList.contains("wsite-page-index");
+        const heroStage = heroBg ? heroBg.querySelector(".hero-slideshow-stage") : null;
         const isFullDesktop = window.innerWidth >= 921;
-        const contentCounterScale = isFullDesktop ? (isHome ? 0.81967 : 0.89285) : 1;
 
-        if (heroBg && isFullDesktop) {
-          const baseScale = isHome ? 1.22 : 1.12;
+        if (heroBg) {
+          gsap.set(heroBg, { scale: 1 });
+        }
+
+        if (heroStage && isFullDesktop) {
           gsap.fromTo(
-            heroBg,
-            { scale: baseScale + 0.12 },
-            { scale: baseScale, duration: 1.9, ease: "power3.out" }
+            heroStage,
+            { scale: 1.08 },
+            { scale: 1, duration: 1.9, ease: "power3.out" }
           );
         }
 
@@ -2401,8 +2409,8 @@
         if (heroSectionContent) {
           heroTl.fromTo(
             heroSectionContent,
-            { autoAlpha: 0, y: 28, scale: contentCounterScale * 0.96 },
-            { autoAlpha: 1, y: 0, scale: contentCounterScale, duration: 0.7, ease: "power3.out" }
+            { autoAlpha: 0, y: 28 },
+            { autoAlpha: 1, y: 0, duration: 0.7, ease: "power3.out" }
           );
         }
         if (heroContainer) {
@@ -3439,12 +3447,56 @@
     });
   }
 
+  function normalizeAllWhatsAppLinks() {
+    const TARGET_WA_NUMBER = "94788729414";
+    const DEFAULT_CHAT_MSG = "Hello Nisha, I would like help planning a safari.";
+    document.querySelectorAll("a").forEach((anchor) => {
+      const href = (anchor.getAttribute("href") || "").trim();
+      const label = (anchor.textContent || "").trim();
+      const isWaHref =
+        /wa\.me\//i.test(href) ||
+        /api\.whatsapp\.com/i.test(href) ||
+        /^whatsapp:/i.test(href);
+      const isChatButton =
+        /\bchat with\b|\bchat now\b|\bwhatsapp chat\b/i.test(label) &&
+        (!href || href === "#" || isWaHref || /javascript:/i.test(href));
+
+      if (!isWaHref && !isChatButton) return;
+
+      let nextQuery = "";
+      try {
+        if (href && /^https?:/i.test(href)) {
+          const parsed = new URL(href, window.location.origin);
+          const msg = parsed.searchParams.get("text");
+          if (msg !== null && msg !== "") {
+            nextQuery = `?text=${encodeURIComponent(msg)}`;
+          }
+        }
+      } catch {
+        const qIdx = href.indexOf("?");
+        if (qIdx !== -1) {
+          nextQuery = href.slice(qIdx);
+        }
+      }
+
+      if (!nextQuery && isChatButton) {
+        nextQuery = `?text=${encodeURIComponent(DEFAULT_CHAT_MSG)}`;
+      }
+
+      anchor.setAttribute("href", `https://wa.me/${TARGET_WA_NUMBER}${nextQuery}`);
+      anchor.setAttribute("target", "_blank");
+      anchor.setAttribute("rel", "noopener noreferrer");
+    });
+  }
+
+  normalizeAllWhatsAppLinks();
   bindEditableSlots();
   bindEditableTextSlots();
   initUltraSmoothScroll();
   window.__firebaseCmsHydrationPromise = hydrateFromFirebaseCms();
   void initDistinctGsapAnimations();
   void window.__firebaseCmsHydrationPromise.then(() => {
+    normalizeAllWhatsAppLinks();
     if (typeof window.__animateFirebaseSectionGallery === "function") {
       window.__animateFirebaseSectionGallery();
     }

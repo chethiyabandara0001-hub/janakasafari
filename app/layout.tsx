@@ -2,9 +2,9 @@ import type {Metadata} from 'next';
 import './globals.css';
 import {ALL_SEO_KEYWORDS_LIST, PAGE_SEO_CONFIG, SITE_BASE_URL} from '@/lib/seo-config';
 
-const APP_TITLE = 'Nisha Travelling';
+const APP_TITLE = 'Sri Lanka Safari Tours | Nisha Safari – Yala & Beyond';
 const APP_DESCRIPTION =
-  'Nisha Travelling offers private Sri Lanka travel experiences, curated wildlife & nature tours, national park expeditions, scenic transfers, and shore excursions across Sri Lanka.';
+  'Nisha Safari offers private Sri Lanka safaris, comfortable 4×4 safari jeeps, guided wildlife & nature tours, national park expeditions, scenic transfers, and shore excursions across Sri Lanka.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_BASE_URL),
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
     title: APP_TITLE,
     description: APP_DESCRIPTION,
     url: SITE_BASE_URL,
-    siteName: 'Nisha Travelling',
+    siteName: 'Nisha Safari',
     type: 'website',
     locale: 'en_US',
   },

@@ -14,8 +14,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Nisha Travelling CMS — Admin Studio',
-  description: 'Manage pages, sections, images, copy, and Cloudflare R2 media sync for Nisha Travelling.',
+  title: 'Nisha Safari CMS — Admin Studio',
+  description: 'Manage pages, sections, images, copy, and Cloudflare R2 media sync for Nisha Safari.',
   robots: {
     index: false,
     follow: false,

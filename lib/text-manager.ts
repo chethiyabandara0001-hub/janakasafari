@@ -404,7 +404,7 @@ export function parsePageTextSlots(html: string): ParsedTextMatch[] {
       sectionName = 'Hero Bottom Cross-Section';
       const sliceBefore = targetRegion.slice(crossBridgeStart, pos);
       if (sliceBefore.includes('cross-sub-right')) {
-        subSectionName = 'Happy Safari Explorers';
+        subSectionName = 'Happy Guests';
       } else if (sliceBefore.includes('cross-sub-center')) {
         subSectionName = 'TripAdvisor Winner';
       } else {

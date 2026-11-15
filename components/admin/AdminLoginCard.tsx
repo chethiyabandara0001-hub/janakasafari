@@ -29,7 +29,7 @@ export function AdminLoginCard({
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-amber-400 text-xs font-semibold tracking-wide uppercase">
             <Compass className="w-4 h-4" />
-            <span>Nisha Travelling CMS</span>
+            <span>Nisha Safari CMS</span>
           </div>
           <h1 className="text-xl font-semibold text-slate-100 tracking-tight">
             Admin Studio Sign In
