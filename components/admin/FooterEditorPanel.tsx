@@ -182,7 +182,7 @@ export const FOOTER_FIELD_DEFINITIONS: FooterFieldDefinition[] = [
     textId: 'global_footer__copyright',
     columnGroup: 'Bottom Bar · Copyright',
     label: 'Copyright Notice',
-    description: 'Bottom copyright line (the "• Admin Panel" link is preserved automatically).',
+    description: 'Bottom copyright line displayed across all 12 pages.',
     defaultValue: '© 2026 Nisha Safari. All rights reserved.',
     multiline: false,
     tagName: 'DIV',
@@ -400,8 +400,7 @@ export function FooterEditorPanel({
             </div>
 
             <div className="pt-4 text-center text-xs text-[#dce7e2]">
-              {getEffectiveValue(FOOTER_FIELD_DEFINITIONS[17])} &nbsp;•&nbsp;{' '}
-              <span className="opacity-70">Admin Panel</span>
+              {getEffectiveValue(FOOTER_FIELD_DEFINITIONS[17])}
             </div>
           </div>
         </div>
