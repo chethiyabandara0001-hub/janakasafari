@@ -30,21 +30,21 @@ export const DESTINATION_PAGES_META: {
   page: PackagePriceDefinition['page'];
   destinationName: string;
 }[] = [
-  { page: 'yala-safari.html', destinationName: 'Yala Safari' },
-  { page: 'udawalawe-safari.html', destinationName: 'Udawalawe Safari' },
-  { page: 'bundala-birding-safari.html', destinationName: 'Bundala Safari' },
-  { page: 'wilpattu-safari.html', destinationName: 'Wilpattu Safari' },
-  { page: 'minneriya-safari.html', destinationName: 'Minneriya Safari' },
-  { page: 'kumana-birding-safari.html', destinationName: 'Kumana Safari' },
+  { page: 'yala-safari.html', destinationName: 'Yala Safari Tours' },
+  { page: 'udawalawe-safari.html', destinationName: 'Udawalawe Safari Tours' },
+  { page: 'bundala-birding-safari.html', destinationName: 'Bundala Safari Tours' },
+  { page: 'wilpattu-safari.html', destinationName: 'Wilpattu Safari Tours' },
+  { page: 'minneriya-safari.html', destinationName: 'Minneriya Safari Tours' },
+  { page: 'kumana-birding-safari.html', destinationName: 'Kumana Safari Tours' },
 ];
 
 export const PACKAGE_PRICE_DEFINITIONS: PackagePriceDefinition[] = [
-  // Yala Safari
+  // Yala Safari Tours
   {
     priceId: 'pkg_price__yala_full_day',
     page: 'yala-safari.html',
-    destinationName: 'Yala Safari',
-    packageTitle: 'Full Day Safari',
+    destinationName: 'Yala Safari Tours',
+    packageTitle: 'Full Day Safari Tour',
     timingOrRoute: '4:30 AM – 6:00 PM',
     unitLabel: '/ person',
     defaultValue: '€30',
@@ -52,8 +52,8 @@ export const PACKAGE_PRICE_DEFINITIONS: PackagePriceDefinition[] = [
   {
     priceId: 'pkg_price__yala_special_leopard',
     page: 'yala-safari.html',
-    destinationName: 'Yala Safari',
-    packageTitle: 'Special Leopard & Elephants Safari',
+    destinationName: 'Yala Safari Tours',
+    packageTitle: 'Special Leopard & Elephants Safari Tour',
     timingOrRoute: '4:30 AM – 11:30 AM',
     unitLabel: '/ person',
     defaultValue: '€12',
@@ -61,8 +61,8 @@ export const PACKAGE_PRICE_DEFINITIONS: PackagePriceDefinition[] = [
   {
     priceId: 'pkg_price__yala_evening',
     page: 'yala-safari.html',
-    destinationName: 'Yala Safari',
-    packageTitle: 'Evening Safari',
+    destinationName: 'Yala Safari Tours',
+    packageTitle: 'Evening Safari Tour',
     timingOrRoute: '1:30 PM – 6:00 PM',
     unitLabel: '/ person',
     defaultValue: '€20',
@@ -70,7 +70,7 @@ export const PACKAGE_PRICE_DEFINITIONS: PackagePriceDefinition[] = [
   {
     priceId: 'pkg_price__yala_transfer_ella_south_full',
     page: 'yala-safari.html',
-    destinationName: 'Yala Safari',
+    destinationName: 'Yala Safari Tours',
     packageTitle: 'Ella → Yala → Southern Coast (Full Day & Transfer)',
     timingOrRoute: '3:00 AM – 8:00 PM',
     unitLabel: 'per person',
@@ -79,7 +79,7 @@ export const PACKAGE_PRICE_DEFINITIONS: PackagePriceDefinition[] = [
   {
     priceId: 'pkg_price__yala_transfer_ella_south_special',
     page: 'yala-safari.html',
-    destinationName: 'Yala Safari',
+    destinationName: 'Yala Safari Tours',
     packageTitle: 'Ella → Yala → Southern Coast (Special Leopard & Transfer)',
     timingOrRoute: '3:00 AM – 2:00 PM',
     unitLabel: 'per person',
@@ -88,7 +88,7 @@ export const PACKAGE_PRICE_DEFINITIONS: PackagePriceDefinition[] = [
   {
     priceId: 'pkg_price__yala_transfer_south_ella_full',
     page: 'yala-safari.html',
-    destinationName: 'Yala Safari',
+    destinationName: 'Yala Safari Tours',
     packageTitle: 'Southern Coast → Yala → Ella (Full Day & Transfer)',
     timingOrRoute: '3:00 AM – 8:00 PM',
     unitLabel: 'per person',
@@ -97,7 +97,7 @@ export const PACKAGE_PRICE_DEFINITIONS: PackagePriceDefinition[] = [
   {
     priceId: 'pkg_price__yala_transfer_south_ella_special',
     page: 'yala-safari.html',
-    destinationName: 'Yala Safari',
+    destinationName: 'Yala Safari Tours',
     packageTitle: 'Southern Coast → Yala → Ella (Special Leopard & Transfer)',
     timingOrRoute: '3:00 AM – 2:00 PM',
     unitLabel: 'per person',
@@ -106,19 +106,19 @@ export const PACKAGE_PRICE_DEFINITIONS: PackagePriceDefinition[] = [
   {
     priceId: 'pkg_price__yala_hambantota_port',
     page: 'yala-safari.html',
-    destinationName: 'Yala Safari',
-    packageTitle: 'Special Safari from Hambantota Port',
+    destinationName: 'Yala Safari Tours',
+    packageTitle: 'Special Safari Tour from Hambantota Port',
     timingOrRoute: 'Approx. 8:00 AM – 5:30 PM',
     unitLabel: 'per person',
     defaultValue: '€45',
   },
 
-  // Udawalawe Safari
+  // Udawalawe Safari Tours
   {
     priceId: 'pkg_price__udawalawe_full_day',
     page: 'udawalawe-safari.html',
-    destinationName: 'Udawalawe Safari',
-    packageTitle: 'Full Day Safari',
+    destinationName: 'Udawalawe Safari Tours',
+    packageTitle: 'Full Day Safari Tour',
     timingOrRoute: '5:30 AM – 6:00 PM',
     unitLabel: '/ person',
     defaultValue: '€35',
@@ -126,8 +126,8 @@ export const PACKAGE_PRICE_DEFINITIONS: PackagePriceDefinition[] = [
   {
     priceId: 'pkg_price__udawalawe_morning',
     page: 'udawalawe-safari.html',
-    destinationName: 'Udawalawe Safari',
-    packageTitle: 'Morning Safari',
+    destinationName: 'Udawalawe Safari Tours',
+    packageTitle: 'Morning Safari Tour',
     timingOrRoute: '5:30 AM – 10:00 AM',
     unitLabel: '/ person',
     defaultValue: '€20',
@@ -135,8 +135,8 @@ export const PACKAGE_PRICE_DEFINITIONS: PackagePriceDefinition[] = [
   {
     priceId: 'pkg_price__udawalawe_evening',
     page: 'udawalawe-safari.html',
-    destinationName: 'Udawalawe Safari',
-    packageTitle: 'Evening Safari',
+    destinationName: 'Udawalawe Safari Tours',
+    packageTitle: 'Evening Safari Tour',
     timingOrRoute: '2:00 PM – 6:00 PM',
     unitLabel: '/ person',
     defaultValue: '€20',
@@ -144,19 +144,19 @@ export const PACKAGE_PRICE_DEFINITIONS: PackagePriceDefinition[] = [
   {
     priceId: 'pkg_price__udawalawe_hambantota_port',
     page: 'udawalawe-safari.html',
-    destinationName: 'Udawalawe Safari',
-    packageTitle: 'Udawalawe Special Safari from Hambantota Port',
+    destinationName: 'Udawalawe Safari Tours',
+    packageTitle: 'Udawalawe Special Safari Tour from Hambantota Port',
     timingOrRoute: 'Approx. 8:00 AM – 5:00 PM',
     unitLabel: 'per person',
     defaultValue: '€45',
   },
 
-  // Bundala Safari
+  // Bundala Safari Tours
   {
     priceId: 'pkg_price__bundala_morning',
     page: 'bundala-birding-safari.html',
-    destinationName: 'Bundala Safari',
-    packageTitle: 'Morning Safari',
+    destinationName: 'Bundala Safari Tours',
+    packageTitle: 'Morning Safari Tour',
     timingOrRoute: '5:30 AM – 10:00 AM',
     unitLabel: '/ person',
     defaultValue: '€20',
@@ -164,8 +164,8 @@ export const PACKAGE_PRICE_DEFINITIONS: PackagePriceDefinition[] = [
   {
     priceId: 'pkg_price__bundala_evening',
     page: 'bundala-birding-safari.html',
-    destinationName: 'Bundala Safari',
-    packageTitle: 'Evening Safari',
+    destinationName: 'Bundala Safari Tours',
+    packageTitle: 'Evening Safari Tour',
     timingOrRoute: '2:00 PM – 6:00 PM',
     unitLabel: '/ person',
     defaultValue: '€20',
@@ -173,19 +173,19 @@ export const PACKAGE_PRICE_DEFINITIONS: PackagePriceDefinition[] = [
   {
     priceId: 'pkg_price__bundala_hambantota_port',
     page: 'bundala-birding-safari.html',
-    destinationName: 'Bundala Safari',
-    packageTitle: 'Bundala Special Safari from Hambantota Port',
+    destinationName: 'Bundala Safari Tours',
+    packageTitle: 'Bundala Special Safari Tour from Hambantota Port',
     timingOrRoute: 'Approx. 8:00 AM – 5:00 PM',
     unitLabel: 'per person',
     defaultValue: '€45',
   },
 
-  // Wilpattu Safari
+  // Wilpattu Safari Tours
   {
     priceId: 'pkg_price__wilpattu_full_day',
     page: 'wilpattu-safari.html',
-    destinationName: 'Wilpattu Safari',
-    packageTitle: 'Full Day Safari',
+    destinationName: 'Wilpattu Safari Tours',
+    packageTitle: 'Full Day Safari Tour',
     timingOrRoute: '5:30 AM – 6:00 PM',
     unitLabel: '/ person',
     defaultValue: '€45',
@@ -193,8 +193,8 @@ export const PACKAGE_PRICE_DEFINITIONS: PackagePriceDefinition[] = [
   {
     priceId: 'pkg_price__wilpattu_morning',
     page: 'wilpattu-safari.html',
-    destinationName: 'Wilpattu Safari',
-    packageTitle: 'Morning Safari',
+    destinationName: 'Wilpattu Safari Tours',
+    packageTitle: 'Morning Safari Tour',
     timingOrRoute: '5:30 AM – 10:30 AM',
     unitLabel: '/ person',
     defaultValue: '€25',
@@ -202,19 +202,19 @@ export const PACKAGE_PRICE_DEFINITIONS: PackagePriceDefinition[] = [
   {
     priceId: 'pkg_price__wilpattu_evening',
     page: 'wilpattu-safari.html',
-    destinationName: 'Wilpattu Safari',
-    packageTitle: 'Evening Safari',
+    destinationName: 'Wilpattu Safari Tours',
+    packageTitle: 'Evening Safari Tour',
     timingOrRoute: '2:00 PM – 6:00 PM',
     unitLabel: '/ person',
     defaultValue: '€25',
   },
 
-  // Minneriya Safari
+  // Minneriya Safari Tours
   {
     priceId: 'pkg_price__minneriya_morning',
     page: 'minneriya-safari.html',
-    destinationName: 'Minneriya Safari',
-    packageTitle: 'Morning Safari',
+    destinationName: 'Minneriya Safari Tours',
+    packageTitle: 'Morning Safari Tour',
     timingOrRoute: '5:30 AM – 10:00 AM',
     unitLabel: '/ person',
     defaultValue: '€25',
@@ -222,19 +222,19 @@ export const PACKAGE_PRICE_DEFINITIONS: PackagePriceDefinition[] = [
   {
     priceId: 'pkg_price__minneriya_evening',
     page: 'minneriya-safari.html',
-    destinationName: 'Minneriya Safari',
-    packageTitle: 'Evening Safari',
+    destinationName: 'Minneriya Safari Tours',
+    packageTitle: 'Evening Safari Tour',
     timingOrRoute: '2:00 PM – 6:00 PM',
     unitLabel: '/ person',
     defaultValue: '€25',
   },
 
-  // Kumana Safari
+  // Kumana Safari Tours
   {
     priceId: 'pkg_price__kumana_morning',
     page: 'kumana-birding-safari.html',
-    destinationName: 'Kumana Safari',
-    packageTitle: 'Morning Safari',
+    destinationName: 'Kumana Safari Tours',
+    packageTitle: 'Morning Safari Tour',
     timingOrRoute: '5:30 AM – 10:30 AM',
     unitLabel: '/ person',
     defaultValue: '€25',
@@ -242,8 +242,8 @@ export const PACKAGE_PRICE_DEFINITIONS: PackagePriceDefinition[] = [
   {
     priceId: 'pkg_price__kumana_evening',
     page: 'kumana-birding-safari.html',
-    destinationName: 'Kumana Safari',
-    packageTitle: 'Evening Safari',
+    destinationName: 'Kumana Safari Tours',
+    packageTitle: 'Evening Safari Tour',
     timingOrRoute: '2:00 PM – 6:00 PM',
     unitLabel: '/ person',
     defaultValue: '€25',

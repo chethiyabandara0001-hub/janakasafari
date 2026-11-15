@@ -497,7 +497,6 @@
   function applySafeTextContent(el, newContent) {
     let textVal = String(newContent ?? "")
       .replace(/\bNisha Safari Tours\b/gi, "Nisha Safari")
-      .replace(/\bWhy Choose Us for Your safari tours\?/gi, "Why Choose Us for Your Safaris?")
       .replace(/Safari experience since 2002\.\s*(?:\n|<br\s*\/?>|\s)*/gi, "")
       .replace(/\bSafari Experience Since 2002\b/gi, "Safari Experience Since 2006")
       .replace(/\bSafari experience since 2002\b/gi, "Safari experience since 2006")
@@ -620,7 +619,7 @@
     const whyChooseMatch = textVal
       .trim()
       .match(
-        /^(01\.\s*Experience You Can Trust|02\.\s*Experienced Local Team|03\.\s*Thoughtfully Planned\s+(?:Safaris?|safari\s+trips?)|04\.\s*Respect for Wildlife\s*(?:&|and)\s*Nature|0[1-4]\.\s*[^\n-]+?)(?:\s*[-–—:]\s*|\s*\n+\s*|\s+)(.*)$/is
+        /^(01\.\s*Experience You Can Trust|02\.\s*Experienced Local Team|03\.\s*Thoughtfully Planned\s+(?:Safari\s+Tours?|Safaris?|safari\s+trips?)|04\.\s*Respect for Wildlife\s*(?:&|and)\s*Nature|0[1-4]\.\s*[^\n-]+?)(?:\s*[-–—:]\s*|\s*\n+\s*|\s+)(.*)$/is
       );
     if (whyChooseMatch && (el.closest(".home-why-choose") || /^0[1-4]\./.test(textVal.trim()))) {
       const titlePart = whyChooseMatch[1].trim();
@@ -675,7 +674,7 @@
     // Preserve inner <strong> / <font> wrapper when updating single-line titles or highlighted card headings
     const innerStrong = el.querySelector("strong");
     if (innerStrong && innerStrong.textContent.trim() === el.textContent.trim()) {
-      innerStrong.textContent = textVal.replace(/\bsafari trip\b/gi, "Safari");
+      innerStrong.textContent = textVal.replace(/\bsafari trip\b/gi, "Safari Tour");
       return;
     }
     const innerFont = el.querySelector("font");

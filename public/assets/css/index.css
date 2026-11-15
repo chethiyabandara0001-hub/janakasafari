@@ -147,24 +147,34 @@ body.header-page #wsite-content .wsite-background-1 .home-safari-card > .paragra
   }
 }
 
-@media screen and (max-width: 680px) {
+@media screen and (max-width: 767px) {
+  div:nth-of-type(1) > div:nth-of-type(1) > main#main-content:nth-of-type(1) > div:nth-of-type(2) > div#wsite-content:nth-of-type(1) > div:nth-of-type(4) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) .home-safari-grid,
   .wsite-background-1 .home-safari-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    gap: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px;
   }
   .wsite-background-1 .home-safari-card {
-    padding: 12px 10px;
+    padding: 14px 12px;
+    border-radius: 14px;
   }
   .wsite-background-1 .home-safari-card .wsite-image {
-    height: 120px;
+    height: 130px;
     margin-bottom: 12px !important;
   }
   body.header-page #wsite-content .wsite-background-1 .home-safari-card > .home-safari-title {
-    font-size: 16px !important;
+    font-size: 17px !important;
   }
   body.header-page #wsite-content .wsite-background-1 .home-safari-card > .home-safari-description {
-    font-size: 12.5px !important;
-    margin-bottom: 12px !important;
+    font-size: 13px !important;
+    line-height: 1.55 !important;
+    margin-bottom: 14px !important;
+  }
+  .wsite-background-1 .home-safari-button {
+    padding: 12px 0 0 !important;
+  }
+  .wsite-background-1 .home-safari-button .wsite-button {
+    padding: 10px 8px !important;
+    font-size: 11px !important;
   }
 }
 
@@ -269,19 +279,61 @@ body.header-page #wsite-content .wsite-background-1 .home-safari-card > .paragra
 }
 
 @media screen and (max-width: 767px) {
+  .janaka-benefits .benefits-grid > .wsite-multicol-table-wrap > .wsite-multicol-table,
+  .janaka-benefits .benefits-grid > .wsite-multicol-table-wrap > .wsite-multicol-table > .wsite-multicol-tbody {
+    display: block !important;
+    width: 100% !important;
+  }
+
   .janaka-benefits .benefits-grid > .wsite-multicol-table-wrap > .wsite-multicol-table > .wsite-multicol-tbody > .wsite-multicol-tr,
   .janaka-benefits .benefits-grid table > tbody > tr {
-    display: flex !important;
-    flex-direction: column !important;
-    grid-template-columns: 1fr !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-auto-rows: auto !important;
     gap: 16px !important;
     width: 100% !important;
     margin-top: 20px !important;
   }
 
+  #wsite-content .janaka-benefits .benefits-grid td.benefit-column,
   .janaka-benefits .benefit-column {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
     width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    aspect-ratio: auto !important;
+    margin-bottom: 0 !important;
     padding: 24px 18px !important;
+    box-sizing: border-box !important;
+    border-radius: 16px !important;
+  }
+
+  .janaka-benefits .benefit-icon {
+    width: 52px;
+    height: 52px;
+    margin-bottom: 14px;
+    border-radius: 14px;
+  }
+
+  .janaka-benefits .benefit-icon svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  #wsite-content .janaka-benefits .benefit-column .benefit-title,
+  #wsite-content .janaka-benefits .benefit-column .benefit-title * {
+    margin-bottom: 8px !important;
+    font-size: 20px !important;
+    line-height: 1.25 !important;
+  }
+
+  #wsite-content .janaka-benefits .benefit-column .paragraph {
+    font-size: 15px !important;
+    line-height: 1.65 !important;
   }
 }
 
