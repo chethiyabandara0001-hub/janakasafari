@@ -581,6 +581,7 @@ export interface R2PushResult {
 }
 
 export async function testR2Connection(): Promise<{
+  ok: boolean;
   connected: boolean;
   provider: string;
   message: string;
@@ -603,6 +604,7 @@ export async function testR2Connection(): Promise<{
         await binding.get('__test_ping__');
       }
       return {
+        ok: true,
         connected: true,
         provider: 'worker-binding',
         message: `Connected to Cloudflare R2 bucket "${bucketName}" via Cloudflare Worker Binding.`,
@@ -612,6 +614,7 @@ export async function testR2Connection(): Promise<{
       };
     } catch (err) {
       return {
+        ok: false,
         connected: false,
         provider: 'worker-binding',
         message: `Worker binding ping failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -632,6 +635,7 @@ export async function testR2Connection(): Promise<{
       if (res) {
         if (res.ok) {
           return {
+            ok: true,
             connected: true,
             provider: 's3-sigv4',
             message: `Connected to Cloudflare R2 bucket "${bucketName}" via S3 SigV4 API.`,
@@ -651,6 +655,7 @@ export async function testR2Connection(): Promise<{
           msg = msgMatch[1];
         }
         return {
+          ok: false,
           connected: false,
           provider: 's3-sigv4',
           message: `${code}: ${msg}`,
@@ -663,6 +668,7 @@ export async function testR2Connection(): Promise<{
       }
     } catch (err) {
       return {
+        ok: false,
         connected: false,
         provider: 's3-sigv4',
         message: `Network error connecting to Cloudflare R2: ${err instanceof Error ? err.message : String(err)}`,
@@ -682,6 +688,7 @@ export async function testR2Connection(): Promise<{
       });
       if (res.ok) {
         return {
+          ok: true,
           connected: true,
           provider: 'cf-api-token',
           message: `Verified Cloudflare R2 bucket "${bucketName}" via Cloudflare REST API Token.`,
@@ -693,6 +700,7 @@ export async function testR2Connection(): Promise<{
       }
       const errText = await res.text();
       return {
+        ok: false,
         connected: false,
         provider: 'cf-api-token',
         message: `Cloudflare REST API Error ${res.status}: ${errText.slice(0, 160)}`,
@@ -703,6 +711,7 @@ export async function testR2Connection(): Promise<{
       };
     } catch (err) {
       return {
+        ok: false,
         connected: false,
         provider: 'cf-api-token',
         message: `Cloudflare REST API failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -714,6 +723,7 @@ export async function testR2Connection(): Promise<{
   }
 
   return {
+    ok: false,
     connected: false,
     provider: 'unconfigured',
     message: status.warning || 'No remote Cloudflare R2 credentials or Worker binding found.',

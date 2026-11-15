@@ -534,7 +534,8 @@ export async function deleteSiteTextInFirestore(textId: string) {
  */
 export function subscribePublicCollection<T>(
   collectionName: 'site_images' | 'section_gallery_items' | 'site_texts',
-  onData: (items: T[]) => void
+  onData: (items: T[]) => void,
+  onError?: (err: Error) => void
 ) {
   const q = query(collection(db, collectionName), where('visibility', '==', 'public'));
   return onSnapshot(
@@ -548,6 +549,7 @@ export function subscribePublicCollection<T>(
     },
     (err) => {
       console.warn(`Firestore subscription warning on ${collectionName}:`, err.message);
+      onError?.(err);
     }
   );
 }
@@ -625,7 +627,10 @@ export async function deleteEnquiryInFirestore(enquiryId: string) {
   }
 }
 
-export function subscribeAdminEnquiries<T>(onData: (items: T[]) => void) {
+export function subscribeAdminEnquiries<T>(
+  onData: (items: T[]) => void,
+  onError?: (err: Error) => void
+) {
   const q = query(collection(db, 'enquiries'), where('adminScope', '==', 'nisha-cms-admin'));
   return onSnapshot(
     q,
@@ -638,6 +643,7 @@ export function subscribeAdminEnquiries<T>(onData: (items: T[]) => void) {
     },
     (err) => {
       console.warn('Firestore subscription warning on enquiries:', err.message);
+      onError?.(err);
     }
   );
 }

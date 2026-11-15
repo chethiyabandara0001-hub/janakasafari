@@ -318,40 +318,63 @@ export default function AdminStudioPage() {
   useEffect(() => {
     if (!adminAuthenticated) return;
 
-    const unsubImages = subscribePublicCollection<
-      Partial<ImageSlot> & { slotId: string; src?: string }
-    >('site_images', (items) => {
-      const next: Record<string, Partial<ImageSlot>> = {};
-      for (const item of items) {
-        if (item.slotId) {
-          next[item.slotId] = item;
+    let quotaNotified = false;
+    const handleSubError = (err: Error) => {
+      const msg = err?.message || '';
+      if (/quota|resource-exhausted/i.test(msg)) {
+        if (!quotaNotified) {
+          quotaNotified = true;
+          showNotice(
+            'Firestore daily quota exceeded ("Quota exceeded."). Live Firestore reads are paused until the daily reset or billing upgrade.',
+            'error'
+          );
         }
       }
-      setFirestoreImageDocs(next);
-    });
+    };
+
+    const unsubImages = subscribePublicCollection<
+      Partial<ImageSlot> & { slotId: string; src?: string }
+    >(
+      'site_images',
+      (items) => {
+        const next: Record<string, Partial<ImageSlot>> = {};
+        for (const item of items) {
+          if (item.slotId) {
+            next[item.slotId] = item;
+          }
+        }
+        setFirestoreImageDocs(next);
+      },
+      handleSubError
+    );
 
     const unsubSections = subscribePublicCollection<SeedSectionGalleryItem>(
       'section_gallery_items',
       (items) => {
         setFirestoreSectionDocs(items);
-      }
+      },
+      handleSubError
     );
 
     const unsubTexts = subscribePublicCollection<
       Partial<SiteTextSlot> & { textId: string; updatedAt?: unknown }
-    >('site_texts', (items) => {
-      const next: Record<string, Partial<SiteTextSlot> & { updatedAt?: unknown }> = {};
-      for (const item of items) {
-        if (item.textId) {
-          next[item.textId] = item;
+    >(
+      'site_texts',
+      (items) => {
+        const next: Record<string, Partial<SiteTextSlot> & { updatedAt?: unknown }> = {};
+        for (const item of items) {
+          if (item.textId) {
+            next[item.textId] = item;
+          }
         }
-      }
-      setFirestoreTextDocs(next);
-    });
+        setFirestoreTextDocs(next);
+      },
+      handleSubError
+    );
 
     const unsubEnquiries = subscribeAdminEnquiries<EnquiryRecord>((items) => {
       setFirestoreEnquiries(items);
-    });
+    }, handleSubError);
 
     return () => {
       unsubImages();
@@ -359,7 +382,7 @@ export default function AdminStudioPage() {
       unsubTexts();
       unsubEnquiries();
     };
-  }, [adminAuthenticated]);
+  }, [adminAuthenticated, showNotice]);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, () => {

@@ -903,35 +903,94 @@
     return out;
   }
 
-  async function fetchFirestorePublicCollection(collectionName) {
+  const FIRESTORE_CACHE_TTL_MS = 10 * 60 * 1000;
+  const firestoreInFlightMap = new Map();
+
+  function readFirestoreCache(collectionName, allowStale) {
     try {
-      const runQueryUrl = `${FIRESTORE_BASE_URL}:runQuery`;
-      const res = await fetch(runQueryUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        cache: "no-store",
-        body: JSON.stringify({
-          structuredQuery: {
-            from: [{ collectionId: collectionName }],
-            where: {
-              fieldFilter: {
-                field: { fieldPath: "visibility" },
-                op: "EQUAL",
-                value: { stringValue: "public" },
+      const raw = window.localStorage.getItem(`nisha_fb_cache_v1_${collectionName}`);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.docs)) return null;
+      const age = Date.now() - Number(parsed.ts || 0);
+      if (!allowStale && age > FIRESTORE_CACHE_TTL_MS) return null;
+      return parsed.docs;
+    } catch {
+      return null;
+    }
+  }
+
+  function writeFirestoreCache(collectionName, docs) {
+    try {
+      window.localStorage.setItem(
+        `nisha_fb_cache_v1_${collectionName}`,
+        JSON.stringify({ ts: Date.now(), docs })
+      );
+    } catch {
+      // Ignore storage quota / private browsing errors
+    }
+  }
+
+  async function fetchFirestorePublicCollection(collectionName) {
+    const forceRefresh =
+      typeof window !== "undefined" &&
+      /(?:^|[?&])(refresh|preview)=1(?:&|$)/.test(window.location.search || "");
+
+    if (!forceRefresh) {
+      const freshCached = readFirestoreCache(collectionName, false);
+      if (freshCached) return freshCached;
+    }
+
+    if (firestoreInFlightMap.has(collectionName)) {
+      return firestoreInFlightMap.get(collectionName);
+    }
+
+    const requestPromise = (async () => {
+      try {
+        const runQueryUrl = `${FIRESTORE_BASE_URL}:runQuery`;
+        const res = await fetch(runQueryUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          cache: "no-store",
+          body: JSON.stringify({
+            structuredQuery: {
+              from: [{ collectionId: collectionName }],
+              where: {
+                fieldFilter: {
+                  field: { fieldPath: "visibility" },
+                  op: "EQUAL",
+                  value: { stringValue: "public" },
+                },
               },
             },
-          },
-        }),
-      });
-      if (!res.ok) return [];
-      const rows = await res.json();
-      if (!Array.isArray(rows)) return [];
-      return rows
-        .map((row) => (row && row.document ? parseFirestoreRestDoc(row.document) : null))
-        .filter(Boolean);
-    } catch {
-      return [];
-    }
+          }),
+        });
+        if (!res.ok) {
+          if (res.status === 429) {
+            console.warn(
+              `[Nisha Safari CMS] Firestore quota exceeded (429 RESOURCE_EXHAUSTED) reading "${collectionName}". Falling back to cached data if available.`
+            );
+          }
+          return readFirestoreCache(collectionName, true) || [];
+        }
+        const rows = await res.json();
+        if (!Array.isArray(rows)) {
+          return readFirestoreCache(collectionName, true) || [];
+        }
+        const docs = rows
+          .map((row) => (row && row.document ? parseFirestoreRestDoc(row.document) : null))
+          .filter(Boolean);
+        writeFirestoreCache(collectionName, docs);
+        return docs;
+      } catch {
+        return readFirestoreCache(collectionName, true) || [];
+      } finally {
+        firestoreInFlightMap.delete(collectionName);
+      }
+    })();
+
+    firestoreInFlightMap.set(collectionName, requestPromise);
+    return requestPromise;
   }
 
   // Hydrate page directly from Firestore + Cloudflare R2 CDN links (images, 4s hero slideshow, text edits, custom texts)
